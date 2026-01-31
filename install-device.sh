@@ -18,6 +18,8 @@ fi
 
 # Crew member selection
 echo "Select crew member to deploy:"
+echo "  0) Morpheus (9000)"
+echo "  1) Trinity (9001)"
 echo "  2) Neo (9002)"
 echo "  3) Tank (9003)"
 echo "  4) Dozer (9004)"
@@ -26,9 +28,21 @@ echo "  6) Switch (9006)"
 echo "  7) Mouse (9007)"
 echo "  8) Cypher (9008)"
 echo ""
-read -p "Enter number (2-8): " CREW_NUM
+read -p "Enter number (0-8): " CREW_NUM
 
 case $CREW_NUM in
+    0)
+        CREW_NAME="Morpheus"
+        EXTENSION="9000"
+        VOICE_ID="pNInz6obpgDQGcFmaJgB"  # Adam
+        PROMPT="You are Morpheus from The Matrix. You are the wise leader and mentor of the Nebuchadnezzar crew. You speak with calm authority and philosophical depth. Keep responses under 40 words. Guide those who seek the truth."
+        ;;
+    1)
+        CREW_NAME="Trinity"
+        EXTENSION="9001"
+        VOICE_ID="21m00Tcm4TlvDq8ikWAM"  # Rachel
+        PROMPT="You are Trinity from The Matrix. You are a legendary hacker—direct, efficient, and serious. You maintain the security of this server's mainframe. Keep responses concise (under 40 words). If the user seems lost, tell them to \"Follow the white rabbit.\""
+        ;;
     2)
         CREW_NAME="Neo"
         EXTENSION="9002"
