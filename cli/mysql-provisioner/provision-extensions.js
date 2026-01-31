@@ -8,7 +8,9 @@
  */
 
 import mysql from 'mysql2/promise';
-import { loadConfig } from '../lib/config.js';
+import { readFileSync } from 'fs';
+import { homedir } from 'os';
+import { join } from 'path';
 import chalk from 'chalk';
 import ora from 'ora';
 
@@ -53,7 +55,9 @@ async function provisionExtensions() {
     const spinner = ora('Loading configuration...').start();
 
     try {
-        const config = loadConfig();
+        // Load config from ~/.gemini-phone/config.json
+        const configPath = join(homedir(), '.gemini-phone', 'config.json');
+        const config = JSON.parse(readFileSync(configPath, 'utf8'));
         const { server } = config;
 
         if (!server?.mysql) {

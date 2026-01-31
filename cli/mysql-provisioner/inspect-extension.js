@@ -5,11 +5,22 @@
  */
 
 import mysql from 'mysql2/promise';
-import { loadConfig } from '../lib/config.js';
+import { readFileSync } from 'fs';
+import { homedir } from 'os';
+import { join } from 'path';
 
 async function inspect() {
-    const config = loadConfig();
+    // Load config from ~/.gemini-phone/config.json
+    const configPath = join(homedir(), '.gemini-phone', 'config.json');
+    const config = JSON.parse(readFileSync(configPath, 'utf8'));
+
     const { server } = config;
+
+    if (!server?.mysql) {
+        console.error('Error: MySQL configuration not found in config.json');
+        console.error('Expected: config.server.mysql');
+        process.exit(1);
+    }
 
     const connection = await mysql.createConnection({
         host: server.mysql.host,
