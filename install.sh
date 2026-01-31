@@ -5,7 +5,7 @@ set -e
 # Usage: curl -sSL https://raw.githubusercontent.com/jayis1/claude-phone-but-for-Gemini-and-freepbx/main/install.sh | bash
 
 INSTALL_DIR="$HOME/.gemini-phone-cli"
-REPO_URL="https://github.com/jayis1/claude-phone-but-for-Gemini-and-freepbx.git"
+REPO_URL="https://github.com/jayis1/2fast2dumb2fun.git"
 
 echo "🎯 Gemini Phone CLI Installer"
 echo ""
