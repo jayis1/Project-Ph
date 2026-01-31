@@ -115,8 +115,9 @@ console.log('[STARTUP] API keys loaded:', apiKeys.join(', '));
 // Session storage: callId -> geminiSessionId
 const sessions = new Map();
 
-// Model selection - Sonnet for balanced speed/quality
-const GEMINI_MODEL = process.env.GEMINI_MODEL || 'gemini-2.0-flash-lite-001';
+// Model selection - Use stable 1.5 flash for v1beta compatibility
+// gemini-2.0 models may not be available in v1beta API
+const GEMINI_MODEL = process.env.GEMINI_MODEL || 'gemini-1.5-flash-001';
 
 function parseGeminiStdout(stdout) {
   // Gemini Code CLI may output JSONL; when it does, extract the `result` message.
