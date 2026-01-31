@@ -21,8 +21,15 @@ echo ""
 # Create SQL script on FreePBX
 ssh root@$FREEPBX_IP << 'ENDSSH'
 
-# Get MySQL password from FreePBX config
-MYSQL_PASS=$(grep AMPDBPASS /etc/freepbx.conf | cut -d'"' -f2)
+# Get MySQL password from FreePBX config (try multiple methods)
+MYSQL_PASS=$(grep -oP 'AMPDBPASS["\s]*=["\s]*\K[^"]+' /etc/freepbx.conf 2>/dev/null || \
+             awk -F'"' '/AMPDBPASS/ {print $2}' /etc/freepbx.conf 2>/dev/null || \
+             grep AMPDBPASS /etc/freepbx.conf | cut -d'"' -f2)
+
+if [ -z "$MYSQL_PASS" ]; then
+    echo "❌ Could not extract MySQL password from /etc/freepbx.conf"
+    exit 1
+fi
 
 echo "📝 Creating extensions 9000-9008..."
 
