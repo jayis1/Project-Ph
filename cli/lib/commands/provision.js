@@ -128,16 +128,28 @@ export async function provisionCommand(options = {}) {
             ];
 
             try {
+                // 8000: All Crew
                 const rgExists = await client.ringGroupExists('8000');
-                await client.createOrUpdateRingGroup(
-                    '8000',
-                    'Nebuchadnezzar Crew',
-                    crewExtensions,
-                    'ringall'
-                );
-                spinner.succeed(chalk.cyan(`Ring Group 8000 ${rgExists ? 'updated' : 'created'} with 9 crew members (Matrix)`));
+                await client.createOrUpdateRingGroup('8000', 'Nebuchadnezzar Crew', crewExtensions, 'ringall');
+                spinner.succeed(chalk.cyan(`Ring Group 8000 (Hub) ${rgExists ? 'updated' : 'created'}`));
+
+                // 8001: Command (Morpheus, Trinity)
+                const commandExts = ['9000', '9001'];
+                await client.createOrUpdateRingGroup('8001', 'Command Deck', commandExts, 'ringall');
+                spinner.succeed(chalk.cyan(`Ring Group 8001 (Command) created`));
+
+                // 8002: IT/Ops (Neo, Cypher, Tank, Link, Mouse)
+                const opsExts = ['9002', '9003', '9004', '9008', '9007'];
+                await client.createOrUpdateRingGroup('8002', 'Operators', opsExts, 'ringall');
+                spinner.succeed(chalk.cyan(`Ring Group 8002 (Operators) created`));
+
+                // 8003: Deck/Engineering (Dozer, Apoc, Switch)
+                const deckExts = ['9005', '9006', '9007']; // Switch is sort of both but primarily deck muscle here
+                await client.createOrUpdateRingGroup('8003', 'Engineering', deckExts, 'ringall');
+                spinner.succeed(chalk.cyan(`Ring Group 8003 (Engineering) created`));
+
             } catch (error) {
-                spinner.warn(chalk.yellow(`Could not provision Ring Group: ${error.message}`));
+                spinner.warn(chalk.yellow(`Could not provision Ring Groups: ${error.message}`));
             }
 
             // IVR instructions or automation
