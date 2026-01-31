@@ -127,28 +127,52 @@ async function provisionNebuchadnezzar() {
         let updatedCount = 0;
         let missingCount = 0;
 
-        for (const member of CREW) {
-            // Check if extension exists in ps_endpoints (PJSIP)
-            const [rows] = await connection.execute('SELECT id FROM ps_endpoints WHERE id = ?', [member.extension]);
+        try {
+            // Check available tables
+            const [pjsipTable] = await connection.execute("SHOW TABLES LIKE 'ps_endpoints'");
+            const isPJSIP = pjsipTable.length > 0;
 
-            if (rows.length > 0) {
-                // Extension exists, update secret
-                // Default secure-ish secret for the crew if not in config
-                // (In prodoction, read from config.devices)
-                const secret = 'GeminiPhone123!';
-                const updated = await updatePjsipSecret(connection, member.extension, secret);
-                if (updated) {
-                    updatedCount++;
-                }
+            const [sipTable] = await connection.execute("SHOW TABLES LIKE 'sip'");
+            const isChanSIP = sipTable.length > 0;
+
+            if (!isPJSIP && !isChanSIP) {
+                spinner.warn(chalk.yellow('Skipping Secret Sync: Could not detect PJSIP (ps_endpoints) or chan_sip (sip) tables.'));
+                console.log(chalk.gray('   This is non-fatal. IVR provisioning will proceed.'));
+                skippedSecretSync = true;
             } else {
-                missingCount++;
-                console.log(chalk.yellow(`\n⚠️  Extension ${member.extension} (${member.name}) NOT FOUND in PJSIP.`));
+                for (const member of CREW) {
+                    if (isPJSIP) {
+                        // PJSIP Logic
+                        const [rows] = await connection.execute('SELECT id FROM ps_endpoints WHERE id = ?', [member.extension]);
+                        if (rows.length > 0) {
+                            const updated = await updatePjsipSecret(connection, member.extension, 'GeminiPhone123!');
+                            if (updated) updatedCount++;
+                        } else {
+                            missingCount++;
+                        }
+                    } else if (isChanSIP) {
+                        // chan_sip Logic
+                        const [rows] = await connection.execute('SELECT id FROM sip WHERE id = ?', [member.extension]);
+                        if (rows.length > 0) {
+                            const [res] = await connection.execute(
+                                "UPDATE sip SET data = ? WHERE id = ? AND keyword = 'secret'",
+                                ['GeminiPhone123!', member.extension]
+                            );
+                            if (res.affectedRows > 0) updatedCount++;
+                        } else {
+                            missingCount++;
+                        }
+                    }
+                }
+                spinner.succeed(`Secrets synced for ${updatedCount} extensions.`);
             }
+
+        } catch (error) {
+            spinner.warn(chalk.yellow(`Skipping Secret Sync: ${error.message}`));
         }
 
-        spinner.succeed(`Secrets synced for ${updatedCount} extensions.`);
         if (missingCount > 0) {
-            console.log(chalk.yellow(`   ${missingCount} extensions are missing. Please creating them via FreePBX GUI (Bulk Handler or Batch Create).`));
+            console.log(chalk.yellow(`   ${missingCount} extensions are missing. Please create them via FreePBX GUI.`));
             console.log(chalk.gray(`   Recommended Secret: GeminiPhone123!`));
         }
 
