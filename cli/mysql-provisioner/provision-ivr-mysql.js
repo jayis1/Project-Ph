@@ -13,7 +13,7 @@ import { promisify } from 'util';
 
 const execAsync = promisify(exec);
 
-import { loadConfig } from '../../lib/config.js';
+import { loadConfig } from '../lib/config.js';
 
 // Configuration loaded dynamically
 async function getMySQLConfig() {
