@@ -267,13 +267,34 @@ fi
 
 if [ "$OS" = "Linux" ]; then
   ln -s "$INSTALL_DIR/cli/bin/gemini-phone.js" "$BIN_DIR/gemini-phone"
+  chmod +x "$INSTALL_DIR/cli/bin/gemini-phone.js"
   echo "✓ Installed to: $BIN_DIR/gemini-phone"
 
+  # Add to PATH if not already there
   if [[ ":$PATH:" != *":$HOME/.local/bin:"* ]]; then
     echo ""
     echo "⚠️  Adding $HOME/.local/bin to PATH..."
-    echo 'export PATH="$HOME/.local/bin:$PATH"' >> ~/.bashrc
+    
+    # Add to .bashrc for bash sessions
+    if [ -f ~/.bashrc ]; then
+      if ! grep -q 'export PATH="$HOME/.local/bin:$PATH"' ~/.bashrc; then
+        echo 'export PATH="$HOME/.local/bin:$PATH"' >> ~/.bashrc
+      fi
+    fi
+    
+    # Add to .profile for login shells
+    if [ -f ~/.profile ]; then
+      if ! grep -q 'export PATH="$HOME/.local/bin:$PATH"' ~/.profile; then
+        echo 'export PATH="$HOME/.local/bin:$PATH"' >> ~/.profile
+      fi
+    else
+      echo 'export PATH="$HOME/.local/bin:$PATH"' > ~/.profile
+    fi
+    
+    # Activate for current session
     export PATH="$HOME/.local/bin:$PATH"
+    
+    echo "✓ PATH updated (active now and for future sessions)"
   fi
 else
   if [ -w "$BIN_DIR" ]; then
@@ -288,6 +309,8 @@ echo ""
 echo "════════════════════════════════════════════"
 echo "✓ Installation complete!"
 echo "════════════════════════════════════════════"
+echo ""
+echo "The 'gemini-phone' command is now available!"
 echo ""
 echo "Next steps:"
 echo "  gemini-phone setup    # Configure your installation"
