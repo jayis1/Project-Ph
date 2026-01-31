@@ -277,7 +277,13 @@ mutation($input: addInboundRouteInput!) {
      */
     async createOrUpdateRingGroup(grpnum, description, extensionList, strategy = 'ringall') {
         const exists = await this.ringGroupExists(grpnum);
-        const input = {
+        const input = exists ? {
+            groupNumber: grpnum,
+            description,
+            strategy,
+            extensionList: extensionList.join('-'),
+            ringTime: '20'
+        } : {
             grpnum,
             description,
             strategy,
@@ -311,15 +317,17 @@ mutation($input: ${mutationType}Input!) {
      */
     async createRingGroup(grpnum, description, extensionList, strategy = 'ringall') {
         const input = {
-            grpnum,
-            description,
-            strategy,
-            grplist: extensionList.join('-'), // Extensions separated by dashes
-            grptime: '20', // Ring time in seconds
-            grppre: '', // Prefix
-            annmsg_id: '0', // No announcement
-            postdest: 'app-blackhole,hangup,1', // Destination if no answer
-            ringing: true // Play ringing tone
+            groupNumber: grpnum,
+            description: description,
+            strategy: strategy,
+            extensionList: extensionList.join('-'), // FreePBX expects dash-separated list apparently, or maybe newlines? Let's check docs or try dash
+            ringTime: '20',
+            groupPrefix: '',
+            callerMessage: '',
+            postAnswer: '',
+            alertInfo: '',
+            needConf: false,
+            ignoreCallForward: false
         };
 
         const mutation = `
