@@ -174,12 +174,83 @@ docker logs voice-app -f
 
 ### Update to latest version
 
+**For existing crew members that are already online:**
+
 ```bash
+# SSH into the crew member's LXC
+ssh root@<crew-lxc-ip>
+
+# Navigate to installation directory
 cd ~/.gemini-phone-cli
-git pull
+
+# Pull latest changes from GitHub
+git pull origin main
+
+# Restart services to apply updates
 gemini-phone stop
+sleep 2
 gemini-phone start
+
+# Verify update
+gemini-phone status
+gemini-phone doctor
 ```
+
+**Batch update script for all online crew:**
+
+```bash
+#!/bin/bash
+# update-all-crew.sh - Update all deployed crew members
+
+# List of crew LXC IPs (update as crew members are deployed)
+CREW_NODES=(
+    "root@<trinity-ip>"      # Trinity (fucktard2)
+    "root@<morpheus-ip>"     # Morpheus (if separate)
+    "root@<neo-ip>"          # Neo
+    # Add more as they come online
+)
+
+for node in "${CREW_NODES[@]}"; do
+    echo "========================================="
+    echo "Updating: $node"
+    echo "========================================="
+    
+    ssh "$node" << 'EOF'
+        cd ~/.gemini-phone-cli
+        git pull origin main
+        gemini-phone stop
+        sleep 2
+        gemini-phone start
+        sleep 3
+        echo ""
+        echo "Status:"
+        gemini-phone status
+EOF
+    
+    echo ""
+    echo "✅ $node updated"
+    echo ""
+done
+
+echo "========================================="
+echo "✅ All crew members updated!"
+echo "========================================="
+```
+
+**Usage:**
+
+```bash
+chmod +x update-all-crew.sh
+./update-all-crew.sh
+```
+
+**What gets updated:**
+
+- Scheduled callback feature
+- IVR improvements
+- Bug fixes
+- New features
+- Documentation updates
 
 ## Network Diagram
 
