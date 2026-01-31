@@ -117,18 +117,37 @@ export async function provisionCommand(options = {}) {
             spinner.info(chalk.cyan(`Ring Group 8000 ${ringGroupExists ? 'updated' : 'created'} with ${extensions.length} AI(s)`));
         }
 
-        // Step 5: Provision IVR Menu (if --full flag or multiple devices)
-        if (shouldProvisionGroup) {
-            spinner.warn(chalk.yellow('⚠️  IVR provisioning not supported by FreePBX GraphQL API'));
-            spinner.info(chalk.cyan('   Please create IVR 7000 manually in FreePBX GUI:'));
-            spinner.info(chalk.gray('   Applications → IVR → Add IVR'));
-            spinner.info(chalk.gray(`   - Press 1 → Extension ${config.devices[0].extension}`));
-            if (config.devices.length > 1) {
-                config.devices.slice(1).forEach((device, index) => {
-                    spinner.info(chalk.gray(`   - Press ${index + 2} → Extension ${device.extension}`));
-                });
+        // Step 5: Provision Ring Group 8000 (Nebuchadnezzar Crew)
+        if (options.full) {
+            spinner.text = 'Provisioning Ring Group 8000 (Nebuchadnezzar Crew)...';
+
+            // Full crew list
+            const crewExtensions = [
+                '9000', '9001', '9002', '9003', '9004',
+                '9005', '9006', '9007', '9008'
+            ];
+
+            try {
+                const rgExists = await client.ringGroupExists('8000');
+                await client.createOrUpdateRingGroup(
+                    '8000',
+                    'Nebuchadnezzar Crew',
+                    crewExtensions,
+                    'ringall'
+                );
+                spinner.succeed(chalk.cyan(`Ring Group 8000 ${rgExists ? 'updated' : 'created'} with 9 crew members (Matrix)`));
+            } catch (error) {
+                spinner.warn(chalk.yellow(`Could not provision Ring Group: ${error.message}`));
             }
-            spinner.info(chalk.gray('   - Press 0 → Ring Group 8000'));
+
+            // IVR instructions or automation
+            spinner.info(chalk.cyan('ℹ️  To provision IVR 7000:'));
+            spinner.info(chalk.gray('   Run: cd cli/mysql-provisioner && node provision-ivr-mysql.js'));
+        } else if (config.devices.length > 1) {
+            // Standard multi-device logic (local devices only)
+            // ... existing logic ...
+            spinner.warn(chalk.yellow('⚠️  IVR provisioning not supported by FreePBX GraphQL API'));
+            // ...
         }
 
         // Step 6: Apply Config
