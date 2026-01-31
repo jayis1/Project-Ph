@@ -77,10 +77,50 @@ async function provisionNebuchadnezzar() {
     const mysqlConfig = await getMySQLConfig();
 
     let connection;
+    // Setup SSH Tunnel
+    async function createTunnel() {
+        console.log(chalk.cyan('   🔄 Establishing SSH Tunnel (33306 -> 3306)...'));
+        // sshpass -p 'pass' ssh -N -L 33306:127.0.0.1:3306 root@host
+        const cmd = `sshpass -p "${SSH_CONFIG.password}" ssh -f -N -L 33306:127.0.0.1:3306 -o StrictHostKeyChecking=no ${SSH_CONFIG.user}@${SSH_CONFIG.host}`;
+
+        try {
+            await execAsync(cmd);
+            // Wait a moment for tunnel to come up
+            await new Promise(r => setTimeout(r, 1000));
+            console.log(chalk.green('   ✓ SSH Tunnel established'));
+            return true;
+        } catch (e) {
+            console.warn(chalk.yellow(`   Could not establish tunnel: ${e.message}`));
+            return false;
+        }
+    }
+
+    // Ensure the tunnel process is killed on exit?
+    // Since we used -f (background), it lingers. Ideally we find and kill it, but for a provisioner running one-off,
+    // it might not be critical to clean up instantly, though good practice.
+    // For now, simple implementation.
+
     try {
         // Connect to MySQL
-        connection = await mysql.createConnection(mysqlConfig);
-        spinner.succeed('Connected to MySQL');
+        try {
+            connection = await mysql.createConnection(mysqlConfig);
+            spinner.succeed('Connected to MySQL (Direct)');
+        } catch (directErr) {
+            if (directErr.code === 'ECONNREFUSED' || directErr.code === 'ETIMEDOUT') {
+                spinner.warn(chalk.yellow('Direct connection failed. Attempting via SSH Tunnel...'));
+                const tunnelCreated = await createTunnel();
+                if (tunnelCreated) {
+                    // Update config to local tunnel port
+                    const tunnelConfig = { ...mysqlConfig, host: '127.0.0.1', port: 33306 };
+                    connection = await mysql.createConnection(tunnelConfig);
+                    spinner.succeed('Connected to MySQL (via SSH Tunnel)');
+                } else {
+                    throw directErr; // Rethrow original if tunnel fails
+                }
+            } else {
+                throw directErr;
+            }
+        }
 
         // 1. Sync Secrets for Crew
         spinner.start('Syncing Extension Secrets...');
