@@ -175,6 +175,9 @@ cat > ~/.gemini-phone/config.json <<EOF
 }
 EOF
 
+# Fix any literal $HOME that didn't expand
+sed -i "s|\$HOME|$HOME|g" ~/.gemini-phone/config.json
+
 echo "✅ Configuration created"
 
 # Start services
