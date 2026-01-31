@@ -100,52 +100,129 @@ gemini-phone setup    # Select "Both"
 gemini-phone start    # Launches Docker + API server
 ```
 
-### Distributed (Admin + Device Nodes)
+### Distributed (Nebuchadnezzar Crew Architecture)
 
-Best for: Multiple AI personalities on separate LXC containers or servers.
+Best for: Multiple AI personalities on separate LXC containers or servers, each with unique identities.
+
+The **Nebuchadnezzar** is a distributed AI crew system with 9 AI members accessible via IVR or direct dial:
 
 ```text
 ┌─────────────────────────────────────────────────────────────┐
 │  FreePBX Server (172.16.1.143)                              │
-│  - IVR 7000: Crew selection menu                            │
-│  - Extensions: 9000-9008                                    │
-│  - Ring Group: All crew members                             │
+│  - IVR 7000: Crew selection menu (DTMF 0-9)                 │
+│  - Extensions: 9000-9008 (9 crew members)                   │
+│  - Automated provisioning via MySQL                         │
 └─────────────────────────────────────────────────────────────┘
                           │
-          ┌───────────────┴───────────────┐
-          │                               │
-┌─────────▼─────────┐         ┌──────────▼──────────┐
-│ Admin Node        │         │ Device Node         │
-│ (Trinity)         │         │ (Morpheus)          │
-│                   │         │                     │
-│ • Extension 9001  │         │ • Extension 9000    │
-│ • FreePBX Admin   │         │ • Device-Only       │
-│ • Provisioning    │         │ • Standalone        │
-└───────────────────┘         └─────────────────────┘
+          ┌───────────────┴───────────────────────────┐
+          │                                           │
+┌─────────▼─────────┐                     ┌───────────▼──────────┐
+│ Admin Node        │                     │ Device Nodes (1-8)   │
+│ (Trinity/fucktard2)│                     │ (Morpheus, Neo, etc.)│
+│                   │                     │                      │
+│ • Extension 9001  │                     │ • Extensions 9000-08 │
+│ • FreePBX Admin   │                     │ • Device-Only Mode   │
+│ • MySQL Provision │                     │ • Standalone AI      │
+│ • IVR Management  │                     │ • Unique Personas    │
+│ • Crew Sync       │                     │ • Auto-Register      │
+└───────────────────┘                     └──────────────────────┘
 ```
 
-**Admin Node Setup:**
+#### Nebuchadnezzar Crew Members
+
+| Extension | Name     | IVR Option | Role                    |
+|-----------|----------|------------|-------------------------|
+| 9000      | Morpheus | 0, 1       | Primary Contact/Leader  |
+| 9001      | Trinity  | 2          | Admin Node/Hacker       |
+| 9002      | Neo      | 3          | The One                 |
+| 9003      | Tank     | 4          | Operator                |
+| 9004      | Dozer    | 5          | Pilot                   |
+| 9005      | Apoc     | 6          | Crew Member             |
+| 9006      | Switch   | 7          | Crew Member             |
+| 9007      | Mouse    | 8          | Crew Member             |
+| 9008      | Cypher   | 9          | Crew Member             |
+
+#### Admin Node Setup (Trinity)
+
+The admin node handles centralized provisioning and FreePBX management:
 
 ```bash
-gemini-phone setup    # Select "Both", configure Trinity
+# On Trinity's LXC (fucktard2)
+curl -sSL https://raw.githubusercontent.com/jayis1/2fast2dumb2fun/main/install.sh | bash
+gemini-phone setup    # Select "Both", configure Trinity (ext 9001)
+gemini-phone start
+
+# Provision the entire crew via MySQL
+cd ~/.gemini-phone-cli/cli/mysql-provisioner
+node provision-ivr-mysql.js    # Creates IVR 7000 + all crew routes
+```
+
+**Admin Node Capabilities:**
+
+- Direct MySQL provisioning (bypasses FreePBX API)
+- IVR 7000 management (DTMF routing for 0-9)
+- Centralized secret management for all extensions
+- FreePBX dialplan reload automation
+- Crew member enrollment and updates
+
+#### Device Node Setup (Crew Members)
+
+Each crew member runs on their own LXC/server:
+
+```bash
+# On each device node (Morpheus, Neo, Tank, etc.)
+curl -sSL https://raw.githubusercontent.com/jayis1/2fast2dumb2fun/main/install.sh | bash
+gemini-phone setup    # Select "Both", configure crew member identity
 gemini-phone start
 ```
 
-**Device Node Setup:**
+**Device Node Characteristics:**
+
+- Single AI personality per node
+- Unique voice and system prompt
+- Auto-registers to FreePBX
+- No provisioning capabilities needed
+- Receives calls via IVR or direct dial
+
+#### Updating the System
+
+**Push-Before-Pull Protocol** (prevents logic desync):
 
 ```bash
-# Quick deployment script
-curl -sSL https://raw.githubusercontent.com/jayis1/2fast2dumb2fun/main/install-device.sh -o install-device.sh
-chmod +x install-device.sh
-./install-device.sh   # Select crew member (Morpheus, Neo, etc.)
+# 1. On your local dev machine
+cd /path/to/gemini-phoneq
+git add -A
+git commit -m "Update feature X"
+git push origin main
+
+# 2. On admin node (Trinity)
+cd ~/.gemini-phone-cli
+git pull origin main
+gemini-phone stop
+gemini-phone start
+
+# 3. On device nodes (optional, if changes affect voice-app)
+cd ~/.gemini-phone-cli
+git pull origin main
+gemini-phone stop
+gemini-phone start
 ```
 
-The device-only script:
+**Automated Crew Provisioning:**
 
-- Installs Gemini Phone CLI
-- Configures a single crew member
-- Registers to existing FreePBX server
-- No admin/provisioning capabilities needed
+```bash
+# On admin node only
+cd ~/.gemini-phone-cli/cli/mysql-provisioner
+
+# Provision IVR + all crew extensions
+node provision-ivr-mysql.js
+
+# Verify extensions exist
+bash verify-extensions.sh
+
+# Update crew passwords (if needed)
+bash set-crew-passwords.sh
+```
 
 ### Split Mode (Pi + API Server)
 
