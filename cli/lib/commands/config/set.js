@@ -1,8 +1,22 @@
 import { loadConfig, saveConfig } from '../../config.js';
 import chalk from 'chalk';
-import lodash from 'lodash';
 
-const { set } = lodash;
+// Simple implementation of lodash.set
+function set(obj, path, value) {
+    if (Object(obj) !== obj) return obj;
+    if (!path) return obj;
+
+    const p = Array.isArray(path) ? path : path.split('.');
+
+    p.slice(0, -1).reduce((a, c, i) => {
+        if (Object(a[c]) !== a[c]) {
+            a[c] = Math.abs(p[i + 1]) >> 0 === +p[i + 1] ? [] : {};
+        }
+        return a[c];
+    }, obj)[p.pop()] = value;
+
+    return obj;
+}
 
 export async function setConfig(key, value) {
     try {
