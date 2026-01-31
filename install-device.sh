@@ -128,6 +128,9 @@ mkdir -p ~/.gemini-phone
 
 cat > ~/.gemini-phone/config.json <<EOF
 {
+  "deployment": {
+    "mode": "device-only"
+  },
   "devices": [
     {
       "name": "$CREW_NAME",
@@ -143,16 +146,19 @@ cat > ~/.gemini-phone/config.json <<EOF
     "registrar": "$FREEPBX_IP",
     "externalIp": "$EXTERNAL_IP"
   },
+  "voiceApp": {
+    "port": 3000
+  },
   "api": {
     "gemini": {
       "url": "http://localhost:3333"
+    },
+    "elevenlabs": {
+      "apiKey": "$ELEVENLABS_KEY"
+    },
+    "openai": {
+      "apiKey": "$OPENAI_KEY"
     }
-  },
-  "tts": {
-    "elevenLabsApiKey": "$ELEVENLABS_KEY"
-  },
-  "stt": {
-    "openaiApiKey": "$OPENAI_KEY"
   }
 }
 EOF
