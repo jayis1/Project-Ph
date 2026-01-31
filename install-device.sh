@@ -126,6 +126,9 @@ echo "📝 Creating configuration..."
 
 mkdir -p ~/.gemini-phone
 
+# Expand HOME for use in JSON
+HOME_DIR="$HOME"
+
 cat > ~/.gemini-phone/config.json <<EOF
 {
   "installationType": "both",
@@ -148,8 +151,8 @@ cat > ~/.gemini-phone/config.json <<EOF
     "externalIp": "$EXTERNAL_IP"
   },
   "paths": {
-    "voiceApp": "${HOME}/.gemini-phone-cli/voice-app",
-    "geminiApiServer": "${HOME}/.gemini-phone-cli/gemini-api-server"
+    "voiceApp": "$HOME_DIR/.gemini-phone-cli/voice-app",
+    "geminiApiServer": "$HOME_DIR/.gemini-phone-cli/gemini-api-server"
   },
   "server": {
     "geminiApiPort": 3333,
