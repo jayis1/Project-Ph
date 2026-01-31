@@ -216,9 +216,9 @@ async function queryGeminiWithFallback({ fullPrompt, callId, timestamp, model })
     );
 
     const currentModel = model || GEMINI_MODEL;
-    if (isQuotaError && currentModel !== 'gemini-1.5-flash') {
-      console.warn(`[GEMINI] Quota exceeded for ${currentModel}, falling back to gemini-1.5-flash...`);
-      return await runGeminiOnce({ fullPrompt, callId, timestamp, model: 'gemini-1.5-flash' });
+    if (isQuotaError && currentModel !== 'gemini-1.5-flash-001') {
+      console.warn(`[GEMINI] Quota exceeded for ${currentModel}, falling back to gemini-1.5-flash-001...`);
+      return await runGeminiOnce({ fullPrompt, callId, timestamp, model: 'gemini-1.5-flash-001' });
     }
     throw err;
   }
