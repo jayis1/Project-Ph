@@ -126,6 +126,7 @@ async function provisionNebuchadnezzar() {
         spinner.start('Syncing Extension Secrets...');
         let updatedCount = 0;
         let missingCount = 0;
+        let skippedSecretSync = false;
 
         try {
             // Check available tables
