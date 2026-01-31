@@ -11,6 +11,7 @@ import { deviceAddCommand } from '../lib/commands/device/add.js';
 import { deviceListCommand } from '../lib/commands/device/list.js';
 import { deviceRemoveCommand } from '../lib/commands/device/remove.js';
 import { logsCommand } from '../lib/commands/logs.js';
+import { setConfig } from '../lib/commands/config/set.js';
 import { configShowCommand } from '../lib/commands/config/show.js';
 import { configPathCommand } from '../lib/commands/config/path.js';
 import { configResetCommand } from '../lib/commands/config/reset.js';
@@ -201,8 +202,13 @@ config
   });
 
 config
+  .command('set <key> <value>')
+  .description('Set a configuration value')
+  .action(setConfig);
+
+config
   .command('reset')
-  .description('Reset configuration (creates backup)')
+  .description('Reset configuration to defaults')
   .action(async () => {
     try {
       await configResetCommand();
