@@ -197,18 +197,17 @@ async function provisionNebuchadnezzar() {
         await connection.execute(`
             INSERT INTO ivr_details (
                 id, name, description, announcement, directdial,
-                timeout, timeout_time, timeout_recording, timeout_retry_recording,
+                timeout_time, timeout_recording, timeout_retry_recording,
                 timeout_loops, timeout_append_announce, timeout_destination,
                 invalid_loops, invalid_retry_recording, invalid_destination,
                 invalid_recording, retvm
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         `, [
             IVR_ID,
             IVR_NAME,
             IVR_DESCRIPTION,
             '0',              // announcement (0 = none, you'll need to record one)
             'CHECKED',        // directdial enabled
-            '1',              // timeout enabled
             '10',             // timeout_time (10 seconds)
             '0',              // timeout_recording
             '0',              // timeout_retry_recording
