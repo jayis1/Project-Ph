@@ -119,27 +119,16 @@ export async function provisionCommand(options = {}) {
 
         // Step 5: Provision IVR Menu (if --full flag or multiple devices)
         if (shouldProvisionGroup) {
-            spinner.text = 'Provisioning IVR 7000 (AI Selection Menu)...';
-            const ivrExists = await client.ivrExists('7000');
-
-            // Build IVR entries dynamically
-            const ivrEntries = {};
-            config.devices.forEach((device, index) => {
-                const digit = (index + 1).toString();
-                ivrEntries[digit] = `ext-local,${device.extension},1`;
-            });
-            // Option 0 rings all AIs
-            ivrEntries['0'] = 'ext-local,8000,1';
-
-            await client.createOrUpdateIVR(
-                '7000',
-                'AI Selection Menu',
-                'Choose your AI assistant',
-                '0', // No announcement (you'll need to record one)
-                ivrEntries
-            );
-
-            spinner.info(chalk.cyan(`IVR 7000 ${ivrExists ? 'updated' : 'created'} with ${config.devices.length} options`));
+            spinner.warn(chalk.yellow('⚠️  IVR provisioning not supported by FreePBX GraphQL API'));
+            spinner.info(chalk.cyan('   Please create IVR 7000 manually in FreePBX GUI:'));
+            spinner.info(chalk.gray('   Applications → IVR → Add IVR'));
+            spinner.info(chalk.gray(`   - Press 1 → Extension ${config.devices[0].extension}`));
+            if (config.devices.length > 1) {
+                config.devices.slice(1).forEach((device, index) => {
+                    spinner.info(chalk.gray(`   - Press ${index + 2} → Extension ${device.extension}`));
+                });
+            }
+            spinner.info(chalk.gray('   - Press 0 → Ring Group 8000'));
         }
 
         // Step 6: Apply Config

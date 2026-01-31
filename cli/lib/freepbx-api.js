@@ -245,31 +245,26 @@ mutation($input: addInboundRouteInput!) {
      */
     async ringGroupExists(grpnum) {
         try {
-            const query = `query { fetchAllRingGroups { grpnum } }`;
+            const query = `query { fetchAllRingGroups { ringgroups { groupNumber } } }`;
             const res = await this.query(query);
-            const groups = res?.fetchAllRingGroups || [];
-            return groups.some(g => g.grpnum === grpnum);
+            const ringgroups = res?.fetchAllRingGroups?.ringgroups || [];
+            return ringgroups.some(rg => rg.groupNumber === grpnum);
         } catch (error) {
-            console.warn('Could not check ring group existence:', error.message);
+            console.warn('Could not check Ring Group existence:', error.message);
             return false;
         }
     }
 
     /**
      * Check if an IVR exists
-     * @param {string} id - IVR ID
+     * NOTE: IVR is not exposed in FreePBX GraphQL API, always returns false
+     * @param {string} _id - IVR ID (unused - IVR not supported in API)
      * @returns {Promise<boolean>} True if exists
      */
-    async ivrExists(id) {
-        try {
-            const query = `query { fetchAllIVRs { id } }`;
-            const res = await this.query(query);
-            const ivrs = res?.fetchAllIVRs || [];
-            return ivrs.some(i => i.id === id);
-        } catch (error) {
-            console.warn('Could not check IVR existence:', error.message);
-            return false;
-        }
+    async ivrExists(_id) {
+        // IVR is not available in FreePBX GraphQL API
+        console.warn('IVR queries not supported by FreePBX GraphQL API - skipping IVR provisioning');
+        return false;
     }
 
     /**
