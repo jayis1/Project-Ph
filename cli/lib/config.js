@@ -1,6 +1,7 @@
 import fs from 'fs';
 import path from 'path';
 import os from 'os';
+import { loadEnv, envExists, migrateConfigToEnv, saveEnv } from './env-loader.js';
 
 /**
  * Get the config directory path
@@ -12,7 +13,7 @@ export function getConfigDir() {
 
 /**
  * Get the config file path
- * @returns {string} Path to ~/.  gemini-phone/config.json
+ * @returns {string} Path to ~/.gemini-phone/config.json
  */
 export function getConfigPath() {
   return path.join(getConfigDir(), 'config.json');
@@ -27,7 +28,7 @@ export function configExists() {
 }
 
 /**
- * Load configuration from disk
+ * Load configuration from disk, merging .env values
  * @returns {Promise<object>} Configuration object
  */
 export async function loadConfig() {
@@ -43,6 +44,54 @@ export async function loadConfig() {
   // Ensure installationType exists for backward compatibility
   if (!config.installationType) {
     config.installationType = 'both';
+  }
+
+  // Auto-migrate: If .env doesn't exist but config has dynamic values, create .env
+  if (!envExists() && (config.sip?.domain || config.server?.externalIp)) {
+    const envVars = migrateConfigToEnv(config);
+    saveEnv(envVars);
+  }
+
+  // Load .env and merge (env takes precedence for dynamic values)
+  const env = loadEnv();
+
+  if (Object.keys(env).length > 0) {
+    // Merge FreePBX/SIP settings from .env
+    if (env.FREEPBX_IP || env.SIP_DOMAIN) {
+      config.sip = config.sip || {};
+      config.sip.domain = env.SIP_DOMAIN || env.FREEPBX_IP || config.sip.domain;
+      config.sip.registrar = env.SIP_REGISTRAR || env.FREEPBX_IP || config.sip.registrar;
+    }
+
+    if (env.FREEPBX_GRAPHQL_URL) {
+      config.api = config.api || {};
+      config.api.freepbx = config.api.freepbx || {};
+      config.api.freepbx.apiUrl = env.FREEPBX_GRAPHQL_URL;
+    } else if (env.FREEPBX_IP) {
+      // Auto-generate GraphQL URL from FREEPBX_IP
+      config.api = config.api || {};
+      config.api.freepbx = config.api.freepbx || {};
+      if (!config.api.freepbx.apiUrl || config.api.freepbx.apiUrl.includes('istealyourdomain')) {
+        config.api.freepbx.apiUrl = `http://${env.FREEPBX_IP}:83/admin/api/api/gql`;
+      }
+    }
+
+    // Merge server settings from .env
+    if (env.EXTERNAL_IP) {
+      config.server = config.server || {};
+      config.server.externalIp = env.EXTERNAL_IP;
+    }
+
+    if (env.HTTP_PORT) {
+      config.server = config.server || {};
+      config.server.httpPort = parseInt(env.HTTP_PORT, 10);
+    }
+
+    // Merge admin phone from .env
+    if (env.ADMIN_PHONE_NUMBER) {
+      config.admin = config.admin || {};
+      config.admin.phoneNumber = env.ADMIN_PHONE_NUMBER;
+    }
   }
 
   return config;
