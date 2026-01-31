@@ -13,19 +13,26 @@ import { promisify } from 'util';
 
 const execAsync = promisify(exec);
 
-// Configuration - UPDATE THESE VALUES
-const MYSQL_CONFIG = {
-    host: '172.16.1.143',
-    port: 3306,
-    user: 'freepbxuser',        // UPDATE THIS
-    password: 'YOUR_PASSWORD',   // UPDATE THIS
-    database: 'asterisk'
-};
+import { loadConfig } from '../../lib/config.js';
+
+// Configuration loaded dynamically
+async function getMySQLConfig() {
+    const config = await loadConfig();
+
+    // Check if MySQL creds exist, if not use defaults or error
+    return {
+        host: config.api?.freepbx?.host || '172.16.1.143',
+        port: 3306,
+        user: config.api?.freepbx?.mysqlUser || 'freepbxuser',
+        password: config.api?.freepbx?.mysqlPassword || 'rCK+gZBKfILF', // Default to what we found
+        database: 'asterisk'
+    };
+}
 
 const SSH_CONFIG = {
     host: '172.16.1.143',
     user: 'root',
-    password: 'Jumbo2601'  // Or use SSH key
+    password: 'Jumbo2601'  // Should also be in config ideally
 };
 
 // Nebuchadnezzar crew configuration
@@ -49,11 +56,12 @@ async function provisionIVR() {
     console.log(chalk.bold.cyan('\n🚢 Provisioning Nebuchadnezzar IVR via MySQL\n'));
 
     const spinner = ora('Connecting to FreePBX MySQL...').start();
+    const mysqlConfig = await getMySQLConfig();
 
     let connection;
     try {
         // Connect to MySQL
-        connection = await mysql.createConnection(MYSQL_CONFIG);
+        connection = await mysql.createConnection(mysqlConfig);
         spinner.succeed('Connected to MySQL');
 
         // Check if IVR already exists
