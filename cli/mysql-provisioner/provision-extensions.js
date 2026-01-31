@@ -58,20 +58,24 @@ async function provisionExtensions() {
         // Load config from ~/.gemini-phone/config.json
         const configPath = join(homedir(), '.gemini-phone', 'config.json');
         const config = JSON.parse(readFileSync(configPath, 'utf8'));
-        const { server } = config;
 
-        if (!server?.mysql) {
-            spinner.fail('MySQL configuration not found in config.json');
+        // Extract MySQL credentials from FreePBX config
+        const freepbxHost = config.sip?.domain || '172.16.1.143';
+        const mysqlPassword = config.api?.freepbx?.mysqlPassword;
+
+        if (!mysqlPassword) {
+            spinner.fail('FreePBX MySQL password not found in config.json');
+            console.error('Expected: config.api.freepbx.mysqlPassword');
             process.exit(1);
         }
 
         spinner.text = 'Connecting to FreePBX MySQL...';
 
         const connection = await mysql.createConnection({
-            host: server.mysql.host,
-            user: server.mysql.user,
-            password: server.mysql.password,
-            database: server.mysql.database || 'asterisk'
+            host: freepbxHost,
+            user: 'freepbxuser',
+            password: mysqlPassword,
+            database: 'asterisk'
         });
 
         spinner.succeed('Connected to FreePBX MySQL');
