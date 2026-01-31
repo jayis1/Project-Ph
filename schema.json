@@ -1,0 +1,2548 @@
+{
+  "types": [
+    {
+      "name": "Query",
+      "kind": "OBJECT",
+      "description": null
+    },
+    {
+      "name": "String",
+      "kind": "SCALAR",
+      "description": "The `String` scalar type represents textual data, represented as UTF-8\ncharacter sequences. The String type is most often used by GraphQL to\nrepresent free-form human-readable text."
+    },
+    {
+      "name": "Int",
+      "kind": "SCALAR",
+      "description": "The `Int` scalar type represents non-fractional signed whole numeric\nvalues. Int can represent values between -(2^31) and 2^31 - 1. "
+    },
+    {
+      "name": "ModuleStatus",
+      "kind": "ENUM",
+      "description": "Module status"
+    },
+    {
+      "name": "ModuleConnection",
+      "kind": "OBJECT",
+      "description": "A connection to a list of items."
+    },
+    {
+      "name": "PageInfo",
+      "kind": "OBJECT",
+      "description": "Information about pagination in a connection."
+    },
+    {
+      "name": "Boolean",
+      "kind": "SCALAR",
+      "description": "The `Boolean` scalar type represents `true` or `false`."
+    },
+    {
+      "name": "ModuleEdge",
+      "kind": "OBJECT",
+      "description": "An edge in a connection"
+    },
+    {
+      "name": "module",
+      "kind": "OBJECT",
+      "description": "Used to manage module specific operations"
+    },
+    {
+      "name": "Node",
+      "kind": "INTERFACE",
+      "description": "An object with an ID"
+    },
+    {
+      "name": "ID",
+      "kind": "SCALAR",
+      "description": "The `ID` scalar type represents a unique identifier, often used to\nrefetch an object or as key for a cache. The ID type appears in a JSON\nresponse as a String; however, it is not intended to be human-readable.\nWhen expected as an input type, any string (such as `\"4\"`) or integer\n(such as `4`) input value will be accepted as an ID."
+    },
+    {
+      "name": "system",
+      "kind": "OBJECT",
+      "description": "System Information"
+    },
+    {
+      "name": "UpdatestatusConnection",
+      "kind": "OBJECT",
+      "description": "A connection to a list of items."
+    },
+    {
+      "name": "UpdatestatusEdge",
+      "kind": "OBJECT",
+      "description": "An edge in a connection"
+    },
+    {
+      "name": "updatestatus",
+      "kind": "OBJECT",
+      "description": ""
+    },
+    {
+      "name": "AllowlistConnection",
+      "kind": "OBJECT",
+      "description": "A connection to a list of items."
+    },
+    {
+      "name": "AllowlistEdge",
+      "kind": "OBJECT",
+      "description": "An edge in a connection"
+    },
+    {
+      "name": "allowlist",
+      "kind": "OBJECT",
+      "description": "Used to manage a system wide list of allowed callers"
+    },
+    {
+      "name": "allowlistsettings",
+      "kind": "OBJECT",
+      "description": "Allowlist Settings"
+    },
+    {
+      "name": "destination",
+      "kind": "UNION",
+      "description": "Destination for a call to hit"
+    },
+    {
+      "name": "unknowndestination",
+      "kind": "OBJECT",
+      "description": "A destination that does not have a GraphQL reference"
+    },
+    {
+      "name": "announcement",
+      "kind": "OBJECT",
+      "description": "Plays back one of the system recordings (optionally allowing the user to skip it) and then goes to another destination"
+    },
+    {
+      "name": "did",
+      "kind": "OBJECT",
+      "description": "Used to tell your PBX where to route inbound calls based on the phone number or DID dialed"
+    },
+    {
+      "name": "AnnouncementConnection",
+      "kind": "OBJECT",
+      "description": "A connection to a list of items."
+    },
+    {
+      "name": "AnnouncementEdge",
+      "kind": "OBJECT",
+      "description": "An edge in a connection"
+    },
+    {
+      "name": "AppointmentreminderConnection",
+      "kind": "OBJECT",
+      "description": "A connection to a list of items."
+    },
+    {
+      "name": "AppointmentreminderEdge",
+      "kind": "OBJECT",
+      "description": "An edge in a connection"
+    },
+    {
+      "name": "appointmentReminder",
+      "kind": "OBJECT",
+      "description": "%description%"
+    },
+    {
+      "name": "AppointmentremindercallConnection",
+      "kind": "OBJECT",
+      "description": "A connection to a list of items."
+    },
+    {
+      "name": "AppointmentremindercallEdge",
+      "kind": "OBJECT",
+      "description": "An edge in a connection"
+    },
+    {
+      "name": "appointmentReminderCall",
+      "kind": "OBJECT",
+      "description": "%description%"
+    },
+    {
+      "name": "ArimanageruserConnection",
+      "kind": "OBJECT",
+      "description": "A connection to a list of items."
+    },
+    {
+      "name": "ArimanageruserEdge",
+      "kind": "OBJECT",
+      "description": "An edge in a connection"
+    },
+    {
+      "name": "ariManagerUser",
+      "kind": "OBJECT",
+      "description": "%description%"
+    },
+    {
+      "name": "BackupConnection",
+      "kind": "OBJECT",
+      "description": "A connection to a list of items."
+    },
+    {
+      "name": "BackupEdge",
+      "kind": "OBJECT",
+      "description": "An edge in a connection"
+    },
+    {
+      "name": "backup",
+      "kind": "OBJECT",
+      "description": "%description%"
+    },
+    {
+      "name": "BlacklistConnection",
+      "kind": "OBJECT",
+      "description": "A connection to a list of items."
+    },
+    {
+      "name": "BlacklistEdge",
+      "kind": "OBJECT",
+      "description": "An edge in a connection"
+    },
+    {
+      "name": "blacklist",
+      "kind": "OBJECT",
+      "description": "Used to manage a system wide list of blocked callers"
+    },
+    {
+      "name": "blacklistsettings",
+      "kind": "OBJECT",
+      "description": "Blacklist Settings"
+    },
+    {
+      "name": "CampaignsConnection",
+      "kind": "OBJECT",
+      "description": "A connection to a list of items."
+    },
+    {
+      "name": "CampaignsEdge",
+      "kind": "OBJECT",
+      "description": "An edge in a connection"
+    },
+    {
+      "name": "campaigns",
+      "kind": "OBJECT",
+      "description": "Used to set campaign values"
+    },
+    {
+      "name": "CallbackConnection",
+      "kind": "OBJECT",
+      "description": "A connection to a list of items."
+    },
+    {
+      "name": "CallbackEdge",
+      "kind": "OBJECT",
+      "description": "An edge in a connection"
+    },
+    {
+      "name": "callback",
+      "kind": "OBJECT",
+      "description": ""
+    },
+    {
+      "name": "cdrOrderBy",
+      "kind": "ENUM",
+      "description": "Dispositions represent the final state of the call from the perspective of Party A"
+    },
+    {
+      "name": "CdrConnection",
+      "kind": "OBJECT",
+      "description": "A connection to a list of items."
+    },
+    {
+      "name": "CdrEdge",
+      "kind": "OBJECT",
+      "description": "An edge in a connection"
+    },
+    {
+      "name": "cdr",
+      "kind": "OBJECT",
+      "description": "Used to manage a system wide list of blocked callers"
+    },
+    {
+      "name": "certman",
+      "kind": "OBJECT",
+      "description": "Generate Certificate"
+    },
+    {
+      "name": "DidConnection",
+      "kind": "OBJECT",
+      "description": "A connection to a list of items."
+    },
+    {
+      "name": "DidEdge",
+      "kind": "OBJECT",
+      "description": "An edge in a connection"
+    },
+    {
+      "name": "CoreuserConnection",
+      "kind": "OBJECT",
+      "description": "A connection to a list of items."
+    },
+    {
+      "name": "CoreuserEdge",
+      "kind": "OBJECT",
+      "description": "An edge in a connection"
+    },
+    {
+      "name": "coreuser",
+      "kind": "OBJECT",
+      "description": ""
+    },
+    {
+      "name": "AdvacesettingsConnection",
+      "kind": "OBJECT",
+      "description": "A connection to a list of items."
+    },
+    {
+      "name": "AdvacesettingsEdge",
+      "kind": "OBJECT",
+      "description": "An edge in a connection"
+    },
+    {
+      "name": "advacesettings",
+      "kind": "OBJECT",
+      "description": ""
+    },
+    {
+      "name": "ExtensionConnection",
+      "kind": "OBJECT",
+      "description": "A connection to a list of items."
+    },
+    {
+      "name": "ExtensionEdge",
+      "kind": "OBJECT",
+      "description": "An edge in a connection"
+    },
+    {
+      "name": "extension",
+      "kind": "OBJECT",
+      "description": ""
+    },
+    {
+      "name": "coredevice",
+      "kind": "OBJECT",
+      "description": ""
+    },
+    {
+      "name": "CoredeviceConnection",
+      "kind": "OBJECT",
+      "description": "A connection to a list of items."
+    },
+    {
+      "name": "CoredeviceEdge",
+      "kind": "OBJECT",
+      "description": "An edge in a connection"
+    },
+    {
+      "name": "DiskspaceConnection",
+      "kind": "OBJECT",
+      "description": "A connection to a list of items."
+    },
+    {
+      "name": "DiskspaceEdge",
+      "kind": "OBJECT",
+      "description": "An edge in a connection"
+    },
+    {
+      "name": "diskspace",
+      "kind": "OBJECT",
+      "description": "Read the System licence information"
+    },
+    {
+      "name": "EndpointConnection",
+      "kind": "OBJECT",
+      "description": "A connection to a list of items."
+    },
+    {
+      "name": "EndpointEdge",
+      "kind": "OBJECT",
+      "description": "An edge in a connection"
+    },
+    {
+      "name": "endpoint",
+      "kind": "OBJECT",
+      "description": "endpoint call back description"
+    },
+    {
+      "name": "FilestoreConnection",
+      "kind": "OBJECT",
+      "description": "A connection to a list of items."
+    },
+    {
+      "name": "FilestoreEdge",
+      "kind": "OBJECT",
+      "description": "An edge in a connection"
+    },
+    {
+      "name": "filestore",
+      "kind": "OBJECT",
+      "description": ""
+    },
+    {
+      "name": "findmefollow",
+      "kind": "OBJECT",
+      "description": "Used to manage Follow Me"
+    },
+    {
+      "name": "ringstrategiesv2",
+      "kind": "ENUM",
+      "description": "Ring Strategies (including v2)"
+    },
+    {
+      "name": "externalcidmode",
+      "kind": "ENUM",
+      "description": "External Caller Id Modes"
+    },
+    {
+      "name": "FirewallConnection",
+      "kind": "OBJECT",
+      "description": "A connection to a list of items."
+    },
+    {
+      "name": "FirewallEdge",
+      "kind": "OBJECT",
+      "description": "An edge in a connection"
+    },
+    {
+      "name": "firewall",
+      "kind": "OBJECT",
+      "description": "firewall call back description"
+    },
+    {
+      "name": "MusiconholdConnection",
+      "kind": "OBJECT",
+      "description": "A connection to a list of items."
+    },
+    {
+      "name": "MusiconholdEdge",
+      "kind": "OBJECT",
+      "description": "An edge in a connection"
+    },
+    {
+      "name": "musiconhold",
+      "kind": "OBJECT",
+      "description": "Used to manage a system wide list of blocked callers"
+    },
+    {
+      "name": "Pm2Connection",
+      "kind": "OBJECT",
+      "description": "A connection to a list of items."
+    },
+    {
+      "name": "Pm2Edge",
+      "kind": "OBJECT",
+      "description": "An edge in a connection"
+    },
+    {
+      "name": "pm2",
+      "kind": "OBJECT",
+      "description": "Process management"
+    },
+    {
+      "name": "RecordingsConnection",
+      "kind": "OBJECT",
+      "description": "A connection to a list of items."
+    },
+    {
+      "name": "RecordingsEdge",
+      "kind": "OBJECT",
+      "description": "An edge in a connection"
+    },
+    {
+      "name": "recordings",
+      "kind": "OBJECT",
+      "description": "Sytem Recordings"
+    },
+    {
+      "name": "RinggroupConnection",
+      "kind": "OBJECT",
+      "description": "A connection to a list of items."
+    },
+    {
+      "name": "RinggroupEdge",
+      "kind": "OBJECT",
+      "description": "An edge in a connection"
+    },
+    {
+      "name": "ringgroup",
+      "kind": "OBJECT",
+      "description": "Used to set ringgroup values"
+    },
+    {
+      "name": "ringstrategies",
+      "kind": "ENUM",
+      "description": "Ring Strategies"
+    },
+    {
+      "name": "sangomaconnect",
+      "kind": "OBJECT",
+      "description": "Read Sangomaconnect Service Status."
+    },
+    {
+      "name": "SipsettingsConnection",
+      "kind": "OBJECT",
+      "description": "A connection to a list of items."
+    },
+    {
+      "name": "SipsettingsEdge",
+      "kind": "OBJECT",
+      "description": "An edge in a connection"
+    },
+    {
+      "name": "sipsettings",
+      "kind": "OBJECT",
+      "description": "Sipsettings management"
+    },
+    {
+      "name": "sipstation",
+      "kind": "OBJECT",
+      "description": "Sipstation Key"
+    },
+    {
+      "name": "serverinfo",
+      "kind": "OBJECT",
+      "description": "Gets server settings information"
+    },
+    {
+      "name": "e911",
+      "kind": "OBJECT",
+      "description": "Gets E911 information"
+    },
+    {
+      "name": "trunk",
+      "kind": "OBJECT",
+      "description": "Gets gateways trunk information"
+    },
+    {
+      "name": "SmsConnection",
+      "kind": "OBJECT",
+      "description": "A connection to a list of items."
+    },
+    {
+      "name": "SmsEdge",
+      "kind": "OBJECT",
+      "description": "An edge in a connection"
+    },
+    {
+      "name": "sms",
+      "kind": "OBJECT",
+      "description": "%description%"
+    },
+    {
+      "name": "dataToBeSentOnValuesForoutput",
+      "kind": "ENUM",
+      "description": "On which SMS events fire the webhook"
+    },
+    {
+      "name": "dataToBeSentOnValuesForoutputSetConnectionFields",
+      "kind": "ENUM",
+      "description": "On which SMS events fire the webhook"
+    },
+    {
+      "name": "sysadmin",
+      "kind": "OBJECT",
+      "description": "Read the System licence information"
+    },
+    {
+      "name": "HttpssetupConnection",
+      "kind": "OBJECT",
+      "description": "A connection to a list of items."
+    },
+    {
+      "name": "HttpssetupEdge",
+      "kind": "OBJECT",
+      "description": "An edge in a connection"
+    },
+    {
+      "name": "httpssetup",
+      "kind": "OBJECT",
+      "description": "Setup https"
+    },
+    {
+      "name": "voiceMail",
+      "kind": "OBJECT",
+      "description": "Read the Voicemail information"
+    },
+    {
+      "name": "Mutation",
+      "kind": "OBJECT",
+      "description": null
+    },
+    {
+      "name": "moduleOperationsInput",
+      "kind": "INPUT_OBJECT",
+      "description": null
+    },
+    {
+      "name": "moduleOperationsPayload",
+      "kind": "OBJECT",
+      "description": null
+    },
+    {
+      "name": "installModuleInput",
+      "kind": "INPUT_OBJECT",
+      "description": null
+    },
+    {
+      "name": "installModulePayload",
+      "kind": "OBJECT",
+      "description": null
+    },
+    {
+      "name": "uninstallModuleInput",
+      "kind": "INPUT_OBJECT",
+      "description": null
+    },
+    {
+      "name": "uninstallModulePayload",
+      "kind": "OBJECT",
+      "description": null
+    },
+    {
+      "name": "enableModuleInput",
+      "kind": "INPUT_OBJECT",
+      "description": null
+    },
+    {
+      "name": "enableModulePayload",
+      "kind": "OBJECT",
+      "description": null
+    },
+    {
+      "name": "disableModuleInput",
+      "kind": "INPUT_OBJECT",
+      "description": null
+    },
+    {
+      "name": "disableModulePayload",
+      "kind": "OBJECT",
+      "description": null
+    },
+    {
+      "name": "upgradeModuleInput",
+      "kind": "INPUT_OBJECT",
+      "description": null
+    },
+    {
+      "name": "upgradeModulePayload",
+      "kind": "OBJECT",
+      "description": null
+    },
+    {
+      "name": "upgradeAllModuleInput",
+      "kind": "INPUT_OBJECT",
+      "description": null
+    },
+    {
+      "name": "upgradeAllModulePayload",
+      "kind": "OBJECT",
+      "description": null
+    },
+    {
+      "name": "doreloadInput",
+      "kind": "INPUT_OBJECT",
+      "description": null
+    },
+    {
+      "name": "doreloadPayload",
+      "kind": "OBJECT",
+      "description": null
+    },
+    {
+      "name": "fwconsoleCommandInput",
+      "kind": "INPUT_OBJECT",
+      "description": null
+    },
+    {
+      "name": "command",
+      "kind": "ENUM",
+      "description": null
+    },
+    {
+      "name": "fwconsoleCommandPayload",
+      "kind": "OBJECT",
+      "description": null
+    },
+    {
+      "name": "updateAdminAuthInput",
+      "kind": "INPUT_OBJECT",
+      "description": null
+    },
+    {
+      "name": "updateAdminAuthPayload",
+      "kind": "OBJECT",
+      "description": null
+    },
+    {
+      "name": "updateSystemRPMInput",
+      "kind": "INPUT_OBJECT",
+      "description": null
+    },
+    {
+      "name": "updateSystemRPMPayload",
+      "kind": "OBJECT",
+      "description": null
+    },
+    {
+      "name": "switchAstriskVersionInput",
+      "kind": "INPUT_OBJECT",
+      "description": null
+    },
+    {
+      "name": "switchAstriskVersionPayload",
+      "kind": "OBJECT",
+      "description": null
+    },
+    {
+      "name": "RunWarmSpareRestoreInput",
+      "kind": "INPUT_OBJECT",
+      "description": null
+    },
+    {
+      "name": "RunWarmSpareRestorePayload",
+      "kind": "OBJECT",
+      "description": null
+    },
+    {
+      "name": "UpdateSecondaryInput",
+      "kind": "INPUT_OBJECT",
+      "description": null
+    },
+    {
+      "name": "UpdateSecondaryPayload",
+      "kind": "OBJECT",
+      "description": null
+    },
+    {
+      "name": "resetInput",
+      "kind": "INPUT_OBJECT",
+      "description": null
+    },
+    {
+      "name": "resetPayload",
+      "kind": "OBJECT",
+      "description": null
+    },
+    {
+      "name": "RestorestatusInput",
+      "kind": "INPUT_OBJECT",
+      "description": null
+    },
+    {
+      "name": "RestorestatusPayload",
+      "kind": "OBJECT",
+      "description": null
+    },
+    {
+      "name": "servicestatusInput",
+      "kind": "INPUT_OBJECT",
+      "description": null
+    },
+    {
+      "name": "servicestatusPayload",
+      "kind": "OBJECT",
+      "description": null
+    },
+    {
+      "name": "setservicestatusInput",
+      "kind": "INPUT_OBJECT",
+      "description": null
+    },
+    {
+      "name": "setservicestatusPayload",
+      "kind": "OBJECT",
+      "description": null
+    },
+    {
+      "name": "heartbeatInput",
+      "kind": "INPUT_OBJECT",
+      "description": null
+    },
+    {
+      "name": "heartbeatPayload",
+      "kind": "OBJECT",
+      "description": null
+    },
+    {
+      "name": "addAllowlistInput",
+      "kind": "INPUT_OBJECT",
+      "description": null
+    },
+    {
+      "name": "addAllowlistPayload",
+      "kind": "OBJECT",
+      "description": null
+    },
+    {
+      "name": "removeAllowlistInput",
+      "kind": "INPUT_OBJECT",
+      "description": null
+    },
+    {
+      "name": "removeAllowlistPayload",
+      "kind": "OBJECT",
+      "description": null
+    },
+    {
+      "name": "addAnnouncementInput",
+      "kind": "INPUT_OBJECT",
+      "description": null
+    },
+    {
+      "name": "addAnnouncementPayload",
+      "kind": "OBJECT",
+      "description": null
+    },
+    {
+      "name": "updateAnnouncementInput",
+      "kind": "INPUT_OBJECT",
+      "description": null
+    },
+    {
+      "name": "updateAnnouncementPayload",
+      "kind": "OBJECT",
+      "description": null
+    },
+    {
+      "name": "removeAnnouncementInput",
+      "kind": "INPUT_OBJECT",
+      "description": null
+    },
+    {
+      "name": "removeAnnouncementPayload",
+      "kind": "OBJECT",
+      "description": null
+    },
+    {
+      "name": "addAppointmentReminderInput",
+      "kind": "INPUT_OBJECT",
+      "description": null
+    },
+    {
+      "name": "addAppointmentReminderPayload",
+      "kind": "OBJECT",
+      "description": null
+    },
+    {
+      "name": "updateAppointmentReminderInput",
+      "kind": "INPUT_OBJECT",
+      "description": null
+    },
+    {
+      "name": "updateAppointmentReminderPayload",
+      "kind": "OBJECT",
+      "description": null
+    },
+    {
+      "name": "removeAppointmentReminderInput",
+      "kind": "INPUT_OBJECT",
+      "description": null
+    },
+    {
+      "name": "removeAppointmentReminderPayload",
+      "kind": "OBJECT",
+      "description": null
+    },
+    {
+      "name": "addAriManagerUsersInput",
+      "kind": "INPUT_OBJECT",
+      "description": null
+    },
+    {
+      "name": "addAriManagerUsersPayload",
+      "kind": "OBJECT",
+      "description": null
+    },
+    {
+      "name": "updateAriManagerUsersInput",
+      "kind": "INPUT_OBJECT",
+      "description": null
+    },
+    {
+      "name": "updateAriManagerUsersPayload",
+      "kind": "OBJECT",
+      "description": null
+    },
+    {
+      "name": "removeAriManagerUsersInput",
+      "kind": "INPUT_OBJECT",
+      "description": null
+    },
+    {
+      "name": "removeAriManagerUsersPayload",
+      "kind": "OBJECT",
+      "description": null
+    },
+    {
+      "name": "addBackupInput",
+      "kind": "INPUT_OBJECT",
+      "description": null
+    },
+    {
+      "name": "addBackupPayload",
+      "kind": "OBJECT",
+      "description": null
+    },
+    {
+      "name": "updateBackupInput",
+      "kind": "INPUT_OBJECT",
+      "description": null
+    },
+    {
+      "name": "updateBackupPayload",
+      "kind": "OBJECT",
+      "description": null
+    },
+    {
+      "name": "restoreBackupInput",
+      "kind": "INPUT_OBJECT",
+      "description": null
+    },
+    {
+      "name": "restoreBackupPayload",
+      "kind": "OBJECT",
+      "description": null
+    },
+    {
+      "name": "runBackupInput",
+      "kind": "INPUT_OBJECT",
+      "description": null
+    },
+    {
+      "name": "runBackupPayload",
+      "kind": "OBJECT",
+      "description": null
+    },
+    {
+      "name": "addBlacklistInput",
+      "kind": "INPUT_OBJECT",
+      "description": null
+    },
+    {
+      "name": "addBlacklistPayload",
+      "kind": "OBJECT",
+      "description": null
+    },
+    {
+      "name": "setBlacklistSettingsInput",
+      "kind": "INPUT_OBJECT",
+      "description": null
+    },
+    {
+      "name": "setBlacklistSettingsPayload",
+      "kind": "OBJECT",
+      "description": null
+    },
+    {
+      "name": "removeBlacklistInput",
+      "kind": "INPUT_OBJECT",
+      "description": null
+    },
+    {
+      "name": "removeBlacklistPayload",
+      "kind": "OBJECT",
+      "description": null
+    },
+    {
+      "name": "addCampaignInput",
+      "kind": "INPUT_OBJECT",
+      "description": null
+    },
+    {
+      "name": "addCampaignPayload",
+      "kind": "OBJECT",
+      "description": null
+    },
+    {
+      "name": "updateCampaignInput",
+      "kind": "INPUT_OBJECT",
+      "description": null
+    },
+    {
+      "name": "updateCampaignPayload",
+      "kind": "OBJECT",
+      "description": null
+    },
+    {
+      "name": "deleteCampaignInput",
+      "kind": "INPUT_OBJECT",
+      "description": null
+    },
+    {
+      "name": "deleteCampaignPayload",
+      "kind": "OBJECT",
+      "description": null
+    },
+    {
+      "name": "startCampaignInput",
+      "kind": "INPUT_OBJECT",
+      "description": null
+    },
+    {
+      "name": "startCampaignPayload",
+      "kind": "OBJECT",
+      "description": null
+    },
+    {
+      "name": "startStopCampaignInput",
+      "kind": "INPUT_OBJECT",
+      "description": null
+    },
+    {
+      "name": "startStopCampaignPayload",
+      "kind": "OBJECT",
+      "description": null
+    },
+    {
+      "name": "activateCampaignInput",
+      "kind": "INPUT_OBJECT",
+      "description": null
+    },
+    {
+      "name": "activateCampaignPayload",
+      "kind": "OBJECT",
+      "description": null
+    },
+    {
+      "name": "deActivateCampaignInput",
+      "kind": "INPUT_OBJECT",
+      "description": null
+    },
+    {
+      "name": "deActivateCampaignPayload",
+      "kind": "OBJECT",
+      "description": null
+    },
+    {
+      "name": "addCallbackInput",
+      "kind": "INPUT_OBJECT",
+      "description": null
+    },
+    {
+      "name": "addCallbackPayload",
+      "kind": "OBJECT",
+      "description": null
+    },
+    {
+      "name": "updateCallbackInput",
+      "kind": "INPUT_OBJECT",
+      "description": null
+    },
+    {
+      "name": "updateCallbackPayload",
+      "kind": "OBJECT",
+      "description": null
+    },
+    {
+      "name": "removeCallbackInput",
+      "kind": "INPUT_OBJECT",
+      "description": null
+    },
+    {
+      "name": "removeCallbackPayload",
+      "kind": "OBJECT",
+      "description": null
+    },
+    {
+      "name": "generateCSRInput",
+      "kind": "INPUT_OBJECT",
+      "description": null
+    },
+    {
+      "name": "generateCSRPayload",
+      "kind": "OBJECT",
+      "description": null
+    },
+    {
+      "name": "uploadSSLCertificateInput",
+      "kind": "INPUT_OBJECT",
+      "description": null
+    },
+    {
+      "name": "uploadSSLCertificatePayload",
+      "kind": "OBJECT",
+      "description": null
+    },
+    {
+      "name": "deleteCSRFileInput",
+      "kind": "INPUT_OBJECT",
+      "description": null
+    },
+    {
+      "name": "deleteCSRFilePayload",
+      "kind": "OBJECT",
+      "description": null
+    },
+    {
+      "name": "deleteCertificateInput",
+      "kind": "INPUT_OBJECT",
+      "description": null
+    },
+    {
+      "name": "deleteCertificatePayload",
+      "kind": "OBJECT",
+      "description": null
+    },
+    {
+      "name": "updateDefaultCertificateInput",
+      "kind": "INPUT_OBJECT",
+      "description": null
+    },
+    {
+      "name": "updateDefaultCertificatePayload",
+      "kind": "OBJECT",
+      "description": null
+    },
+    {
+      "name": "addInboundRouteInput",
+      "kind": "INPUT_OBJECT",
+      "description": null
+    },
+    {
+      "name": "addInboundRoutePayload",
+      "kind": "OBJECT",
+      "description": null
+    },
+    {
+      "name": "updateInboundRouteInput",
+      "kind": "INPUT_OBJECT",
+      "description": null
+    },
+    {
+      "name": "updateInboundRoutePayload",
+      "kind": "OBJECT",
+      "description": null
+    },
+    {
+      "name": "removeInboundRouteInput",
+      "kind": "INPUT_OBJECT",
+      "description": null
+    },
+    {
+      "name": "removeInboundRoutePayload",
+      "kind": "OBJECT",
+      "description": null
+    },
+    {
+      "name": "addCoreUserInput",
+      "kind": "INPUT_OBJECT",
+      "description": null
+    },
+    {
+      "name": "addCoreUserPayload",
+      "kind": "OBJECT",
+      "description": null
+    },
+    {
+      "name": "updateCoreUserInput",
+      "kind": "INPUT_OBJECT",
+      "description": null
+    },
+    {
+      "name": "updateCoreUserPayload",
+      "kind": "OBJECT",
+      "description": null
+    },
+    {
+      "name": "removeCoreUserInput",
+      "kind": "INPUT_OBJECT",
+      "description": null
+    },
+    {
+      "name": "removeCoreUserPayload",
+      "kind": "OBJECT",
+      "description": null
+    },
+    {
+      "name": "updateSettingsInput",
+      "kind": "INPUT_OBJECT",
+      "description": null
+    },
+    {
+      "name": "keywordsList",
+      "kind": "ENUM",
+      "description": ""
+    },
+    {
+      "name": "updateSettingsPayload",
+      "kind": "OBJECT",
+      "description": null
+    },
+    {
+      "name": "addExtensionInput",
+      "kind": "INPUT_OBJECT",
+      "description": null
+    },
+    {
+      "name": "addExtensionPayload",
+      "kind": "OBJECT",
+      "description": null
+    },
+    {
+      "name": "updateExtensionInput",
+      "kind": "INPUT_OBJECT",
+      "description": null
+    },
+    {
+      "name": "updateExtensionPayload",
+      "kind": "OBJECT",
+      "description": null
+    },
+    {
+      "name": "deleteExtensionInput",
+      "kind": "INPUT_OBJECT",
+      "description": null
+    },
+    {
+      "name": "deleteExtensionPayload",
+      "kind": "OBJECT",
+      "description": null
+    },
+    {
+      "name": "CreateRangeofExtensionInput",
+      "kind": "INPUT_OBJECT",
+      "description": null
+    },
+    {
+      "name": "CreateRangeofExtensionPayload",
+      "kind": "OBJECT",
+      "description": null
+    },
+    {
+      "name": "addCoreDeviceInput",
+      "kind": "INPUT_OBJECT",
+      "description": null
+    },
+    {
+      "name": "addCoreDevicePayload",
+      "kind": "OBJECT",
+      "description": null
+    },
+    {
+      "name": "updateCoreDeviceInput",
+      "kind": "INPUT_OBJECT",
+      "description": null
+    },
+    {
+      "name": "updateCoreDevicePayload",
+      "kind": "OBJECT",
+      "description": null
+    },
+    {
+      "name": "deleteCoreDeviceInput",
+      "kind": "INPUT_OBJECT",
+      "description": null
+    },
+    {
+      "name": "deleteCoreDevicePayload",
+      "kind": "OBJECT",
+      "description": null
+    },
+    {
+      "name": "updateEndpointManagerGlobalSettingsInput",
+      "kind": "INPUT_OBJECT",
+      "description": null
+    },
+    {
+      "name": "updateEndpointManagerGlobalSettingsPayload",
+      "kind": "OBJECT",
+      "description": null
+    },
+    {
+      "name": "enableDPMAInput",
+      "kind": "INPUT_OBJECT",
+      "description": null
+    },
+    {
+      "name": "enableDPMAPayload",
+      "kind": "OBJECT",
+      "description": null
+    },
+    {
+      "name": "disableDPMAInput",
+      "kind": "INPUT_OBJECT",
+      "description": null
+    },
+    {
+      "name": "disableDPMAPayload",
+      "kind": "OBJECT",
+      "description": null
+    },
+    {
+      "name": "updateEndpointGlobalSettingsInput",
+      "kind": "INPUT_OBJECT",
+      "description": null
+    },
+    {
+      "name": "updateEndpointGlobalSettingsPayload",
+      "kind": "OBJECT",
+      "description": null
+    },
+    {
+      "name": "rebuildConfigUpdatePhonesInput",
+      "kind": "INPUT_OBJECT",
+      "description": null
+    },
+    {
+      "name": "rebuildConfigUpdatePhonesPayload",
+      "kind": "OBJECT",
+      "description": null
+    },
+    {
+      "name": "addFTPInstanceInput",
+      "kind": "INPUT_OBJECT",
+      "description": null
+    },
+    {
+      "name": "addFTPInstancePayload",
+      "kind": "OBJECT",
+      "description": null
+    },
+    {
+      "name": "addS3BucketInput",
+      "kind": "INPUT_OBJECT",
+      "description": null
+    },
+    {
+      "name": "addS3BucketPayload",
+      "kind": "OBJECT",
+      "description": null
+    },
+    {
+      "name": "updateFTPInstanceInput",
+      "kind": "INPUT_OBJECT",
+      "description": null
+    },
+    {
+      "name": "updateFTPInstancePayload",
+      "kind": "OBJECT",
+      "description": null
+    },
+    {
+      "name": "deleteFTPInstanceInput",
+      "kind": "INPUT_OBJECT",
+      "description": null
+    },
+    {
+      "name": "deleteFTPInstancePayload",
+      "kind": "OBJECT",
+      "description": null
+    },
+    {
+      "name": "updateFollowMeInput",
+      "kind": "INPUT_OBJECT",
+      "description": null
+    },
+    {
+      "name": "updateFollowMePayload",
+      "kind": "OBJECT",
+      "description": null
+    },
+    {
+      "name": "enableFollowMeInput",
+      "kind": "INPUT_OBJECT",
+      "description": null
+    },
+    {
+      "name": "enableFollowMePayload",
+      "kind": "OBJECT",
+      "description": null
+    },
+    {
+      "name": "disableFollowMeInput",
+      "kind": "INPUT_OBJECT",
+      "description": null
+    },
+    {
+      "name": "disableFollowMePayload",
+      "kind": "OBJECT",
+      "description": null
+    },
+    {
+      "name": "enableFirewallInput",
+      "kind": "INPUT_OBJECT",
+      "description": null
+    },
+    {
+      "name": "enableFirewallPayload",
+      "kind": "OBJECT",
+      "description": null
+    },
+    {
+      "name": "disableFirewallInput",
+      "kind": "INPUT_OBJECT",
+      "description": null
+    },
+    {
+      "name": "disableFirewallPayload",
+      "kind": "OBJECT",
+      "description": null
+    },
+    {
+      "name": "addBlacklistIPInput",
+      "kind": "INPUT_OBJECT",
+      "description": null
+    },
+    {
+      "name": "addBlacklistIPPayload",
+      "kind": "OBJECT",
+      "description": null
+    },
+    {
+      "name": "deleteBlacklistIPInput",
+      "kind": "INPUT_OBJECT",
+      "description": null
+    },
+    {
+      "name": "deleteBlacklistIPPayload",
+      "kind": "OBJECT",
+      "description": null
+    },
+    {
+      "name": "updateFirewallConfigurationInput",
+      "kind": "INPUT_OBJECT",
+      "description": null
+    },
+    {
+      "name": "updateFirewallConfigurationPayload",
+      "kind": "OBJECT",
+      "description": null
+    },
+    {
+      "name": "addWhiteListIPInput",
+      "kind": "INPUT_OBJECT",
+      "description": null
+    },
+    {
+      "name": "addWhiteListIPPayload",
+      "kind": "OBJECT",
+      "description": null
+    },
+    {
+      "name": "updateFirewallInterfaceInput",
+      "kind": "INPUT_OBJECT",
+      "description": null
+    },
+    {
+      "name": "updateFirewallInterfacePayload",
+      "kind": "OBJECT",
+      "description": null
+    },
+    {
+      "name": "updateFirewallAdvanceSettingsInput",
+      "kind": "INPUT_OBJECT",
+      "description": null
+    },
+    {
+      "name": "updateFirewallAdvanceSettingsPayload",
+      "kind": "OBJECT",
+      "description": null
+    },
+    {
+      "name": "addRecordingInput",
+      "kind": "INPUT_OBJECT",
+      "description": null
+    },
+    {
+      "name": "addRecordingPayload",
+      "kind": "OBJECT",
+      "description": null
+    },
+    {
+      "name": "updateRecordingInput",
+      "kind": "INPUT_OBJECT",
+      "description": null
+    },
+    {
+      "name": "updateRecordingPayload",
+      "kind": "OBJECT",
+      "description": null
+    },
+    {
+      "name": "deleteRecordingInput",
+      "kind": "INPUT_OBJECT",
+      "description": null
+    },
+    {
+      "name": "deleteRecordingPayload",
+      "kind": "OBJECT",
+      "description": null
+    },
+    {
+      "name": "convertfileInput",
+      "kind": "INPUT_OBJECT",
+      "description": null
+    },
+    {
+      "name": "convertfilePayload",
+      "kind": "OBJECT",
+      "description": null
+    },
+    {
+      "name": "addRingGroupInput",
+      "kind": "INPUT_OBJECT",
+      "description": null
+    },
+    {
+      "name": "addRingGroupPayload",
+      "kind": "OBJECT",
+      "description": null
+    },
+    {
+      "name": "updateRingGroupInput",
+      "kind": "INPUT_OBJECT",
+      "description": null
+    },
+    {
+      "name": "updateRingGroupPayload",
+      "kind": "OBJECT",
+      "description": null
+    },
+    {
+      "name": "DeleteRingGroupInput",
+      "kind": "INPUT_OBJECT",
+      "description": null
+    },
+    {
+      "name": "DeleteRingGroupPayload",
+      "kind": "OBJECT",
+      "description": null
+    },
+    {
+      "name": "addSipNatLocalIpInput",
+      "kind": "INPUT_OBJECT",
+      "description": null
+    },
+    {
+      "name": "addSipNatLocalIpPayload",
+      "kind": "OBJECT",
+      "description": null
+    },
+    {
+      "name": "updateSipNatExternalIpInput",
+      "kind": "INPUT_OBJECT",
+      "description": null
+    },
+    {
+      "name": "updateSipNatExternalIpPayload",
+      "kind": "OBJECT",
+      "description": null
+    },
+    {
+      "name": "updateWSSettingsInput",
+      "kind": "INPUT_OBJECT",
+      "description": null
+    },
+    {
+      "name": "updateWSSettingsPayload",
+      "kind": "OBJECT",
+      "description": null
+    },
+    {
+      "name": "addkeyInput",
+      "kind": "INPUT_OBJECT",
+      "description": null
+    },
+    {
+      "name": "addkeyPayload",
+      "kind": "OBJECT",
+      "description": null
+    },
+    {
+      "name": "removekeyInput",
+      "kind": "INPUT_OBJECT",
+      "description": null
+    },
+    {
+      "name": "removekeyPayload",
+      "kind": "OBJECT",
+      "description": null
+    },
+    {
+      "name": "removeAndDeleteTrunkInput",
+      "kind": "INPUT_OBJECT",
+      "description": null
+    },
+    {
+      "name": "removeAndDeleteTrunkPayload",
+      "kind": "OBJECT",
+      "description": null
+    },
+    {
+      "name": "addSmsWebhookInput",
+      "kind": "INPUT_OBJECT",
+      "description": null
+    },
+    {
+      "name": "dataToBeSentOnValuesForadd",
+      "kind": "ENUM",
+      "description": "On which SMS events fire the webhook"
+    },
+    {
+      "name": "addSmsWebhookPayload",
+      "kind": "OBJECT",
+      "description": null
+    },
+    {
+      "name": "updateSmsWebhookInput",
+      "kind": "INPUT_OBJECT",
+      "description": null
+    },
+    {
+      "name": "dataToBeSentOnValuesForupdate",
+      "kind": "ENUM",
+      "description": "On which SMS events fire the webhook"
+    },
+    {
+      "name": "updateSmsWebhookPayload",
+      "kind": "OBJECT",
+      "description": null
+    },
+    {
+      "name": "deleteSmsWebhookInput",
+      "kind": "INPUT_OBJECT",
+      "description": null
+    },
+    {
+      "name": "deleteSmsWebhookPayload",
+      "kind": "OBJECT",
+      "description": null
+    },
+    {
+      "name": "activateSystemInput",
+      "kind": "INPUT_OBJECT",
+      "description": null
+    },
+    {
+      "name": "activateSystemPayload",
+      "kind": "OBJECT",
+      "description": null
+    },
+    {
+      "name": "updateLicenceInput",
+      "kind": "INPUT_OBJECT",
+      "description": null
+    },
+    {
+      "name": "updateLicencePayload",
+      "kind": "OBJECT",
+      "description": null
+    },
+    {
+      "name": "updateProvisionPortInput",
+      "kind": "INPUT_OBJECT",
+      "description": null
+    },
+    {
+      "name": "updateProvisionPortPayload",
+      "kind": "OBJECT",
+      "description": null
+    },
+    {
+      "name": "addHostnameInput",
+      "kind": "INPUT_OBJECT",
+      "description": null
+    },
+    {
+      "name": "addHostnamePayload",
+      "kind": "OBJECT",
+      "description": null
+    },
+    {
+      "name": "updateProvisioningProtocolsInput",
+      "kind": "INPUT_OBJECT",
+      "description": null
+    },
+    {
+      "name": "HTTPAuthentications",
+      "kind": "ENUM",
+      "description": null
+    },
+    {
+      "name": "updateProvisioningProtocolsPayload",
+      "kind": "OBJECT",
+      "description": null
+    },
+    {
+      "name": "ssl_protocolInput",
+      "kind": "INPUT_OBJECT",
+      "description": null
+    },
+    {
+      "name": "ssl_protocolPayload",
+      "kind": "OBJECT",
+      "description": null
+    },
+    {
+      "name": "updateForcePortInput",
+      "kind": "INPUT_OBJECT",
+      "description": null
+    },
+    {
+      "name": "updateForcePortPayload",
+      "kind": "OBJECT",
+      "description": null
+    },
+    {
+      "name": "installSSLCertificateInput",
+      "kind": "INPUT_OBJECT",
+      "description": null
+    },
+    {
+      "name": "installSSLCertificatePayload",
+      "kind": "OBJECT",
+      "description": null
+    },
+    {
+      "name": "updateSSLCertificateInput",
+      "kind": "INPUT_OBJECT",
+      "description": null
+    },
+    {
+      "name": "updateSSLCertificatePayload",
+      "kind": "OBJECT",
+      "description": null
+    },
+    {
+      "name": "enableVoiceMailInput",
+      "kind": "INPUT_OBJECT",
+      "description": null
+    },
+    {
+      "name": "enableVoiceMailPayload",
+      "kind": "OBJECT",
+      "description": null
+    },
+    {
+      "name": "disableVoiceMailInput",
+      "kind": "INPUT_OBJECT",
+      "description": null
+    },
+    {
+      "name": "disableVoiceMailPayload",
+      "kind": "OBJECT",
+      "description": null
+    },
+    {
+      "name": "__Schema",
+      "kind": "OBJECT",
+      "description": "A GraphQL Schema defines the capabilities of a GraphQL server. It exposes all available types and directives on the server, as well as the entry points for query, mutation, and subscription operations."
+    },
+    {
+      "name": "__Type",
+      "kind": "OBJECT",
+      "description": "The fundamental unit of any GraphQL Schema is the type. There are many kinds of types in GraphQL as represented by the `__TypeKind` enum.\n\nDepending on the kind of a type, certain fields describe information about that type. Scalar types provide no information beyond a name and description, while Enum types provide their values. Object and Interface types provide the fields they describe. Abstract types, Union and Interface, provide the Object types possible at runtime. List and NonNull types compose other types."
+    },
+    {
+      "name": "__TypeKind",
+      "kind": "ENUM",
+      "description": "An enum describing what kind of type a given `__Type` is."
+    },
+    {
+      "name": "__Field",
+      "kind": "OBJECT",
+      "description": "Object and Interface types are described by a list of Fields, each of which has a name, potentially a list of arguments, and a return type."
+    },
+    {
+      "name": "__InputValue",
+      "kind": "OBJECT",
+      "description": "Arguments provided to Fields or Directives and the input fields of an InputObject are represented as Input Values which describe their type and optionally a default value."
+    },
+    {
+      "name": "__EnumValue",
+      "kind": "OBJECT",
+      "description": "One possible value for a given Enum. Enum values are unique values, not a placeholder for a string or numeric value. However an Enum value is returned in a JSON response as a string."
+    },
+    {
+      "name": "__Directive",
+      "kind": "OBJECT",
+      "description": "A Directive provides a way to describe alternate runtime execution and type validation behavior in a GraphQL document.\n\nIn some cases, you need to provide options to alter GraphQL's execution behavior in ways field arguments will not suffice, such as conditionally including or skipping a field. Directives provide this by describing additional information to the executor."
+    },
+    {
+      "name": "__DirectiveLocation",
+      "kind": "ENUM",
+      "description": "A Directive can be adjacent to many parts of the GraphQL language, a __DirectiveLocation describes one such possible adjacencies."
+    }
+  ],
+  "queries": [
+    {
+      "name": "fetchAllModuleStatus",
+      "description": "Provide functionality to your PBX Modules"
+    },
+    {
+      "name": "fetchModuleStatus",
+      "description": "Provide functionality to your PBX Modules"
+    },
+    {
+      "name": "fetchApiStatus",
+      "description": "Return the status of the API running Asyncronous"
+    },
+    {
+      "name": "fetchNeedReload",
+      "description": "Check if config reload is required or not"
+    },
+    {
+      "name": "fetchInstalledModules",
+      "description": "List all the installed modules"
+    },
+    {
+      "name": "system",
+      "description": "General System information"
+    },
+    {
+      "name": "fetchAsteriskDetails",
+      "description": "Fetch asterisk details"
+    },
+    {
+      "name": "fetchDBStatus",
+      "description": "Fetch system status for DB"
+    },
+    {
+      "name": "fetchGUIMode",
+      "description": "Describes the GUI mode"
+    },
+    {
+      "name": "fetchAutomaticUpdate",
+      "description": "Gets the status of automatic updates"
+    },
+    {
+      "name": "fetchSetupWizard",
+      "description": "Gets the details of setup wizrd"
+    },
+    {
+      "name": "allAllowlists",
+      "description": "Used to manage a system wide list of allowed callers"
+    },
+    {
+      "name": "allowlist",
+      "description": null
+    },
+    {
+      "name": "allowlistSettings",
+      "description": "Allowlist Settings"
+    },
+    {
+      "name": "allAnnouncements",
+      "description": "Plays back one of the system recordings (optionally allowing the user to skip it) and then goes to another destinations"
+    },
+    {
+      "name": "announcement",
+      "description": "Plays back one of the system recordings (optionally allowing the user to skip it) and then goes to another destinations"
+    },
+    {
+      "name": "allAppointmentReminders",
+      "description": "COMMERCIAL MODULE REQUIRES A LICENSE FOR IT TO FUNCTION.\tPlease visit www.schmoozecom.com/oss.php Appointment Reminder module for FreePBXis a unique way to automate\tappointment confirmations, cancellations and reschedules. By simply specifying numbers and names to be called your PBX will automatically call at specified times and allow\trecipients to confirm / cancel / reschedule appointments. The module gives you the flexibility to control all details of the calls from rate limiting to retry attempts and days\tahead to notify of an appointment. You have the ability to simply load a CSV list of numbers to call, or even add numbers and names manually. On the fly modifications can be\tmade to any Appointment Reminder list to allow for total flexibility."
+    },
+    {
+      "name": "appointmentReminder",
+      "description": "COMMERCIAL MODULE REQUIRES A LICENSE FOR IT TO FUNCTION.\tPlease visit www.schmoozecom.com/oss.php Appointment Reminder module for FreePBXis a unique way to automate\tappointment confirmations, cancellations and reschedules. By simply specifying numbers and names to be called your PBX will automatically call at specified times and allow\trecipients to confirm / cancel / reschedule appointments. The module gives you the flexibility to control all details of the calls from rate limiting to retry attempts and days\tahead to notify of an appointment. You have the ability to simply load a CSV list of numbers to call, or even add numbers and names manually. On the fly modifications can be\tmade to any Appointment Reminder list to allow for total flexibility."
+    },
+    {
+      "name": "allAppointmentReminderCalls",
+      "description": "COMMERCIAL MODULE REQUIRES A LICENSE FOR IT TO FUNCTION.\tPlease visit www.schmoozecom.com/oss.php Appointment Reminder module for FreePBXis a unique way to automate\tappointment confirmations, cancellations and reschedules. By simply specifying numbers and names to be called your PBX will automatically call at specified times and allow\trecipients to confirm / cancel / reschedule appointments. The module gives you the flexibility to control all details of the calls from rate limiting to retry attempts and days\tahead to notify of an appointment. You have the ability to simply load a CSV list of numbers to call, or even add numbers and names manually. On the fly modifications can be\tmade to any Appointment Reminder list to allow for total flexibility."
+    },
+    {
+      "name": "appointmentReminderCall",
+      "description": "COMMERCIAL MODULE REQUIRES A LICENSE FOR IT TO FUNCTION.\tPlease visit www.schmoozecom.com/oss.php Appointment Reminder module for FreePBXis a unique way to automate\tappointment confirmations, cancellations and reschedules. By simply specifying numbers and names to be called your PBX will automatically call at specified times and allow\trecipients to confirm / cancel / reschedule appointments. The module gives you the flexibility to control all details of the calls from rate limiting to retry attempts and days\tahead to notify of an appointment. You have the ability to simply load a CSV list of numbers to call, or even add numbers and names manually. On the fly modifications can be\tmade to any Appointment Reminder list to allow for total flexibility."
+    },
+    {
+      "name": "allAriManagerUsers",
+      "description": "Asterisk 12 introduces the Asterisk REST Interface (ARI), a set of RESTful API's for building Asterisk based applications. This module provides the ability to add and remove ARI users."
+    },
+    {
+      "name": "ariManagerUser",
+      "description": "Asterisk 12 introduces the Asterisk REST Interface (ARI), a set of RESTful API's for building Asterisk based applications. This module provides the ability to add and remove ARI users."
+    },
+    {
+      "name": "fetchAllBackups",
+      "description": null
+    },
+    {
+      "name": "fetchAllBackupConfigurations",
+      "description": null
+    },
+    {
+      "name": "deleteBackup",
+      "description": null
+    },
+    {
+      "name": "allBlacklists",
+      "description": "Used to manage a system wide list of blocked callers"
+    },
+    {
+      "name": "blacklist",
+      "description": null
+    },
+    {
+      "name": "blacklistSettings",
+      "description": "Blacklist Settings"
+    },
+    {
+      "name": "fetchAllCampaigns",
+      "description": "Use to get all the campaigns"
+    },
+    {
+      "name": "allCallbacks",
+      "description": ""
+    },
+    {
+      "name": "callback",
+      "description": ""
+    },
+    {
+      "name": "fetchAllCdrs",
+      "description": "CDR Reports"
+    },
+    {
+      "name": "fetchCdr",
+      "description": null
+    },
+    {
+      "name": "fetchCSRFile",
+      "description": "Download the CSR Certificate"
+    },
+    {
+      "name": "allInboundRoutes",
+      "description": "Used to tell your PBX where to route inbound calls based on the phone number or DID dialed"
+    },
+    {
+      "name": "inboundRoute",
+      "description": "Used to tell your PBX where to route inbound calls based on the phone number or DID dialed"
+    },
+    {
+      "name": "allCoreUsers",
+      "description": ""
+    },
+    {
+      "name": "coreUser",
+      "description": ""
+    },
+    {
+      "name": "fetchAllAdvanceSettings",
+      "description": "Returns all the advance setting's details "
+    },
+    {
+      "name": "fetchAdvanceSetting",
+      "description": "Returns particular the advance setting's details"
+    },
+    {
+      "name": "fetchAllExtensions",
+      "description": ""
+    },
+    {
+      "name": "fetchAllValidExtensions",
+      "description": ""
+    },
+    {
+      "name": "fetchExtension",
+      "description": ""
+    },
+    {
+      "name": "fetchAllCoreDevices",
+      "description": "Fetchs all core devices"
+    },
+    {
+      "name": "fetchCoreDevice",
+      "description": "Fetchs particular core device"
+    },
+    {
+      "name": "checkdiskspace",
+      "description": "Use to get all the diskspace"
+    },
+    {
+      "name": "fetchEndpointManagerGlobalSettings",
+      "description": "Fetch Internal and External IPS"
+    },
+    {
+      "name": "fetchInternalExternalIPs",
+      "description": "Fetch Internal and External IPS"
+    },
+    {
+      "name": "fetchFilestoreTypes",
+      "description": null
+    },
+    {
+      "name": "fetchFilestoreLocations",
+      "description": null
+    },
+    {
+      "name": "fetchAWSRegion",
+      "description": null
+    },
+    {
+      "name": "fetchAllFilestores",
+      "description": null
+    },
+    {
+      "name": "fetchFileStoreDetails",
+      "description": null
+    },
+    {
+      "name": "fetchFollowMe",
+      "description": null
+    },
+    {
+      "name": "fetchAllBlacklistIPs",
+      "description": "Fetch custom service zone"
+    },
+    {
+      "name": "fetchAllWhitelistIPs",
+      "description": "Fetch all Whitelisted IPs"
+    },
+    {
+      "name": "fetchFirewallConfiguration",
+      "description": "Fetch firewall configuration"
+    },
+    {
+      "name": "fetchInterface",
+      "description": "Fetch firewall interfaces"
+    },
+    {
+      "name": "fetchFirewallAdvanceSettings",
+      "description": "Fetch firewall advance settings"
+    },
+    {
+      "name": "allMusiconholds",
+      "description": "Used to manage a system wide list of blocked callers"
+    },
+    {
+      "name": "musiconhold",
+      "description": null
+    },
+    {
+      "name": "fetchPm2AppStatus",
+      "description": null
+    },
+    {
+      "name": "fetchAllRecordings",
+      "description": null
+    },
+    {
+      "name": "fetchRecordingFiles",
+      "description": null
+    },
+    {
+      "name": "fetchAllRingGroups",
+      "description": "Use to get all the ringgroups"
+    },
+    {
+      "name": "fetchRingGroup",
+      "description": null
+    },
+    {
+      "name": "fetchSangomaconnectServiceStatus",
+      "description": "Fetch Sangomaconnect Service Enable or Disable."
+    },
+    {
+      "name": "fetchSipNatNetworkSettings",
+      "description": null
+    },
+    {
+      "name": "fetchWSSettings",
+      "description": null
+    },
+    {
+      "name": "fetchSipStationkey",
+      "description": null
+    },
+    {
+      "name": "fetchSipStationStatus",
+      "description": null
+    },
+    {
+      "name": "fetchAllSmsWebhook",
+      "description": null
+    },
+    {
+      "name": "fetchSmsWebhook",
+      "description": null
+    },
+    {
+      "name": "fetchLicenceDetails",
+      "description": null
+    },
+    {
+      "name": "fetchActivationStatus",
+      "description": null
+    },
+    {
+      "name": "fetchUnlockKey",
+      "description": null
+    },
+    {
+      "name": "fetchHostname",
+      "description": null
+    },
+    {
+      "name": "fetchProvisioningProtocols",
+      "description": null
+    },
+    {
+      "name": "fetchForce",
+      "description": null
+    },
+    {
+      "name": "fetchSSLCertificates",
+      "description": null
+    },
+    {
+      "name": "fetchVoiceMail",
+      "description": "Return extension details"
+    },
+    {
+      "name": "node",
+      "description": "Fetches an object given its ID"
+    }
+  ],
+  "mutations": [
+    {
+      "name": "moduleOperations",
+      "description": "This will perform a module install/uninstall/enable/disable/downloadinstall based on action,module and track"
+    },
+    {
+      "name": "installModule",
+      "description": "This will perform install module operation."
+    },
+    {
+      "name": "uninstallModule",
+      "description": "This will perform uninstall module operation."
+    },
+    {
+      "name": "enableModule",
+      "description": "This will perform enable module operation."
+    },
+    {
+      "name": "disableModule",
+      "description": "This will perform disable module operation."
+    },
+    {
+      "name": "upgradeModule",
+      "description": "This will perform upgrade module operation"
+    },
+    {
+      "name": "upgradeAllModules",
+      "description": "This will perform upgrade on all modules"
+    },
+    {
+      "name": "doreload",
+      "description": "Apply Configuration Gql api"
+    },
+    {
+      "name": "fwconsoleCommand",
+      "description": "Executes fwconsole commands"
+    },
+    {
+      "name": "addInitialSetup",
+      "description": "This will Set the Administator Auth credentials"
+    },
+    {
+      "name": "updateSystemRPM",
+      "description": "Update system RPM package"
+    },
+    {
+      "name": "switchAstriskVersion",
+      "description": "Switch Asterisk version"
+    },
+    {
+      "name": "runWarmsparebackuprestore",
+      "description": "Run a Warm Spare Restore"
+    },
+    {
+      "name": "updateSecondary",
+      "description": "Update Secondary with Recovery module details"
+    },
+    {
+      "name": "resetSettings",
+      "description": "reset configuration"
+    },
+    {
+      "name": "getRestoreStatus",
+      "description": "Get the Restore Status on Spare server "
+    },
+    {
+      "name": "getServicestatus",
+      "description": "service Status "
+    },
+    {
+      "name": "setServicestatus",
+      "description": "Start /Stop Service"
+    },
+    {
+      "name": "heartbeat",
+      "description": "to get the heartbeat of the paired one"
+    },
+    {
+      "name": "addAllowlist",
+      "description": "Add a new number to the allowlist"
+    },
+    {
+      "name": "removeAllowlist",
+      "description": "Remove a number from the allowlist"
+    },
+    {
+      "name": "addAnnouncement",
+      "description": "Add a new announcement to the system"
+    },
+    {
+      "name": "updateAnnouncement",
+      "description": "Update an announcement on the system"
+    },
+    {
+      "name": "removeAnnouncement",
+      "description": "Remove an announcement from the system"
+    },
+    {
+      "name": "addAppointmentReminder",
+      "description": "Add a new entry to Appointment Reminder"
+    },
+    {
+      "name": "updateAppointmentReminder",
+      "description": "Update an entry in Appointment Reminder"
+    },
+    {
+      "name": "removeAppointmentReminder",
+      "description": "Remove an entry from Appointment Reminder"
+    },
+    {
+      "name": "addAriManagerUsers",
+      "description": "Add a new entry to Asterisk REST Interface Users"
+    },
+    {
+      "name": "updateAriManagerUsers",
+      "description": "Update an entry in Asterisk REST Interface Users"
+    },
+    {
+      "name": "removeAriManagerUsers",
+      "description": "Remove an entry from Asterisk REST Interface Users"
+    },
+    {
+      "name": "addBackup",
+      "description": "Set Backup Configurations"
+    },
+    {
+      "name": "updateBackup",
+      "description": "Update Backup Configurations"
+    },
+    {
+      "name": "restoreBackup",
+      "description": "Restore Backup"
+    },
+    {
+      "name": "runBackup",
+      "description": "Run Backup"
+    },
+    {
+      "name": "addBlacklist",
+      "description": "Add a new number to the blacklist"
+    },
+    {
+      "name": "setBlacklistSettings",
+      "description": "Add a new number to the blacklist"
+    },
+    {
+      "name": "removeBlacklist",
+      "description": "Remove a number from the blacklist"
+    },
+    {
+      "name": "addCampaign",
+      "description": "Add Campaign"
+    },
+    {
+      "name": "updateCampaign",
+      "description": "Update Campaign"
+    },
+    {
+      "name": "deleteCampaign",
+      "description": "Delete Campaign"
+    },
+    {
+      "name": "startCampaign",
+      "description": "Start Campaign"
+    },
+    {
+      "name": "stopCampaign",
+      "description": "Stop Campaign"
+    },
+    {
+      "name": "activateCampaign",
+      "description": "Activate Campaign"
+    },
+    {
+      "name": "deActivateCampaign",
+      "description": "Deactivate Campaign"
+    },
+    {
+      "name": "addCallback",
+      "description": "Add a new entry to Callback"
+    },
+    {
+      "name": "updateCallback",
+      "description": "Update an entry in Callback"
+    },
+    {
+      "name": "removeCallback",
+      "description": "Remove an entry from Callback"
+    },
+    {
+      "name": "generateCSR",
+      "description": "Generate CSR"
+    },
+    {
+      "name": "uploadSSLCertificate",
+      "description": "Upload an SSL certificate"
+    },
+    {
+      "name": "deleteCSRFile",
+      "description": "Delete the CSR"
+    },
+    {
+      "name": "deleteCertificate",
+      "description": "Delete a specific certificate"
+    },
+    {
+      "name": "updateDefaultCertificate",
+      "description": "Updates a specific certificate as default"
+    },
+    {
+      "name": "addInboundRoute",
+      "description": "Add a new inbound route to the system"
+    },
+    {
+      "name": "updateInboundRoute",
+      "description": "Update an inbound route on the system"
+    },
+    {
+      "name": "removeInboundRoute",
+      "description": "Remove an inbound route from the system"
+    },
+    {
+      "name": "addCoreUser",
+      "description": "Add a new entry to Core"
+    },
+    {
+      "name": "updateCoreUser",
+      "description": "Update an entry in Core"
+    },
+    {
+      "name": "removeCoreUser",
+      "description": "Remove an entry from Core"
+    },
+    {
+      "name": "updateAdvanceSettings",
+      "description": "Updates Advance Settings Field"
+    },
+    {
+      "name": "addExtension",
+      "description": "Add a new Extension to Core"
+    },
+    {
+      "name": "updateExtension",
+      "description": "Update an Extension in Core"
+    },
+    {
+      "name": "deleteExtension",
+      "description": "Delete an Extension in Core"
+    },
+    {
+      "name": "createRangeofExtension",
+      "description": "Create a Range of Extensions"
+    },
+    {
+      "name": "addCoreDevice",
+      "description": "Add a new entry to Core"
+    },
+    {
+      "name": "updateCoreDevice",
+      "description": "Update an entry in Core"
+    },
+    {
+      "name": "deleteCoreDevice",
+      "description": "Remove an entry from Core"
+    },
+    {
+      "name": "updateEndpointManagerGlobalSettings",
+      "description": "Add an internal and external IP address"
+    },
+    {
+      "name": "enableDPMA",
+      "description": "Enable DPMA"
+    },
+    {
+      "name": "disableDPMA",
+      "description": "Disable DPMA"
+    },
+    {
+      "name": "updateEndpointGlobalSettings",
+      "description": "Add an internal and external IP address"
+    },
+    {
+      "name": "rebuildConfigUpdatePhones",
+      "description": "Rebuild Config(s) & Update Phones"
+    },
+    {
+      "name": "addFTPInstance",
+      "description": "Add a new FTP instance"
+    },
+    {
+      "name": "addS3Bucket",
+      "description": "Add a new AWS S3 Bucket"
+    },
+    {
+      "name": "updateFTPInstance",
+      "description": "update a existing FTP instance"
+    },
+    {
+      "name": "deleteFTPInstance",
+      "description": "Delete a existing FTP instance"
+    },
+    {
+      "name": "updateFollowMe",
+      "description": "Create/Update Follow Me"
+    },
+    {
+      "name": "enableFollowMe",
+      "description": "Enable Follow Me"
+    },
+    {
+      "name": "disableFollowMe",
+      "description": "Disable Follow Me"
+    },
+    {
+      "name": "enableFirewall",
+      "description": "Enable firewall"
+    },
+    {
+      "name": "disableFirewall",
+      "description": "Disable firewall"
+    },
+    {
+      "name": "addBlackListIP",
+      "description": "Add to blacklist"
+    },
+    {
+      "name": "deleteBlackListIP",
+      "description": "Remove from blacklist"
+    },
+    {
+      "name": "updateFirewallConfiguration",
+      "description": "Add/update firewall configuration"
+    },
+    {
+      "name": "addWhiteListIP",
+      "description": "Add a whiltelisted IP"
+    },
+    {
+      "name": "updateFirewallInterface",
+      "description": "Update interface default zone."
+    },
+    {
+      "name": "updateFirewallAdvanceSettings",
+      "description": "update firewall advance settings"
+    },
+    {
+      "name": "addRecording",
+      "description": "Add a new recording to the Sytem Recordings"
+    },
+    {
+      "name": "updateRecording",
+      "description": "Update a recording in the Sytem Recordings"
+    },
+    {
+      "name": "deleteRecording",
+      "description": "Delete a recording from the Sytem Recordings"
+    },
+    {
+      "name": "convertfile",
+      "description": "Convert existing file into different formats"
+    },
+    {
+      "name": "addRingGroup",
+      "description": "Add a new Ringgroup"
+    },
+    {
+      "name": "updateRingGroup",
+      "description": "Update a ringgroup"
+    },
+    {
+      "name": "deleteRingGroup",
+      "description": "Delete a ringgroup"
+    },
+    {
+      "name": "addSipNatLocalIp",
+      "description": "Adding a Local IP network and mask"
+    },
+    {
+      "name": "updateSipNatExternalIp",
+      "description": "Updating External IP network and mask"
+    },
+    {
+      "name": "updateWSSettings",
+      "description": "Updating Web Socket Settings"
+    },
+    {
+      "name": "addSipStationKey",
+      "description": "Add Sipstation Key to sipstation module"
+    },
+    {
+      "name": "removeSipStationKey",
+      "description": "Remove the Sipstation Key from sipstation module"
+    },
+    {
+      "name": "removeSipStationKeyAndDeleteTrunk",
+      "description": "Remove the Sipstation Key and delete trunk from sipstation module"
+    },
+    {
+      "name": "addSmsWebhook",
+      "description": "add new sms web hook"
+    },
+    {
+      "name": "updateSmsWebhook",
+      "description": "Update sms web hook"
+    },
+    {
+      "name": "deleteSmsWebhook",
+      "description": "Delete an SMS web hook"
+    },
+    {
+      "name": "activateSystem",
+      "description": "Activate System using DeploymentID"
+    },
+    {
+      "name": "updateLicence",
+      "description": "Refresh Activation information"
+    },
+    {
+      "name": "updateProvisionPort",
+      "description": "Update Provisioning Port"
+    },
+    {
+      "name": "addHostname",
+      "description": "Set hostname of the system"
+    },
+    {
+      "name": "updateProvisioningProtocols",
+      "description": "Update provisioning protocols"
+    },
+    {
+      "name": "updateSSLProtocol",
+      "description": "Set ssl protocol for apache"
+    },
+    {
+      "name": "updateForcePort",
+      "description": "Force HTTP to HTTPS"
+    },
+    {
+      "name": "installSSLCertificate",
+      "description": "Install SSL Certificate"
+    },
+    {
+      "name": "updateSSLCertificate",
+      "description": "Update SSL Certificate"
+    },
+    {
+      "name": "enableVoiceMail",
+      "description": "Create/enable a voicemail account"
+    },
+    {
+      "name": "disableVoiceMail",
+      "description": "Delete/disable a voicemail account"
+    }
+  ]
+}
