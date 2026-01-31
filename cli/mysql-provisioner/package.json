@@ -1,0 +1,10 @@
+{
+    "name": "freepbx-mysql-provisioner",
+    "version": "1.0.0",
+    "type": "module",
+    "dependencies": {
+        "mysql2": "^3.6.5",
+        "chalk": "^5.3.0",
+        "ora": "^8.0.1"
+    }
+}
