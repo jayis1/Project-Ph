@@ -35,25 +35,41 @@ async function promptInstallationType(currentType = 'both') {
   const { type } = await inquirer.prompt([{
     type: 'list',
     name: 'type',
-    message: 'What are you installing?',
+    message: 'What type of node are you setting up?',
     default: currentType,
     choices: [
       {
-        name: 'Voice Server (Pi/Linux) - Handles calls, needs Docker',
+        name: 'Admin Node - Full stack + manages bot nodes (e.g., Trinity)',
+        value: 'admin'
+      },
+      {
+        name: 'Bot Node - Voice app only, connects to admin (e.g., Morpheus, Neo, Tank)',
+        value: 'device'
+      },
+      {
+        name: 'Standalone - Full stack on one machine (legacy mode)',
+        value: 'both'
+      },
+      {
+        name: 'Voice Server - Handles calls, needs Docker (Pi/Linux)',
         value: 'voice-server'
       },
       {
-        name: 'API Server - Gemini Code wrapper, minimal setup',
+        name: 'API Server - Gemini Code wrapper only',
         value: 'api-server'
-      },
-      {
-        name: 'Both (all-in-one) - Full stack on one machine',
-        value: 'both'
       }
     ]
   }]);
 
-  console.log(chalk.cyan(`\nYou selected: ${type === 'voice-server' ? 'Voice Server' : type === 'api-server' ? 'API Server' : 'Both (all-in-one)'}\n`));
+  const typeNames = {
+    'admin': 'Admin Node',
+    'device': 'Bot Node',
+    'both': 'Standalone',
+    'voice-server': 'Voice Server',
+    'api-server': 'API Server'
+  };
+
+  console.log(chalk.cyan(`\nYou selected: ${typeNames[type]}\n`));
 
   return type;
 }
@@ -180,6 +196,24 @@ async function setupInstallationType(installationType, existingConfig, isPi, opt
       } else {
         config = await setupVoiceServer(baseConfig);
       }
+      break;
+
+    case 'admin':
+      // Admin node = full stack + crew management
+      if (isPi) {
+        config = await setupPi(baseConfig);
+      } else {
+        config = await setupBoth(baseConfig);
+      }
+      // Mark as admin node
+      if (!config.deployment) config.deployment = {};
+      config.deployment.mode = 'admin';
+      config.deployment.role = 'admin';
+      break;
+
+    case 'device':
+      // Bot node = voice app only
+      config = await setupDeviceNode(baseConfig);
       break;
 
     case 'both':
@@ -471,6 +505,31 @@ async function setupBoth(config) {
   // Step 4: Server Configuration
   console.log(chalk.bold('\n⚙️  Server Configuration'));
   config = await setupServer(config);
+
+  return config;
+}
+
+/**
+ * Device node (bot) setup flow
+ * Simplified setup for bot nodes that only run voice-app
+ * @param {object} config - Current config
+ * @returns {Promise<object>} Updated config
+ */
+async function setupDeviceNode(config) {
+  console.log(chalk.bold.yellow('\n🤖 Bot Node Setup\n'));
+  console.log(chalk.gray('Bot nodes run voice-app only and connect to an admin node.\n'));
+
+  // Set deployment mode
+  if (!config.deployment) config.deployment = {};
+  config.deployment.mode = 'device';
+  config.deployment.role = 'device';
+
+  // For now, use simplified setup - just run the regular voice-server setup
+  // TODO: Add admin node config pulling in future iteration
+  console.log(chalk.yellow('⚠️  Bot node auto-configuration coming soon!'));
+  console.log(chalk.gray('For now, using standard voice-server setup flow.\n'));
+
+  config = await setupVoiceServer(config);
 
   return config;
 }
