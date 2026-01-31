@@ -1,0 +1,160 @@
+{
+    "name": "Gemini Phone - Slack Alerts",
+    "nodes": [
+        {
+            "parameters": {
+                "httpMethod": "POST",
+                "path": "gemini-phone-alerts",
+                "responseMode": "lastNode",
+                "options": {}
+            },
+            "id": "webhook-1",
+            "name": "Webhook",
+            "type": "n8n-nodes-base.webhook",
+            "typeVersion": 1,
+            "position": [
+                250,
+                300
+            ]
+        },
+        {
+            "parameters": {
+                "conditions": {
+                    "string": [
+                        {
+                            "value1": "={{ $json.event }}",
+                            "operation": "equals",
+                            "value2": "completed"
+                        }
+                    ]
+                }
+            },
+            "id": "switch-1",
+            "name": "Event Type",
+            "type": "n8n-nodes-base.switch",
+            "typeVersion": 1,
+            "position": [
+                450,
+                300
+            ]
+        },
+        {
+            "parameters": {
+                "channel": "#alerts",
+                "text": "=✅ Call completed\\n• To: {{ $json.to }}\\n• Duration: {{ $json.duration }}s\\n• Reason: {{ $json.reason || 'normal' }}",
+                "otherOptions": {}
+            },
+            "id": "slack-completed",
+            "name": "Slack - Completed",
+            "type": "n8n-nodes-base.slack",
+            "typeVersion": 1,
+            "position": [
+                650,
+                200
+            ],
+            "credentials": {
+                "slackApi": {
+                    "id": "1",
+                    "name": "Slack account"
+                }
+            }
+        },
+        {
+            "parameters": {
+                "channel": "#alerts",
+                "text": "=❌ Call failed\\n• To: {{ $json.to }}\\n• Reason: {{ $json.reason }}\\n• Call ID: {{ $json.callId }}",
+                "otherOptions": {
+                    "icon_emoji": ":warning:"
+                }
+            },
+            "id": "slack-failed",
+            "name": "Slack - Failed",
+            "type": "n8n-nodes-base.slack",
+            "typeVersion": 1,
+            "position": [
+                650,
+                400
+            ],
+            "credentials": {
+                "slackApi": {
+                    "id": "1",
+                    "name": "Slack account"
+                }
+            }
+        },
+        {
+            "parameters": {
+                "respondWith": "json",
+                "responseBody": "={ \"ok\": true }",
+                "options": {}
+            },
+            "id": "respond-1",
+            "name": "Respond",
+            "type": "n8n-nodes-base.respondToWebhook",
+            "typeVersion": 1,
+            "position": [
+                850,
+                300
+            ]
+        }
+    ],
+    "connections": {
+        "Webhook": {
+            "main": [
+                [
+                    {
+                        "node": "Event Type",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Event Type": {
+            "main": [
+                [
+                    {
+                        "node": "Slack - Completed",
+                        "type": "main",
+                        "index": 0
+                    }
+                ],
+                [
+                    {
+                        "node": "Slack - Failed",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Slack - Completed": {
+            "main": [
+                [
+                    {
+                        "node": "Respond",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Slack - Failed": {
+            "main": [
+                [
+                    {
+                        "node": "Respond",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        }
+    },
+    "settings": {},
+    "staticData": null,
+    "tags": [],
+    "triggerCount": 0,
+    "updatedAt": "2026-01-31T00:00:00.000Z",
+    "versionId": "1"
+}

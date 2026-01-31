@@ -1,0 +1,144 @@
+{
+    "name": "Gemini Phone - Call Logger",
+    "nodes": [
+        {
+            "parameters": {
+                "httpMethod": "POST",
+                "path": "gemini-phone-inbound",
+                "responseMode": "lastNode",
+                "options": {}
+            },
+            "id": "webhook-1",
+            "name": "Webhook",
+            "type": "n8n-nodes-base.webhook",
+            "typeVersion": 1,
+            "position": [
+                250,
+                300
+            ]
+        },
+        {
+            "parameters": {
+                "values": {
+                    "string": [
+                        {
+                            "name": "timestamp",
+                            "value": "={{ $json.timestamp }}"
+                        },
+                        {
+                            "name": "event",
+                            "value": "={{ $json.event }}"
+                        },
+                        {
+                            "name": "callId",
+                            "value": "={{ $json.callId }}"
+                        },
+                        {
+                            "name": "from",
+                            "value": "={{ $json.from || 'N/A' }}"
+                        },
+                        {
+                            "name": "to",
+                            "value": "={{ $json.to || 'N/A' }}"
+                        },
+                        {
+                            "name": "transcript",
+                            "value": "={{ $json.transcript || '' }}"
+                        },
+                        {
+                            "name": "duration",
+                            "value": "={{ $json.duration || 0 }}"
+                        }
+                    ]
+                },
+                "options": {}
+            },
+            "id": "set-1",
+            "name": "Format Data",
+            "type": "n8n-nodes-base.set",
+            "typeVersion": 1,
+            "position": [
+                450,
+                300
+            ]
+        },
+        {
+            "parameters": {
+                "operation": "append",
+                "sheetId": "YOUR_SHEET_ID",
+                "range": "Call Log!A:G",
+                "options": {}
+            },
+            "id": "sheets-1",
+            "name": "Google Sheets",
+            "type": "n8n-nodes-base.googleSheets",
+            "typeVersion": 2,
+            "position": [
+                650,
+                300
+            ],
+            "credentials": {
+                "googleSheetsOAuth2Api": {
+                    "id": "1",
+                    "name": "Google Sheets account"
+                }
+            }
+        },
+        {
+            "parameters": {
+                "respondWith": "json",
+                "responseBody": "={ \"ok\": true, \"received\": \"{{ $json.event }}\" }",
+                "options": {}
+            },
+            "id": "respond-1",
+            "name": "Respond to Webhook",
+            "type": "n8n-nodes-base.respondToWebhook",
+            "typeVersion": 1,
+            "position": [
+                850,
+                300
+            ]
+        }
+    ],
+    "connections": {
+        "Webhook": {
+            "main": [
+                [
+                    {
+                        "node": "Format Data",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Format Data": {
+            "main": [
+                [
+                    {
+                        "node": "Google Sheets",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Google Sheets": {
+            "main": [
+                [
+                    {
+                        "node": "Respond to Webhook",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        }
+    },
+    "settings": {},
+    "staticData": null,
+    "tags": [],
+    "triggerCount": 0,
+    "updatedAt": "2026-01-31T00:00:00.000Z",
+    "versionId": "1"
+}
