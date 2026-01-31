@@ -109,7 +109,7 @@ async function configureIVRAndRoute() {
             console.log(chalk.gray(`  Creating new inbound route for ${INBOUND_DID}...`));
 
             // Create new route
-            const insertCmd = `sshpass -p "${sshPassword}" ssh -o StrictHostKeyChecking=no root@${freepbxHost} "mysql -u freepbxuser -p${mysqlPassword} asterisk -e \\"INSERT INTO incoming (cidnum, extension, destination, description, grppre, delay_answer, pricid, ringing) VALUES ('${INBOUND_DID}', 's', 'ivr,${IVR_ID},1', '${TRUNK_NAME} → Nebuchadnezzar IVR', '', '', '', 'Ring');\\""`;
+            const insertCmd = `sshpass -p "${sshPassword}" ssh -o StrictHostKeyChecking=no root@${freepbxHost} "mysql -u freepbxuser -p${mysqlPassword} asterisk -e \\"INSERT INTO incoming (cidnum, extension, destination, description, grppre, delay_answer, pricid, ringing) VALUES ('${INBOUND_DID}', 's', 'ivr,${IVR_ID},1', '${TRUNK_NAME} → Nebuchadnezzar IVR', '', NULL, '', 'Ring');\\""`;
 
             execSync(insertCmd, { encoding: 'utf8' });
             console.log(chalk.green(`  ✓ Created inbound route: ${INBOUND_DID} → IVR ${IVR_ID}`));
