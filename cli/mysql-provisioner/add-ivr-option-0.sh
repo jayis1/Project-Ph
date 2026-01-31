@@ -12,17 +12,25 @@ fi
 
 echo "🔧 Adding IVR option 0 → Morpheus (9000)..."
 
-# Add IVR destination for option 0
+# Add IVR entry for option 0
 sshpass -p "$SSH_PASS" ssh -o StrictHostKeyChecking=no root@$FREEPBX_HOST \
     "mysql -u freepbxuser -p'$MYSQL_PASS' asterisk -e \"
-    INSERT INTO ivr_dests (ivr_id, selection, dest, ivr_ret)
-    VALUES (1, '0', 'from-did-direct,9000,1', 0)
+    INSERT INTO ivr_entries (ivr_id, selection, dest, ivr_ret)
+    VALUES ('7000', '0', 'from-did-direct,9000,1', '0')
     ON DUPLICATE KEY UPDATE dest='from-did-direct,9000,1';
     \""
+
+if [ $? -eq 0 ]; then
+    echo "✅ IVR option 0 added successfully"
+else
+    echo "❌ Failed to add IVR option 0"
+    exit 1
+fi
 
 echo "🔄 Reloading FreePBX..."
 sshpass -p "$SSH_PASS" ssh -o StrictHostKeyChecking=no root@$FREEPBX_HOST "fwconsole reload"
 
+echo ""
 echo "✅ Done! IVR option 0 now connects to Morpheus (9000)"
 echo ""
 echo "📞 Test it:"
