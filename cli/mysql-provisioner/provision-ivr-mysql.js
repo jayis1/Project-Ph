@@ -126,7 +126,6 @@ async function provisionNebuchadnezzar() {
         spinner.start('Syncing Extension Secrets...');
         let updatedCount = 0;
         let missingCount = 0;
-        let skippedSecretSync = false;
 
         try {
             // Check available tables
@@ -139,7 +138,6 @@ async function provisionNebuchadnezzar() {
             if (!isPJSIP && !isChanSIP) {
                 spinner.warn(chalk.yellow('Skipping Secret Sync: Could not detect PJSIP (ps_endpoints) or chan_sip (sip) tables.'));
                 console.log(chalk.gray('   This is non-fatal. IVR provisioning will proceed.'));
-                skippedSecretSync = true;
             } else {
                 for (const member of CREW) {
                     if (isPJSIP) {
