@@ -128,6 +128,7 @@ mkdir -p ~/.gemini-phone
 
 cat > ~/.gemini-phone/config.json <<EOF
 {
+  "installationType": "both",
   "deployment": {
     "mode": "device-only"
   },
@@ -145,6 +146,14 @@ cat > ~/.gemini-phone/config.json <<EOF
     "domain": "$FREEPBX_IP",
     "registrar": "$FREEPBX_IP",
     "externalIp": "$EXTERNAL_IP"
+  },
+  "paths": {
+    "voiceApp": "\$HOME/.gemini-phone-cli/voice-app",
+    "geminiApiServer": "\$HOME/.gemini-phone-cli/gemini-api-server"
+  },
+  "server": {
+    "geminiApiPort": 3333,
+    "httpPort": 3000
   },
   "voiceApp": {
     "port": 3000
