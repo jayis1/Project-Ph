@@ -37,6 +37,9 @@ var queryModule = require("./lib/query-routes");
 var queryRouter = queryModule.router;
 var setupQueryRoutes = queryModule.setupRoutes;
 
+// Import callback routes
+var callbackRouter = require("./lib/callback-routes");
+
 // Load device registry first
 // deviceRegistry is a singleton, already instantiated
 
@@ -229,6 +232,10 @@ function initializeServers() {
 
   httpServer.app.use("/api", queryRouter);
   console.log("[" + new Date().toISOString() + "] QUERY API enabled (/api/query, /api/devices)");
+
+  // ========== CALLBACK MANAGEMENT ROUTES ==========
+  httpServer.app.use("/api", callbackRouter);
+  console.log("[" + new Date().toISOString() + "] CALLBACK API enabled (/api/callbacks)");
 
   // ========== SIP STATUS ENDPOINT ==========
   httpServer.app.get("/api/sip-status", (req, res) => {

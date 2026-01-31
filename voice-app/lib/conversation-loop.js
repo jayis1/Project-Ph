@@ -15,6 +15,7 @@
 const logger = require('./logger');
 const voicemailService = require('./voicemail-service');
 const { initiateOutboundCall } = require('./outbound-handler');
+const { scheduleCallback } = require('./scheduled-callbacks');
 
 // Audio cue URLs
 const READY_BEEP_URL = 'http://127.0.0.1:3000/static/ready-beep.wav';
@@ -148,10 +149,18 @@ async function runConversationLoop(endpoint, dialog, callUuid, options) {
   let forkRunning = false;
   let callActive = true;
   let dtmfHandler = null;
-  let callbackTarget = null; // Track callback intent
+  let callbackTarget = null; // Track immediate callback intent
+  let scheduledCallbackInfo = null; // Track scheduled callback intent
 
-  // Enhance system prompt with caller info
-  const systemContext = `\n[SYSTEM] Incoming call from ${callerId}. You are Morpheus. Answer accordingly.\n[SYSTEM] You can call people back. Reply with "I'll call them now. 🗣️ CALLBACK: <number>" to trigger a callback.`;
+  // Enhance system prompt with caller info and callback capabilities
+  const systemContext = `
+[SYSTEM] Incoming call from ${callerId}. You are ${deviceConfig?.name || 'Morpheus'}. Answer accordingly.
+
+[SYSTEM] CALLBACK CAPABILITIES:
+- Immediate callback: "I'll call them now. 🗣️ CALLBACK: <number>"
+- Scheduled callback: "I'll call back in X. 🗣️ SCHEDULED_CALLBACK: <number> | <delay> | <message>"
+  Examples: "🗣️ SCHEDULED_CALLBACK: +15551234567 | 5 minutes | Here's your server status"
+`;
 
   // Track when call ends to prevent operations on dead endpoints
   const onDialogDestroy = () => {
@@ -402,17 +411,28 @@ async function runConversationLoop(endpoint, dialog, callUuid, options) {
       const voiceLine = extractVoiceLine(geminiResponse);
       logger.info('Voice line', { callUuid, voiceLine });
 
-      // Check for CALLBACK
+      // Check for IMMEDIATE CALLBACK
       const callbackMatch = geminiResponse.match(/🗣️\s*CALLBACK:\s*([+\d]+)/im);
       if (callbackMatch) {
         callbackTarget = callbackMatch[1].trim();
-        logger.info('CALLBACK Detected', { callUuid, target: callbackTarget });
+        logger.info('IMMEDIATE CALLBACK Detected', { callUuid, target: callbackTarget });
+      }
+
+      // Check for SCHEDULED CALLBACK
+      const scheduledMatch = geminiResponse.match(/🗣️\s*SCHEDULED_CALLBACK:\s*([+\d]+)\s*\|\s*([^|]+)\s*\|\s*(.+)/im);
+      if (scheduledMatch) {
+        scheduledCallbackInfo = {
+          phoneNumber: scheduledMatch[1].trim(),
+          delay: scheduledMatch[2].trim(),
+          message: scheduledMatch[3].trim()
+        };
+        logger.info('SCHEDULED CALLBACK Detected', { callUuid, info: scheduledCallbackInfo });
       }
 
       const responseUrl = await ttsService.generateSpeech(voiceLine, voiceId);
       if (callActive) await endpoint.play(responseUrl);
 
-      if (callbackTarget) break; // End loop to trigger callback
+      if (callbackTarget || scheduledCallbackInfo) break; // End loop to trigger callback
 
       logger.info('Turn complete', { callUuid, turn: turnCount });
     }
@@ -477,10 +497,9 @@ async function runConversationLoop(endpoint, dialog, callUuid, options) {
     }
   }
 
-  // Execute Callback if requested (outside finally block to ensure cleanup is done)
-  // But wait, we need srf/mediaServer which are passed in options.
+  // Execute IMMEDIATE Callback if requested (outside finally block to ensure cleanup is done)
   if (callbackTarget && srf && mediaServer) {
-    logger.info('Initiating callback', { target: callbackTarget });
+    logger.info('Initiating immediate callback', { target: callbackTarget });
     setTimeout(async () => {
       try {
         await initiateOutboundCall(srf, mediaServer, {
@@ -492,9 +511,27 @@ async function runConversationLoop(endpoint, dialog, callUuid, options) {
           mode: 'conversation' // Start conversation immediately
         });
       } catch (err) {
-        logger.error('Callback failed', { error: err.message });
+        logger.error('Immediate callback failed', { error: err.message });
       }
     }, 2000);
+  }
+
+  // Execute SCHEDULED Callback if requested
+  if (scheduledCallbackInfo && srf && mediaServer) {
+    logger.info('Scheduling callback', { info: scheduledCallbackInfo });
+    try {
+      const result = scheduleCallback({
+        phoneNumber: scheduledCallbackInfo.phoneNumber,
+        message: scheduledCallbackInfo.message,
+        delay: scheduledCallbackInfo.delay,
+        deviceConfig: deviceConfig,
+        srf: srf,
+        mediaServer: mediaServer
+      });
+      logger.info('Callback scheduled successfully', { result });
+    } catch (err) {
+      logger.error('Failed to schedule callback', { error: err.message });
+    }
   }
 }
 
