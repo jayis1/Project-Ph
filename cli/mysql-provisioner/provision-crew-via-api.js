@@ -99,7 +99,8 @@ async function main() {
                 outboundCid: member.name,
                 emergencyCid: '',
                 umEnable: false,
-                umGroups: ''
+                umGroups: '',
+                secret: SIP_SECRET  // Set the SIP password
             };
 
             const result = await client.query(mutation, { input });
