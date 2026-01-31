@@ -239,6 +239,84 @@ mutation($input: addInboundRouteInput!) {
     }
 
     /**
+     * Create a Ring Group
+     * @param {string} grpnum - Ring Group number (e.g., "8000")
+     * @param {string} description - Ring Group description
+     * @param {string[]} extensionList - Array of extensions to include
+     * @param {string} strategy - Ring strategy: "ringall", "hunt", "memoryhunt", "firstavailable", "firstnotonphone"
+     * @returns {Promise<Object>} Mutation result
+     */
+    async createRingGroup(grpnum, description, extensionList, strategy = 'ringall') {
+        const input = {
+            grpnum,
+            description,
+            strategy,
+            grplist: extensionList.join('-'), // Extensions separated by dashes
+            grptime: '20', // Ring time in seconds
+            grppre: '', // Prefix
+            annmsg_id: '0', // No announcement
+            postdest: 'app-blackhole,hangup,1', // Destination if no answer
+            ringing: true // Play ringing tone
+        };
+
+        const mutation = `
+mutation($input: addRingGroupInput!) {
+    addRingGroup(input: $input) {
+        status
+        message
+    }
+}
+`;
+        return this.query(mutation, { input });
+    }
+
+    /**
+     * Create an IVR menu
+     * @param {string} id - IVR ID/number (e.g., "7000")
+     * @param {string} name - IVR name
+     * @param {string} description - IVR description
+     * @param {string} announcement - Recording ID for the announcement
+     * @param {Object} entries - IVR entries mapping (e.g., {"1": "ext-local,9000,1", "2": "ext-local,9001,1"})
+     * @returns {Promise<Object>} Mutation result
+     */
+    async createIVR(id, name, description, announcement, entries) {
+        const input = {
+            id,
+            name,
+            description,
+            announcement,
+            directdial: 'CHECKED', // Allow direct dial
+            invalid_loops: '3',
+            invalid_retry_recording: announcement,
+            invalid_destination: 'app-blackhole,hangup,1',
+            invalid_recording: '0',
+            retvm: 'CHECKED',
+            timeout_time: '10',
+            timeout_recording: '0',
+            timeout_retry_recording: announcement,
+            timeout_loops: '3',
+            timeout_append_announce: false,
+            timeout_destination: 'app-blackhole,hangup,1',
+            // Convert entries object to the format FreePBX expects
+            entries: Object.entries(entries).map(([digit, destination]) => ({
+                selection: digit,
+                dest: destination,
+                ivr_ret: '0'
+            }))
+        };
+
+        const mutation = `
+mutation($input: addIVRInput!) {
+    addIVR(input: $input) {
+        status
+        message
+    }
+}
+`;
+        return this.query(mutation, { input });
+    }
+
+    /**
      * Apply configuration (reload Asterisk)
      * @returns {Promise<Object>} Mutation result
      */
