@@ -100,6 +100,53 @@ gemini-phone setup    # Select "Both"
 gemini-phone start    # Launches Docker + API server
 ```
 
+### Distributed (Admin + Device Nodes)
+
+Best for: Multiple AI personalities on separate LXC containers or servers.
+
+```text
+┌─────────────────────────────────────────────────────────────┐
+│  FreePBX Server (172.16.1.143)                              │
+│  - IVR 7000: Crew selection menu                            │
+│  - Extensions: 9000-9008                                    │
+│  - Ring Group: All crew members                             │
+└─────────────────────────────────────────────────────────────┘
+                          │
+          ┌───────────────┴───────────────┐
+          │                               │
+┌─────────▼─────────┐         ┌──────────▼──────────┐
+│ Admin Node        │         │ Device Node         │
+│ (Trinity)         │         │ (Morpheus)          │
+│                   │         │                     │
+│ • Extension 9001  │         │ • Extension 9000    │
+│ • FreePBX Admin   │         │ • Device-Only       │
+│ • Provisioning    │         │ • Standalone        │
+└───────────────────┘         └─────────────────────┘
+```
+
+**Admin Node Setup:**
+
+```bash
+gemini-phone setup    # Select "Both", configure Trinity
+gemini-phone start
+```
+
+**Device Node Setup:**
+
+```bash
+# Quick deployment script
+curl -sSL https://raw.githubusercontent.com/jayis1/2fast2dumb2fun/main/install-device.sh -o install-device.sh
+chmod +x install-device.sh
+./install-device.sh   # Select crew member (Morpheus, Neo, etc.)
+```
+
+The device-only script:
+
+- Installs Gemini Phone CLI
+- Configures a single crew member
+- Registers to existing FreePBX server
+- No admin/provisioning capabilities needed
+
 ### Split Mode (Pi + API Server)
 
 Best for: Dedicated Pi for voice services, Gemini running on your main machine.
