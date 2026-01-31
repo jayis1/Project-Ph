@@ -71,7 +71,7 @@ async function queryFreePBX() {
     };
 
     extLines.forEach(line => {
-        const [id, ext] = line.split('\t');
+        const [, ext] = line.split('\t');
         if (ext && crewNames[ext]) {
             console.log(chalk.green(`  ✓ ${ext} - ${crewNames[ext]}`));
         }
@@ -104,7 +104,7 @@ async function queryFreePBX() {
     // 3. Query Inbound Route
     console.log(chalk.bold('\n📞 Inbound Route:\n'));
     const inboundRoute = query("SELECT cidnum, extension, destination, description FROM incoming WHERE cidnum='88707695'");
-    const [did, ext, dest, desc] = inboundRoute.split('\t');
+    const [did, , dest, desc] = inboundRoute.split('\t');
     if (did) {
         console.log(chalk.green(`  ✓ DID: ${did}`));
         console.log(chalk.green(`  ✓ Description: ${desc}`));
