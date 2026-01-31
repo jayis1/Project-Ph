@@ -277,28 +277,32 @@ mutation($input: addInboundRouteInput!) {
      */
     async createOrUpdateRingGroup(grpnum, description, extensionList, strategy = 'ringall') {
         const exists = await this.ringGroupExists(grpnum);
-        const input = exists ? {
+
+        // Both addRingGroup and updateRingGroup use the same field names now
+        const input = {
             groupNumber: grpnum,
-            description,
-            strategy,
+            description: description,
+            strategy: strategy,
             extensionList: extensionList.join('-'),
-            ringTime: '20'
-        } : {
-            grpnum,
-            description,
-            strategy,
-            grplist: extensionList.join('-'), // Extensions separated by dashes
-            grptime: '20', // Ring time in seconds
-            grppre: '', // Prefix
-            annmsg_id: '0', // No announcement
-            postdest: 'app-blackhole,hangup,1', // Destination if no answer
-            ringing: true // Play ringing tone
+            ringTime: '20',
+            groupPrefix: '',
+            callerMessage: '',
+            postAnswer: '',
+            alertInfo: '',
+            needConf: false,
+            ignoreCallForward: false
         };
 
-        const mutationType = exists ? 'updateRingGroup' : 'addRingGroup';
-        const mutation = `
-mutation($input: ${mutationType}Input!) {
-    ${mutationType}(input: $input) {
+        const mutation = exists ? `
+mutation($input: updateRingGroupInput!) {
+    updateRingGroup(input: $input) {
+        status
+        message
+    }
+}
+` : `
+mutation($input: addRingGroupInput!) {
+    addRingGroup(input: $input) {
         status
         message
     }
