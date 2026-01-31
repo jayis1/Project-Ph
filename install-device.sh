@@ -148,8 +148,8 @@ cat > ~/.gemini-phone/config.json <<EOF
     "externalIp": "$EXTERNAL_IP"
   },
   "paths": {
-    "voiceApp": "$HOME/.gemini-phone-cli/voice-app",
-    "geminiApiServer": "$HOME/.gemini-phone-cli/gemini-api-server"
+    "voiceApp": "${HOME}/.gemini-phone-cli/voice-app",
+    "geminiApiServer": "${HOME}/.gemini-phone-cli/gemini-api-server"
   },
   "server": {
     "geminiApiPort": 3333,
