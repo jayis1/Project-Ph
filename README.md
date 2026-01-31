@@ -157,6 +157,54 @@ cd ~/.gemini-phone-cli/cli/mysql-provisioner
 node provision-ivr-mysql.js    # Creates IVR 7000 + all crew routes
 ```
 
+**IVR Enhancements (Optional):**
+
+After deploying your crew, you can provision professional IVR features:
+
+```bash
+# On FreePBX server (172.16.1.143)
+# Copy provisioner script
+scp ~/.gemini-phone-cli/cli/mysql-provisioner/provision-enhanced-ivr.js root@172.16.1.143:/tmp/
+
+# SSH to FreePBX and run
+ssh root@172.16.1.143
+cd /tmp
+npm install mysql2  # Install dependencies
+node provision-enhanced-ivr.js
+
+# This provisions:
+# - Crew Queue (8001): Professional queue with all crew members
+# - Time Conditions: Business hours routing
+# - Announcements: Welcome and after-hours messages
+# - Call Flow Toggle: *2834 to enable/disable crew availability
+```
+
+**What the Queue Does:**
+
+- Callers press 0 in IVR to reach "All crew members"
+- Professional queue experience with music on hold
+- First available crew member answers
+- Periodic announcements every 30 seconds
+- Much better than ring group (no simultaneous ringing)
+
+**Scheduled Callbacks:**
+
+Your crew can now schedule callbacks during conversations:
+
+```bash
+# Caller says: "Call me back in 30 minutes with a status update"
+# AI responds: "I'll call you back in 30 minutes"
+# System schedules callback automatically
+
+# Check scheduled callbacks
+curl http://localhost:3000/api/callbacks
+
+# Cancel a callback
+curl -X DELETE http://localhost:3000/api/callbacks/CALLBACK_ID
+```
+
+See [docs/SCHEDULED-CALLBACKS.md](docs/SCHEDULED-CALLBACKS.md) for full API documentation.
+
 **Admin Node Capabilities:**
 
 - Direct MySQL provisioning (bypasses FreePBX API)

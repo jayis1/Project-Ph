@@ -102,6 +102,19 @@ program
   });
 
 program
+  .command('provision-ivr')
+  .description('Provision enhanced IVR features (queues, time conditions, announcements)')
+  .action(async () => {
+    try {
+      const { provisionEnhancedIVR } = await import('../mysql-provisioner/provision-enhanced-ivr.js');
+      await provisionEnhancedIVR();
+    } catch (error) {
+      console.error(chalk.red(`\n✗ IVR provisioning failed: ${error.message}\n`));
+      process.exit(1);
+    }
+  });
+
+program
   .command('api-server')
   .description('Start Gemini API server for Pi remote connections')
   .option('-p, --port <port>', 'Port to listen on', '3333')
