@@ -52,8 +52,26 @@ const IVR_ID = '7000';
 const IVR_NAME = 'Nebuchadnezzar Crew';
 const IVR_DESCRIPTION = 'AI Selection Menu';
 
-async function provisionIVR() {
-    console.log(chalk.bold.cyan('\n🚢 Provisioning Nebuchadnezzar IVR via MySQL\n'));
+// Update a PJSIP secret in the database
+async function updatePjsipSecret(connection, extension, secret) {
+    try {
+        // PJSIP auth ID is usually just the extension number or extension-auth
+        // We trigger an update on all likely auth IDs for this extension
+        const [result] = await connection.execute(`
+            UPDATE ps_auths 
+            SET password = ? 
+            WHERE id = ? OR id = CONCAT(?, '-auth')
+        `, [secret, extension, extension]);
+
+        return result.affectedRows > 0;
+    } catch (error) {
+        console.warn(`Failed to update secret for ${extension}:`, error.message);
+        return false;
+    }
+}
+
+async function provisionNebuchadnezzar() {
+    console.log(chalk.bold.cyan('\n🚢 Provisioning Nebuchadnezzar (IVR & Secrets) via MySQL\n'));
 
     const spinner = ora('Connecting to FreePBX MySQL...').start();
     const mysqlConfig = await getMySQLConfig();
@@ -64,6 +82,37 @@ async function provisionIVR() {
         connection = await mysql.createConnection(mysqlConfig);
         spinner.succeed('Connected to MySQL');
 
+        // 1. Sync Secrets for Crew
+        spinner.start('Syncing Extension Secrets...');
+        let updatedCount = 0;
+        let missingCount = 0;
+
+        for (const member of CREW) {
+            // Check if extension exists in ps_endpoints (PJSIP)
+            const [rows] = await connection.execute('SELECT id FROM ps_endpoints WHERE id = ?', [member.extension]);
+
+            if (rows.length > 0) {
+                // Extension exists, update secret
+                // Default secure-ish secret for the crew if not in config
+                // (In prodoction, read from config.devices)
+                const secret = 'GeminiPhone123!';
+                const updated = await updatePjsipSecret(connection, member.extension, secret);
+                if (updated) {
+                    updatedCount++;
+                }
+            } else {
+                missingCount++;
+                console.log(chalk.yellow(`\n⚠️  Extension ${member.extension} (${member.name}) NOT FOUND in PJSIP.`));
+            }
+        }
+
+        spinner.succeed(`Secrets synced for ${updatedCount} extensions.`);
+        if (missingCount > 0) {
+            console.log(chalk.yellow(`   ${missingCount} extensions are missing. Please creating them via FreePBX GUI (Bulk Handler or Batch Create).`));
+            console.log(chalk.gray(`   Recommended Secret: GeminiPhone123!`));
+        }
+
+        // 2. IVR Provisioning
         // Check if IVR already exists
         spinner.start('Checking for existing IVR...');
         const [existing] = await connection.execute(
@@ -72,15 +121,11 @@ async function provisionIVR() {
         );
 
         if (existing.length > 0) {
-            spinner.info(`IVR ${IVR_ID} already exists, deleting...`);
+            spinner.info(`IVR ${IVR_ID} already exists, updating/recreating...`);
 
-            // Delete existing entries
+            // Delete existing entries to ensure clean state
             await connection.execute('DELETE FROM ivr_entries WHERE ivr_id = ?', [IVR_ID]);
             await connection.execute('DELETE FROM ivr_details WHERE id = ?', [IVR_ID]);
-
-            spinner.succeed('Deleted existing IVR');
-        } else {
-            spinner.succeed('No existing IVR found');
         }
 
         // Create IVR details
@@ -154,14 +199,12 @@ async function provisionIVR() {
             console.log(chalk.gray('   ssh root@172.16.1.143 "fwconsole reload"\n'));
         }
 
-        console.log(chalk.green('\n✅ IVR 7000 provisioned successfully!\n'));
+        console.log(chalk.green('\n✅ IVR 7000 provisioned successfully!'));
+        console.log(chalk.green('✅ Extension Secrets synchronized (GeminiPhone123!)\n'));
         console.log(chalk.bold('📋 Next Steps:'));
-        console.log(chalk.gray('1. Record IVR announcement in FreePBX GUI'));
-        console.log(chalk.gray('   Admin → System Recordings → Add Recording'));
-        console.log(chalk.gray('2. Update IVR 7000 to use the recording'));
-        console.log(chalk.gray('   Applications → IVR → 7000 → Announcement'));
-        console.log(chalk.gray('3. Point your DID to IVR 7000'));
-        console.log(chalk.gray('   Connectivity → Inbound Routes → Set Destination\n'));
+        console.log(chalk.gray('1. Ensure all 9 extensions exist in FreePBX (create missing ones manually)'));
+        console.log(chalk.gray('2. Update local config.json if adding new devices'));
+        console.log(chalk.gray('3. Record IVR announcement in FreePBX GUI\n'));
 
     } catch (error) {
         spinner.fail('Provisioning failed');
@@ -200,5 +243,6 @@ async function checkPrerequisites() {
 // Main
 (async () => {
     await checkPrerequisites();
-    await provisionIVR();
+    await checkPrerequisites();
+    await provisionNebuchadnezzar();
 })().catch(console.error);
