@@ -1,0 +1,55 @@
+
+     ( 📞 Caller / Phone / PSTN )
+           |    ^
+           |    |
+           |    | (Outside World - SIP/RTP)
+           v    |
++==============================================+
+|             FreePBX (Asterisk)               |
+|  [ Inbound Route ]     [ Outbound  ]         |
+|         |                     ^              |
+|         v                     |              |
+|    (SIP Trunk: 127.0.0.1:5070)               |
++=========|=====================|==============+
+          |                     |
+          | (SIP Signaling)     | (Provisioning Loop)
+          v                     |
++-------------------------------|----------------------------------------------------+
+|  🐳 Docker Compose Stack: "gemini-phone"                                           |
+|                                                                                    |
+|  +--------------------+        (SIP)         +----------------------+              |
+|  |    Drachtio SRF    | <==================> |      Voice App       |              |
+|  |   (SIP Signaler)   |                      |    (Node.js Logic)   |              |
+|  +--------------------+                      +----------|-----------+              |
+|                                                         |                          |
+|           ^                                             | (Control via ESL)        |
+|           | (Internal SIP/RTP)                          v                          |
+|           v                                  +----------------------+              |
+|  +--------------------+                      |   Media Controller   |              |
+|  |     FreeSWITCH     | <-----(RTP Audio)--> |  (Stream Handling)   |              |
+|  |   (Media Server)   |                      +----------|-----------+              |
+|  +--------|-----------+                                 |                          |
+|           |                                             | (HTTP Streams)           |
+|           | (SSHFS Mount)                               v                          |
+|           v                                  +----------------------+              |
+| [ /var/spool/asterisk ] <====(Files)=======> |    AI Orchestrator   |              |
+|    (Remote Voicemail)                        |  (STT / TTS / LLM)   |              |
+|                                              +----------|-----------+              |
++---------------------------------------------------------|--------------------------+
+                                                          |
+                                                          | (HTTP JSON)
+                                                          v
+                                               +----------------------+
+                                               |  Gemini API Server   |
+                                               | (Local Context/Mem)  |
+                                               +----------|-----------+
+                                                          |
+                                                          v
+                                                 ( 🧠 Google Gemini )
+
+======================================================================================
+Legend:
+  ===   Control/API Flow
+  ---   Media/Data Flow
+  [ ]   Component
+======================================================================================

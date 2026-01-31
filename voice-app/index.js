@@ -65,6 +65,7 @@ var config = {
   http_port: parseInt(process.env.HTTP_PORT) || 3000,
   ws_port: parseInt(process.env.WS_PORT) || 3001,
   audio_dir: process.env.AUDIO_DIR || "/tmp/voice-audio",
+  instance_name: process.env.INSTANCE_NAME || null, // Optional friendly name like "Server 1" or "Main"
   n8n: {
     webhook_url: process.env.N8N_WEBHOOK_URL
   }

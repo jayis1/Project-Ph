@@ -120,9 +120,19 @@ async function conversationLoop(endpoint, dialog, callUuid, options, deviceConfi
   const deviceName = deviceConfig ? deviceConfig.name : 'Morpheus';
   const devicePrompt = deviceConfig ? deviceConfig.prompt : null;
   const voiceId = (deviceConfig && deviceConfig.voiceId) ? deviceConfig.voiceId : DEFAULT_VOICE_ID;
-  const greeting = deviceConfig && deviceConfig.name !== 'Morpheus'
-    ? "Hello! I'm " + deviceConfig.name + ". How can I help you today?"
-    : "Hello! I'm your server. How can I help you today?";
+
+  // Include instance name in greeting only if explicitly set
+  const instanceName = options.instanceName;
+  let greeting;
+  if (instanceName) {
+    greeting = deviceConfig && deviceConfig.name !== 'Morpheus'
+      ? "Hello! I'm " + deviceConfig.name + " on " + instanceName + ". How can I help you today?"
+      : "Hello! I'm your server on " + instanceName + ". How can I help you today?";
+  } else {
+    greeting = deviceConfig && deviceConfig.name !== 'Morpheus'
+      ? "Hello! I'm " + deviceConfig.name + ". How can I help you today?"
+      : "Hello! I'm your server. How can I help you today?";
+  }
 
   // Add system instruction for callback capability
   const systemContext = `\n[SYSTEM] Current Caller ID: ${callerId}.\nYou have the ability to call people back. If the user asks you to call a number or return a call, reply with: "I'll call them right now. 🗣️ CALLBACK: <number>" (replace <number> with the actual number).`;
