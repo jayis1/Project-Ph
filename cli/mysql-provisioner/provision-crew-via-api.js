@@ -14,6 +14,7 @@ import chalk from 'chalk';
 import { FreePBXClient } from '../lib/freepbx-api.js';
 
 const CREW = [
+    { name: 'Morpheus', extension: '9000', voiceId: 'pNInz6obpgDQGcFmaJgB', prompt: 'You are Morpheus from The Matrix. You are the wise leader and mentor who guides others to see the truth. You speak with calm authority and philosophical depth.' },
     { name: 'Neo', extension: '9002', voiceId: 'pNInz6obpgDQGcFmaJgB', prompt: 'You are Neo from The Matrix. You are The One...' },
     { name: 'Tank', extension: '9003', voiceId: 'pNInz6obpgDQGcFmaJgB', prompt: 'You are Tank from The Matrix...' },
     { name: 'Dozer', extension: '9004', voiceId: 'pNInz6obpgDQGcFmaJgB', prompt: 'You are Dozer from The Matrix...' },
