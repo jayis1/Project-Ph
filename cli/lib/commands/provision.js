@@ -9,7 +9,7 @@ import { FreePBXClient } from '../freepbx-api.js';
  * @param {object} options - Command options
  * @returns {Promise<void>}
  */
-export async function provisionCommand() {
+export async function provisionCommand(options = {}) {
     console.log(chalk.bold.cyan('\n⚙️  FreePBX Self-Provisioning\n'));
 
     const config = await loadConfig();
@@ -99,8 +99,10 @@ export async function provisionCommand() {
             }
         }
 
-        // Step 4: Provision Ring Group (if multiple devices)
-        if (config.devices.length > 1) {
+        // Step 4: Provision Ring Group (if --full flag or multiple devices)
+        const shouldProvisionGroup = options.full || config.devices.length > 1;
+
+        if (shouldProvisionGroup) {
             spinner.text = 'Provisioning Ring Group 8000 (All AIs)...';
             const extensions = config.devices.map(d => d.extension);
             const ringGroupExists = await client.ringGroupExists('8000');
@@ -112,11 +114,11 @@ export async function provisionCommand() {
                 'ringall'
             );
 
-            spinner.info(chalk.cyan(`Ring Group 8000 ${ringGroupExists ? 'updated' : 'created'} with ${extensions.length} AIs`));
+            spinner.info(chalk.cyan(`Ring Group 8000 ${ringGroupExists ? 'updated' : 'created'} with ${extensions.length} AI(s)`));
         }
 
-        // Step 5: Provision IVR Menu (if multiple devices)
-        if (config.devices.length > 1) {
+        // Step 5: Provision IVR Menu (if --full flag or multiple devices)
+        if (shouldProvisionGroup) {
             spinner.text = 'Provisioning IVR 7000 (AI Selection Menu)...';
             const ivrExists = await client.ivrExists('7000');
 

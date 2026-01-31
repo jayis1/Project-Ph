@@ -90,9 +90,10 @@ program
 program
   .command('provision')
   .description('Sync AI identity to FreePBX (Name, Caller ID, Routes)')
-  .action(async () => {
+  .option('--full', 'Provision IVR and Ring Group even with single device')
+  .action(async (options) => {
     try {
-      await provisionCommand();
+      await provisionCommand(options);
     } catch (error) {
       console.error(chalk.red(`\n✗ Provisioning failed: ${error.message}\n`));
       process.exit(1);
