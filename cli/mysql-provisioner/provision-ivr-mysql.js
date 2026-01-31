@@ -201,30 +201,40 @@ async function provisionNebuchadnezzar() {
                 timeout_time, timeout_recording, timeout_retry_recording,
                 timeout_loops, timeout_append_announce, timeout_destination,
                 invalid_loops, invalid_retry_recording, invalid_destination,
-                invalid_recording, retvm
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                invalid_recording, retvm, accept_pound_key
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         `, [
             IVR_ID,
             IVR_NAME,
             IVR_DESCRIPTION,
             '0',              // announcement (0 = none, you'll need to record one)
             'CHECKED',        // directdial enabled
-            '10',             // timeout_time (10 seconds)
+            '5',              // timeout_time (5 seconds - gives time to press #)
             '0',              // timeout_recording
             '0',              // timeout_retry_recording
             '3',              // timeout_loops
             '0',              // timeout_append_announce
-            'ext-local,8000,1', // timeout_destination (ring group 8000)
+            'ext-group,8000,1', // timeout_destination (ring group 8000)
             '3',              // invalid_loops
             '0',              // invalid_retry_recording
             'app-blackhole,hangup,1', // invalid_destination
             '0',              // invalid_recording
-            'CHECKED'         // retvm (return to IVR)
+            'CHECKED',        // retvm (return to IVR)
+            '1'               // accept_pound_key (allows pressing # to submit immediately)
         ]);
         spinner.succeed('Created IVR details');
 
         // Create IVR entries
         spinner.start('Creating IVR menu options...');
+
+        // Add option 0 for Morpheus (primary contact)
+        await connection.execute(`
+            INSERT INTO ivr_entries (ivr_id, selection, dest, ivr_ret)
+            VALUES (?, ?, ?, ?)
+        `, [IVR_ID, '0', 'from-did-direct,9000,1', '0']);
+        console.log(chalk.gray(`   Press 0 → Morpheus (9000) - Primary Contact`));
+
+        // Add options 1-9 for other crew members
         for (let i = 0; i < CREW.length; i++) {
             const member = CREW[i];
             const digit = (i + 1).toString();
@@ -235,19 +245,12 @@ async function provisionNebuchadnezzar() {
             `, [
                 IVR_ID,
                 digit,
-                `ext-local,${member.extension},1`,
+                `from-did-direct,${member.extension},1`,
                 '0'
             ]);
 
             console.log(chalk.gray(`   Press ${digit} → ${member.name} (${member.extension})`));
         }
-
-        // Add option 0 for ring group
-        await connection.execute(`
-            INSERT INTO ivr_entries (ivr_id, selection, dest, ivr_ret)
-            VALUES (?, ?, ?, ?)
-        `, [IVR_ID, '0', 'ext-local,8000,1', '0']);
-        console.log(chalk.gray(`   Press 0 → Ring All Crew (8000)`));
 
         spinner.succeed(`Created ${CREW.length + 1} IVR menu options`);
 
