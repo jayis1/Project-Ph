@@ -14,17 +14,6 @@ import chalk from 'chalk';
 const TRUNK_NAME = 'Outside World';
 const TRUNK_ID = 'outsideworld';
 
-// Redspot trunk settings from screenshot
-const TRUNK_CONFIG = {
-    username: '88707695',
-    auth_username: '88707695',
-    secret: 'Nk8qpwKM0fgf2',
-    sip_server: 'voice.redspot.dk',
-    sip_port: '5060',
-    context: 'from-pstn',
-    transport: 'udp'
-};
-
 async function createTrunk() {
     console.log(chalk.bold.cyan(`\n🌍 Creating "${TRUNK_NAME}" Trunk\n`));
 
@@ -39,6 +28,25 @@ async function createTrunk() {
         console.error(chalk.red('Error: FreePBX MySQL password not found'));
         process.exit(1);
     }
+
+    // Read trunk configuration from environment or config
+    const TRUNK_CONFIG = {
+        username: process.env.SIP_TRUNK_USERNAME || config.sipTrunk?.username || '88707695',
+        auth_username: process.env.SIP_TRUNK_USERNAME || config.sipTrunk?.username || '88707695',
+        secret: process.env.SIP_TRUNK_PASSWORD || config.sipTrunk?.password,
+        sip_server: process.env.SIP_TRUNK_SERVER || config.sipTrunk?.server || 'voice.redspot.dk',
+        sip_port: process.env.SIP_TRUNK_PORT || config.sipTrunk?.port || '5060',
+        context: 'from-pstn',
+        transport: 'udp'
+    };
+
+    if (!TRUNK_CONFIG.secret) {
+        console.error(chalk.red('Error: SIP trunk password not found!'));
+        console.error(chalk.yellow('Set SIP_TRUNK_PASSWORD environment variable or add to config.json:'));
+        console.error(chalk.gray('  "sipTrunk": { "password": "your_password" }'));
+        process.exit(1);
+    }
+
 
     const query = (sql) => {
         const cmd = `sshpass -p "${sshPassword}" ssh -o StrictHostKeyChecking=no root@${freepbxHost} "mysql -u freepbxuser -p${mysqlPassword} asterisk -e \\"${sql}\\""`;
