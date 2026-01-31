@@ -1,10 +1,10 @@
 #!/usr/bin/env node
 
 /**
- * Inspect extension 9001 structure via MySQL
+ * Inspect extension 9001 structure via SSH + MySQL
  */
 
-import mysql from 'mysql2/promise';
+import { execSync } from 'child_process';
 import { readFileSync } from 'fs';
 import { homedir } from 'os';
 import { join } from 'path';
@@ -14,9 +14,10 @@ async function inspect() {
     const configPath = join(homedir(), '.gemini-phone', 'config.json');
     const config = JSON.parse(readFileSync(configPath, 'utf8'));
 
-    // Extract MySQL credentials from FreePBX config
+    // Extract credentials
     const freepbxHost = config.sip?.domain || '172.16.1.143';
     const mysqlPassword = config.api?.freepbx?.mysqlPassword;
+    const sshPassword = config.voicemail?.sshPass || 'Jumbo2601';
 
     if (!mysqlPassword) {
         console.error('Error: FreePBX MySQL password not found in config.json');
@@ -24,25 +25,18 @@ async function inspect() {
         process.exit(1);
     }
 
-    const connection = await mysql.createConnection({
-        host: freepbxHost,
-        user: 'freepbxuser',
-        password: mysqlPassword,
-        database: 'asterisk'
-    });
+    // Run MySQL query via SSH
+    const cmd = `sshpass -p "${sshPassword}" ssh -o StrictHostKeyChecking=no root@${freepbxHost} 'mysql -u freepbxuser -p"'"'"'${mysqlPassword}'"'"'" asterisk -e "SELECT id, keyword, data FROM sip WHERE id='\"'\"'9001'\"'\"' ORDER BY keyword;"'`;
 
-    const [rows] = await connection.execute(
-        'SELECT id, keyword, data FROM sip WHERE id = ? ORDER BY keyword',
-        ['9001']
-    );
-
-    console.log('Extension 9001 structure:');
-    console.log('========================');
-    rows.forEach(row => {
-        console.log(`${row.keyword.padEnd(20)} = ${row.data}`);
-    });
-
-    await connection.end();
+    try {
+        const result = execSync(cmd, { encoding: 'utf8' });
+        console.log('Extension 9001 structure:');
+        console.log('========================');
+        console.log(result);
+    } catch (error) {
+        console.error('Error:', error.message);
+        process.exit(1);
+    }
 }
 
-inspect().catch(console.error);
+inspect();
