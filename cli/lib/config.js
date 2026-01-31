@@ -64,6 +64,7 @@ export async function loadConfig() {
     }
 
     if (env.FREEPBX_GRAPHQL_URL) {
+      // .env always takes precedence
       config.api = config.api || {};
       config.api.freepbx = config.api.freepbx || {};
       config.api.freepbx.apiUrl = env.FREEPBX_GRAPHQL_URL;
@@ -71,9 +72,7 @@ export async function loadConfig() {
       // Auto-generate GraphQL URL from FREEPBX_IP
       config.api = config.api || {};
       config.api.freepbx = config.api.freepbx || {};
-      if (!config.api.freepbx.apiUrl || config.api.freepbx.apiUrl.includes('istealyourdomain')) {
-        config.api.freepbx.apiUrl = `http://${env.FREEPBX_IP}:83/admin/api/api/gql`;
-      }
+      config.api.freepbx.apiUrl = `http://${env.FREEPBX_IP}:83/admin/api/api/gql`;
     }
 
     // Merge server settings from .env
