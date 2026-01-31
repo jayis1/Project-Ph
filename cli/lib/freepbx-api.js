@@ -239,7 +239,75 @@ mutation($input: addInboundRouteInput!) {
     }
 
     /**
-     * Create a Ring Group
+     * Check if a Ring Group exists
+     * @param {string} grpnum - Ring Group number
+     * @returns {Promise<boolean>} True if exists
+     */
+    async ringGroupExists(grpnum) {
+        try {
+            const query = `query { fetchAllRingGroups { grpnum } }`;
+            const res = await this.query(query);
+            const groups = res?.fetchAllRingGroups || [];
+            return groups.some(g => g.grpnum === grpnum);
+        } catch (error) {
+            console.warn('Could not check ring group existence:', error.message);
+            return false;
+        }
+    }
+
+    /**
+     * Check if an IVR exists
+     * @param {string} id - IVR ID
+     * @returns {Promise<boolean>} True if exists
+     */
+    async ivrExists(id) {
+        try {
+            const query = `query { fetchAllIVRs { id } }`;
+            const res = await this.query(query);
+            const ivrs = res?.fetchAllIVRs || [];
+            return ivrs.some(i => i.id === id);
+        } catch (error) {
+            console.warn('Could not check IVR existence:', error.message);
+            return false;
+        }
+    }
+
+    /**
+     * Create or update a Ring Group
+     * @param {string} grpnum - Ring Group number (e.g., "8000")
+     * @param {string} description - Ring Group description
+     * @param {string[]} extensionList - Array of extensions to include
+     * @param {string} strategy - Ring strategy: "ringall", "hunt", "memoryhunt", "firstavailable", "firstnotonphone"
+     * @returns {Promise<Object>} Mutation result
+     */
+    async createOrUpdateRingGroup(grpnum, description, extensionList, strategy = 'ringall') {
+        const exists = await this.ringGroupExists(grpnum);
+        const input = {
+            grpnum,
+            description,
+            strategy,
+            grplist: extensionList.join('-'), // Extensions separated by dashes
+            grptime: '20', // Ring time in seconds
+            grppre: '', // Prefix
+            annmsg_id: '0', // No announcement
+            postdest: 'app-blackhole,hangup,1', // Destination if no answer
+            ringing: true // Play ringing tone
+        };
+
+        const mutationType = exists ? 'updateRingGroup' : 'addRingGroup';
+        const mutation = `
+mutation($input: ${mutationType}Input!) {
+    ${mutationType}(input: $input) {
+        status
+        message
+    }
+}
+`;
+        return this.query(mutation, { input });
+    }
+
+    /**
+     * Create a Ring Group (legacy - use createOrUpdateRingGroup instead)
      * @param {string} grpnum - Ring Group number (e.g., "8000")
      * @param {string} description - Ring Group description
      * @param {string[]} extensionList - Array of extensions to include
@@ -271,7 +339,55 @@ mutation($input: addRingGroupInput!) {
     }
 
     /**
-     * Create an IVR menu
+     * Create or update an IVR menu
+     * @param {string} id - IVR ID/number (e.g., "7000")
+     * @param {string} name - IVR name
+     * @param {string} description - IVR description
+     * @param {string} announcement - Recording ID for the announcement
+     * @param {Object} entries - IVR entries mapping (e.g., {"1": "ext-local,9000,1", "2": "ext-local,9001,1"})
+     * @returns {Promise<Object>} Mutation result
+     */
+    async createOrUpdateIVR(id, name, description, announcement, entries) {
+        const exists = await this.ivrExists(id);
+        const input = {
+            id,
+            name,
+            description,
+            announcement,
+            directdial: 'CHECKED', // Allow direct dial
+            invalid_loops: '3',
+            invalid_retry_recording: announcement,
+            invalid_destination: 'app-blackhole,hangup,1',
+            invalid_recording: '0',
+            retvm: 'CHECKED',
+            timeout_time: '10',
+            timeout_recording: '0',
+            timeout_retry_recording: announcement,
+            timeout_loops: '3',
+            timeout_append_announce: false,
+            timeout_destination: 'app-blackhole,hangup,1',
+            // Convert entries object to the format FreePBX expects
+            entries: Object.entries(entries).map(([digit, destination]) => ({
+                selection: digit,
+                dest: destination,
+                ivr_ret: '0'
+            }))
+        };
+
+        const mutationType = exists ? 'updateIVR' : 'addIVR';
+        const mutation = `
+mutation($input: ${mutationType}Input!) {
+    ${mutationType}(input: $input) {
+        status
+        message
+    }
+}
+`;
+        return this.query(mutation, { input });
+    }
+
+    /**
+     * Create an IVR menu (legacy - use createOrUpdateIVR instead)
      * @param {string} id - IVR ID/number (e.g., "7000")
      * @param {string} name - IVR name
      * @param {string} description - IVR description

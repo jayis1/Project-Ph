@@ -31,19 +31,24 @@ async function main() {
     console.log('🔧 Provisioning IVR and Ring Group...\n');
 
     try {
-        // Step 1: Create Ring Group (8000) - All AIs
-        console.log('📞 Creating Ring Group 8000 (All AI Assistants)...');
+        // Step 1: Create or Update Ring Group (8000) - All AIs
+        console.log('📞 Checking Ring Group 8000...');
+        const ringGroupExists = await client.ringGroupExists('8000');
+        console.log(ringGroupExists ? '   Found existing Ring Group 8000, updating...' : '   Creating new Ring Group 8000...');
+
         const extensions = config.devices.map(d => d.extension);
-        await client.createRingGroup(
+        await client.createOrUpdateRingGroup(
             '8000',
             'All AI Assistants',
             extensions,
             'ringall' // All ring at once
         );
-        console.log('✅ Ring Group 8000 created\n');
+        console.log(`✅ Ring Group 8000 ${ringGroupExists ? 'updated' : 'created'}\n`);
 
-        // Step 2: Create IVR (7000) - AI Selection Menu
-        console.log('🎙️  Creating IVR 7000 (AI Selection Menu)...');
+        // Step 2: Create or Update IVR (7000) - AI Selection Menu
+        console.log('🎙️  Checking IVR 7000...');
+        const ivrExists = await client.ivrExists('7000');
+        console.log(ivrExists ? '   Found existing IVR 7000, updating...' : '   Creating new IVR 7000...');
 
         // Build IVR entries dynamically from devices
         const ivrEntries = {};
@@ -54,14 +59,14 @@ async function main() {
         // Add option 0 for ring group
         ivrEntries['0'] = 'ext-local,8000,1';
 
-        await client.createIVR(
+        await client.createOrUpdateIVR(
             '7000',
             'AI Selection Menu',
             'Choose your AI assistant',
             '0', // Announcement recording ID (0 = none, you'll need to record one)
             ivrEntries
         );
-        console.log('✅ IVR 7000 created\n');
+        console.log(`✅ IVR 7000 ${ivrExists ? 'updated' : 'created'}\n`);
 
         // Step 3: Apply configuration
         console.log('⚙️  Applying FreePBX configuration...');
