@@ -99,7 +99,48 @@ export async function provisionCommand() {
             }
         }
 
-        // Step 4: Apply Config
+        // Step 4: Provision Ring Group (if multiple devices)
+        if (config.devices.length > 1) {
+            spinner.text = 'Provisioning Ring Group 8000 (All AIs)...';
+            const extensions = config.devices.map(d => d.extension);
+            const ringGroupExists = await client.ringGroupExists('8000');
+
+            await client.createOrUpdateRingGroup(
+                '8000',
+                'All AI Assistants',
+                extensions,
+                'ringall'
+            );
+
+            spinner.info(chalk.cyan(`Ring Group 8000 ${ringGroupExists ? 'updated' : 'created'} with ${extensions.length} AIs`));
+        }
+
+        // Step 5: Provision IVR Menu (if multiple devices)
+        if (config.devices.length > 1) {
+            spinner.text = 'Provisioning IVR 7000 (AI Selection Menu)...';
+            const ivrExists = await client.ivrExists('7000');
+
+            // Build IVR entries dynamically
+            const ivrEntries = {};
+            config.devices.forEach((device, index) => {
+                const digit = (index + 1).toString();
+                ivrEntries[digit] = `ext-local,${device.extension},1`;
+            });
+            // Option 0 rings all AIs
+            ivrEntries['0'] = 'ext-local,8000,1';
+
+            await client.createOrUpdateIVR(
+                '7000',
+                'AI Selection Menu',
+                'Choose your AI assistant',
+                '0', // No announcement (you'll need to record one)
+                ivrEntries
+            );
+
+            spinner.info(chalk.cyan(`IVR 7000 ${ivrExists ? 'updated' : 'created'} with ${config.devices.length} options`));
+        }
+
+        // Step 6: Apply Config
         spinner.text = 'Applying configuration...';
         await client.applyConfig();
 
