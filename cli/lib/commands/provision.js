@@ -141,8 +141,10 @@ export async function provisionCommand(options = {}) {
             }
 
             // IVR instructions or automation
-            spinner.info(chalk.cyan('ℹ️  To provision IVR 7000:'));
-            spinner.info(chalk.gray('   Run: cd cli/mysql-provisioner && node provision-ivr-mysql.js'));
+            spinner.info(chalk.cyan('ℹ️  To provision IVR 7000 (MySQL):'));
+            spinner.info(chalk.gray('   cd cli/mysql-provisioner'));
+            spinner.info(chalk.gray('   npm install'));
+            spinner.info(chalk.gray('   node provision-ivr-mysql.js'));
         } else if (config.devices.length > 1) {
             // Standard multi-device logic (local devices only)
             // ... existing logic ...
