@@ -25,8 +25,8 @@ async function inspect() {
         process.exit(1);
     }
 
-    // Run MySQL query via SSH
-    const cmd = `sshpass -p "${sshPassword}" ssh -o StrictHostKeyChecking=no root@${freepbxHost} 'mysql -u freepbxuser -p"'"'"'${mysqlPassword}'"'"'" asterisk -e "SELECT id, keyword, data FROM sip WHERE id='\"'\"'9001'\"'\"' ORDER BY keyword;"'`;
+    // Run MySQL query via SSH - using the exact escaping pattern that works
+    const cmd = `sshpass -p "${sshPassword}" ssh -o StrictHostKeyChecking=no root@${freepbxHost} "mysql -u freepbxuser -p'\"'\"'${mysqlPassword}'\"'\"' asterisk -e \\"SELECT id, keyword, data FROM sip WHERE id='9001' ORDER BY keyword;\\""`;
 
     try {
         const result = execSync(cmd, { encoding: 'utf8' });
@@ -35,6 +35,9 @@ async function inspect() {
         console.log(result);
     } catch (error) {
         console.error('Error:', error.message);
+        if (error.stderr) {
+            console.error('MySQL Error:', error.stderr.toString());
+        }
         process.exit(1);
     }
 }
