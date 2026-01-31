@@ -259,6 +259,11 @@ echo "Installing dependencies..."
 cd "$INSTALL_DIR/cli"
 npm install --silent --production
 
+# Install API server dependencies
+cd "$INSTALL_DIR/gemini-api-server"
+npm install --silent --production
+cd "$INSTALL_DIR"
+
 # Create symlink
 echo ""
 if [ -L "$BIN_DIR/gemini-phone" ]; then
