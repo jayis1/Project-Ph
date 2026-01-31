@@ -248,7 +248,8 @@ mutation($input: addInboundRouteInput!) {
             const query = `query { fetchAllRingGroups { ringgroups { groupNumber } } }`;
             const res = await this.query(query);
             const ringgroups = res?.fetchAllRingGroups?.ringgroups || [];
-            return ringgroups.some(rg => rg.groupNumber === grpnum);
+            // API returns number, input is string - use loose comparison or String()
+            return ringgroups.some(rg => String(rg.groupNumber) === String(grpnum));
         } catch (error) {
             console.warn('Could not check Ring Group existence:', error.message);
             return false;
