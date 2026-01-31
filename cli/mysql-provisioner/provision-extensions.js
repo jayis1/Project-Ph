@@ -15,13 +15,13 @@ import crypto from 'crypto';
 import chalk from 'chalk';
 
 const CREW = [
-    { name: 'Neo', extension: '9002', voiceId: '21m00Tcm4TlvDq8ikWAM' },
-    { name: 'Tank', extension: '9003', voiceId: '21m00Tcm4TlvDq8ikWAM' },
-    { name: 'Dozer', extension: '9004', voiceId: '21m00Tcm4TlvDq8ikWAM' },
-    { name: 'Apoc', extension: '9005', voiceId: '21m00Tcm4TlvDq8ikWAM' },
-    { name: 'Switch', extension: '9006', voiceId: '21m00Tcm4TlvDq8ikWAM' },
-    { name: 'Mouse', extension: '9007', voiceId: '21m00Tcm4TlvDq8ikWAM' },
-    { name: 'Cypher', extension: '9008', voiceId: '21m00Tcm4TlvDq8ikWAM' }
+    { name: 'Neo', extension: '9002', voiceId: 'pNInz6obpgDQGcFmaJgB' },        // Adam (male)
+    { name: 'Tank', extension: '9003', voiceId: 'pNInz6obpgDQGcFmaJgB' },       // Adam (male)
+    { name: 'Dozer', extension: '9004', voiceId: 'pNInz6obpgDQGcFmaJgB' },      // Adam (male)
+    { name: 'Apoc', extension: '9005', voiceId: 'pNInz6obpgDQGcFmaJgB' },       // Adam (male)
+    { name: 'Switch', extension: '9006', voiceId: '21m00Tcm4TlvDq8ikWAM' },     // Rachel (female)
+    { name: 'Mouse', extension: '9007', voiceId: 'pNInz6obpgDQGcFmaJgB' },      // Adam (male)
+    { name: 'Cypher', extension: '9008', voiceId: 'pNInz6obpgDQGcFmaJgB' }      // Adam (male)
 ];
 
 const SIP_SECRET = 'GeminiPhone123!';
