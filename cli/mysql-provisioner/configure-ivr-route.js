@@ -17,7 +17,7 @@ import chalk from 'chalk';
 const IVR_ID = '7000';
 const IVR_NAME = 'Nebuchadnezzar Crew';
 const INBOUND_DID = '88707695';
-const TRUNK_NAME = 'redspot';
+const TRUNK_NAME = 'Redspot';
 
 const DIGIT_MAPPINGS = [
     { digit: '0', extension: '9000', name: 'Morpheus' },
