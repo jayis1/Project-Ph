@@ -54,21 +54,61 @@ echo "  - 13 IVRs (3-level maze: Main → Departments → Phone Lines)"
 echo "  - 9 Extensions (Nebuchadnezzar crew: 9000-9008)"
 echo ""
 
-# Run provisioner directly with detected MySQL password
-node -e "
-import('./lib/freepbx-provisioner.js').then(async ({ provisionFreePBX }) => {
-  try {
-    await provisionFreePBX({
-      mysqlPassword: '$MYSQL_PASSWORD',
-      skipTrunks: true
-    });
-    console.log('\\n✅ Provisioning complete!');
-  } catch (error) {
-    console.error('\\n❌ Provisioning failed:', error.message);
+# Create a temporary provisioning script
+cat > /tmp/provision.mjs << 'PROVISION_SCRIPT'
+import { provisionFreePBX } from './lib/freepbx-provisioner.js';
+
+const mysqlPassword = process.argv[2];
+
+const config = {
+  freepbx: {
+    host: 'localhost',
+    sshUser: 'root',
+    sshPassword: '', // Not needed for localhost
+    mysqlUser: 'freepbxuser',
+    mysqlPassword: mysqlPassword,
+    mysqlDatabase: 'asterisk'
+  }
+};
+
+const options = {
+  skipTrunks: true,
+  skipInfrastructure: false,
+  skipExtensions: false,
+  skipIVR: false
+};
+
+const progressCallback = (progress) => {
+  if (progress.status === 'running') {
+    console.log(`⏳ ${progress.message}`);
+  } else if (progress.status === 'success') {
+    console.log(`✅ ${progress.message}`);
+  } else if (progress.status === 'error') {
+    console.error(`❌ ${progress.message}`);
+  }
+};
+
+try {
+  console.log('🚀 Starting FreePBX provisioning...\n');
+  const result = await provisionFreePBX(config, options, progressCallback);
+  
+  if (result.success) {
+    console.log('\n✅ Provisioning completed successfully!');
+  } else {
+    console.error('\n❌ Provisioning failed:', result.error);
     process.exit(1);
   }
-});
-"
+} catch (error) {
+  console.error('\n❌ Provisioning error:', error.message);
+  process.exit(1);
+}
+PROVISION_SCRIPT
+
+# Run the provisioning script
+node /tmp/provision.mjs "$MYSQL_PASSWORD"
+
+# Cleanup
+rm /tmp/provision.mjs
 
 echo ""
 echo "🎉 IVR Maze provisioning complete!"
