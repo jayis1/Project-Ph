@@ -27,7 +27,7 @@ async function getMySQLConfig() {
     }
 
     return {
-        host: config.api?.freepbx?.mysqlHost || 'localhost', // Use localhost when running on FreePBX server
+        host: config.api?.freepbx?.mysqlHost || '172.16.1.63', // FreePBX server IP
         port: 3306,
         user: config.api?.freepbx?.mysqlUser || 'freepbxuser',
         password: config.api?.freepbx?.mysqlPassword || 'mTbnCp0W7kqo',
