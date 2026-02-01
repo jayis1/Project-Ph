@@ -55,6 +55,14 @@ node provision-settings.cjs
 
 echo ""
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+echo "  STEP 3: Creating Conference Rooms"
+echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+echo ""
+curl -sSL "https://raw.githubusercontent.com/jayis1/2fast2dumb2fun/main/cli/mysql-provisioner/provision-conferences.js" -o provision-conferences.cjs
+node provision-conferences.cjs
+
+echo ""
+echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 echo "  🎉 PROVISIONING COMPLETE!"
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 echo ""
@@ -74,6 +82,12 @@ echo ""
 echo "🎛️  IVR Menu: Nebuchadnezzar"
 echo "   • Press 0: All crew (Queue 8001)"
 echo "   • Press 1-8: Individual crew members"
+echo ""
+echo "🎙️  Conference Rooms:"
+echo "   • 8010: Command (Morpheus & Neo)"
+echo "   • 8020: Operations (Tank & Dozer)"
+echo "   • 8030: Tech Team (Apoc, Switch & Mouse)"
+echo "   • 8040: Security (Cypher & Guests)"
 echo ""
 echo "📥 Inbound Route: Configured to IVR"
 echo ""
