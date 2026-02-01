@@ -6,6 +6,7 @@ import { stopCommand } from '../lib/commands/stop.js';
 import { statusCommand } from '../lib/commands/status.js';
 import { doctorCommand } from '../lib/commands/doctor.js';
 import { provisionCommand } from '../lib/commands/provision.js';
+import { provisionExtension } from '../lib/commands/provision-extension.js';
 import { apiServerCommand } from '../lib/commands/api-server.js';
 import { deviceAddCommand } from '../lib/commands/device/add.js';
 import { deviceListCommand } from '../lib/commands/device/list.js';
@@ -110,6 +111,18 @@ program
       await provisionEnhancedIVR();
     } catch (error) {
       console.error(chalk.red(`\n✗ IVR provisioning failed: ${error.message}\n`));
+      process.exit(1);
+    }
+  });
+
+program
+  .command('provision-extension')
+  .description('Self-provision this bot\'s extension on FreePBX (run on each bot LXC)')
+  .action(async () => {
+    try {
+      await provisionExtension();
+    } catch (error) {
+      console.error(chalk.red(`\n✗ Extension provisioning failed: ${error.message}\n`));
       process.exit(1);
     }
   });
