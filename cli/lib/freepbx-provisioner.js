@@ -227,7 +227,7 @@ async function createIVR(pool, id, name, description, entries) {
             invalid_destination, invalid_recording, retvm, timeout_time, timeout_recording, timeout_retry_recording, 
             timeout_destination, timeout_loops, timeout_append_announce, invalid_append_announce, timeout_ivr_ret, 
             invalid_ivr_ret, timeout_enabled, alertinfo, rvolume, strict_dial_timeout, accept_pound_key) 
-         VALUES (?, ?, ?, NULL, 'CHECKED', 3, '', 'ivr,1,1', '', '', 10, '', '', 'ivr,1,1', 3, 0, 0, 0, 0, '', '', '', 2, 0)`,
+         VALUES (?, ?, ?, NULL, 'CHECKED', 3, '', 'app-blackhole,hangup,1', '', '', 10, '', '', 'app-blackhole,hangup,1', 3, 0, 0, 0, 0, '', '', '', 2, 0)`,
         [id, name, description]
     );
 
