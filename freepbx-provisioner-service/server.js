@@ -387,7 +387,7 @@ app.get('/ivr', async (req, res) => {
     try {
         // Get IVR digit mappings
         const [mappingRows] = await pool.query(
-            'SELECT selection, dest FROM ivr_details WHERE ivr_id = 1 ORDER BY selection'
+            'SELECT selection, dest FROM ivr_entries WHERE ivr_id = 1 ORDER BY selection'
         );
 
         if (mappingRows.length === 0) {
@@ -433,19 +433,12 @@ app.get('/trunk', async (req, res) => {
 
         const trunkNumber = rows.length > 0 ? rows[0].data : null;
 
-        if (!trunkNumber) {
-            return res.status(404).json({
-                success: false,
-                error: 'Trunk not configured'
-            });
-        }
-
         // Get trunk server
         const [serverRows] = await pool.query(
             'SELECT data FROM sip WHERE id = "outsideworld" AND keyword = "host"'
         );
 
-        const trunkServer = serverRows.length > 0 ? serverRows[0].data : 'unknown';
+        const trunkServer = serverRows.length > 0 ? serverRows[0].data : null;
 
         res.json({
             success: true,
@@ -453,7 +446,8 @@ app.get('/trunk', async (req, res) => {
                 id: 'outsideworld',
                 number: trunkNumber,
                 server: trunkServer,
-                port: 5060
+                port: 5060,
+                configured: trunkNumber !== null
             }
         });
     } catch (error) {
