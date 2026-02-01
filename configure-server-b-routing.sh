@@ -25,7 +25,7 @@ echo "   Server B (this machine): $(hostname -I | awk '{print $1}')"
 echo ""
 
 # Get MySQL password from FreePBX config
-MYSQL_PASSWORD=$(awk -F'"' '/AMPDBPASS/{print $2}' /etc/freepbx.conf)
+MYSQL_PASSWORD=$(awk -F'"' '/AMPDBPASS/{print $4}' /etc/freepbx.conf)
 
 if [ -z "$MYSQL_PASSWORD" ]; then
     echo "❌ Could not detect MySQL password from FreePBX config"
