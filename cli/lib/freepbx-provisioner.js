@@ -144,10 +144,10 @@ export async function provisionExtensions(config, pool, progressCallback = () =>
             });
 
 
-            // Check if extension exists (in PJSIP tables)
+            // Check if extension exists (in PJSIP table)
             const checkResult = await executeMySQLQuery(
                 pool,
-                'SELECT COUNT(*) as count FROM ps_endpoints WHERE id = ?',
+                'SELECT COUNT(*) as count FROM pjsip WHERE id = ?',
                 [member.extension]
             );
 
@@ -172,31 +172,33 @@ export async function provisionExtensions(config, pool, progressCallback = () =>
                 [member.extension, `PJSIP/${member.extension}`, member.extension, member.name]
             );
 
-            // Create PJSIP endpoint
-            await executeMySQLQuery(
-                pool,
-                `INSERT INTO ps_endpoints (id, transport, aors, auth, context, disallow, allow, direct_media, 
-                    rtp_symmetric, force_rport, rewrite_contact, mailboxes, callerid)
-                 VALUES (?, 'transport-udp', ?, ?, 'from-internal', 'all', 'ulaw,alaw', 'yes', 
-                    'yes', 'yes', 'yes', ?, ?)`,
-                [member.extension, member.extension, member.extension, `${member.extension}@device`, `${member.name} (AI) <${member.extension}>`]
-            );
+            // Create PJSIP extension entries in pjsip table
+            const pjsipFields = [
+                { keyword: 'account', data: member.extension },
+                { keyword: 'callerid', data: `${member.name} (AI) <${member.extension}>` },
+                { keyword: 'context', data: 'from-internal' },
+                { keyword: 'dial', data: `PJSIP/${member.extension}` },
+                { keyword: 'mailbox', data: `${member.extension}@device` },
+                { keyword: 'secret', data: 'GeminiPhone123!' },
+                { keyword: 'sipdriver', data: 'chan_pjsip' },
+                { keyword: 'transport', data: 'transport-udp' },
+                { keyword: 'disallow', data: 'all' },
+                { keyword: 'allow', data: 'ulaw,alaw' },
+                { keyword: 'direct_media', data: 'yes' },
+                { keyword: 'rtp_symmetric', data: 'yes' },
+                { keyword: 'force_rport', data: 'yes' },
+                { keyword: 'rewrite_contact', data: 'yes' },
+                { keyword: 'max_contacts', data: '1' },
+                { keyword: 'qualify_frequency', data: '60' }
+            ];
 
-            // Create PJSIP AOR
-            await executeMySQLQuery(
-                pool,
-                `INSERT INTO ps_aors (id, max_contacts, qualify_frequency, remove_existing)
-                 VALUES (?, 1, 60, 'yes')`,
-                [member.extension]
-            );
-
-            // Create PJSIP Auth
-            await executeMySQLQuery(
-                pool,
-                `INSERT INTO ps_auths (id, auth_type, password, username)
-                 VALUES (?, 'userpass', 'GeminiPhone123!', ?)`,
-                [member.extension, member.extension]
-            );
+            for (const field of pjsipFields) {
+                await executeMySQLQuery(
+                    pool,
+                    'INSERT INTO pjsip (id, keyword, data, flags) VALUES (?, ?, ?, 0)',
+                    [member.extension, field.keyword, field.data]
+                );
+            }
 
             results.created++;
         }
@@ -322,46 +324,32 @@ export async function provisionTrunk(config, pool, progressCallback = () => { })
             [trunkId, trunk.server || 'voice.redspot.dk']
         );
 
-        // Create PJSIP endpoint
-        await executeMySQLQuery(
-            pool,
-            `INSERT INTO ps_endpoints (id, transport, aors, auth, outbound_auth, context, disallow, allow, from_user, from_domain)
-       VALUES (?, 'transport-udp', ?, ?, ?, 'from-pstn', 'all', 'ulaw,alaw', ?, ?)
-       ON DUPLICATE KEY UPDATE from_user = VALUES(from_user), from_domain = VALUES(from_domain)`,
-            [trunkId, trunkId, trunkId, trunkId, trunk.username, trunk.server || 'voice.redspot.dk']
-        );
+        // Create trunk PJSIP configuration in pjsip table
+        const trunkPjsipFields = [
+            { keyword: 'type', data: 'endpoint' },
+            { keyword: 'transport', data: 'transport-udp' },
+            { keyword: 'aors', data: trunkId },
+            { keyword: 'auth', data: trunkId },
+            { keyword: 'outbound_auth', data: trunkId },
+            { keyword: 'context', data: 'from-pstn' },
+            { keyword: 'disallow', data: 'all' },
+            { keyword: 'allow', data: 'ulaw,alaw' },
+            { keyword: 'from_user', data: trunk.username },
+            { keyword: 'from_domain', data: trunk.server || 'voice.redspot.dk' },
+            { keyword: 'contact', data: `sip:${trunk.server || 'voice.redspot.dk'}:${trunk.port || 5060}` },
+            { keyword: 'auth_type', data: 'userpass' },
+            { keyword: 'username', data: trunk.username },
+            { keyword: 'password', data: trunk.password }
+        ];
 
-        // Create AOR
-        await executeMySQLQuery(
-            pool,
-            `INSERT INTO ps_aors (id, contact, qualify_frequency)
-       VALUES (?, ?, 60)
-       ON DUPLICATE KEY UPDATE contact = VALUES(contact)`,
-            [trunkId, `sip:${trunk.server || 'voice.redspot.dk'}:${trunk.port || 5060}`]
-        );
-
-        // Create Auth
-        await executeMySQLQuery(
-            pool,
-            `INSERT INTO ps_auths (id, auth_type, username, password)
-       VALUES (?, 'userpass', ?, ?)
-       ON DUPLICATE KEY UPDATE username = VALUES(username), password = VALUES(password)`,
-            [trunkId, trunk.username, trunk.password]
-        );
-
-        // Create Registration
-        await executeMySQLQuery(
-            pool,
-            `INSERT INTO ps_registrations (id, server_uri, client_uri, auth_rejection_permanent, outbound_auth)
-       VALUES (?, ?, ?, 'yes', ?)
-       ON DUPLICATE KEY UPDATE server_uri = VALUES(server_uri), client_uri = VALUES(client_uri)`,
-            [
-                trunkId,
-                `sip:${trunk.server || 'voice.redspot.dk'}:${trunk.port || 5060}`,
-                `sip:${trunk.username}@${trunk.server || 'voice.redspot.dk'}`,
-                trunkId
-            ]
-        );
+        for (const field of trunkPjsipFields) {
+            await executeMySQLQuery(
+                pool,
+                `INSERT INTO pjsip (id, keyword, data, flags) VALUES (?, ?, ?, 0)
+                 ON DUPLICATE KEY UPDATE data = VALUES(data)`,
+                [trunkId, field.keyword, field.data]
+            );
+        }
 
         // Create inbound route to IVR (using IVR ID 1)
         await executeMySQLQuery(
