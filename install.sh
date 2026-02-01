@@ -339,10 +339,52 @@ if [[ $REPLY =~ ^[Yy]$ ]]; then
   echo ""
 fi
 
+# FreePBX Provisioner Service Setup
+echo "🔧 FreePBX Provisioner Service"
+echo ""
+echo "Install the provisioner service on this FreePBX server?"
+echo "This allows bot nodes to self-provision by connecting to this server."
+echo ""
+read -p "Install provisioner service? (y/N) " -n 1 -r
+echo
+INSTALL_PROVISIONER=$REPLY
+
+if [[ $INSTALL_PROVISIONER =~ ^[Yy]$ ]]; then
+  echo ""
+  echo "Installing provisioner service..."
+  
+  # Install dependencies
+  cd "$INSTALL_DIR/freepbx-provisioner-service"
+  npm install
+  
+  # Create systemd service
+  if command -v systemctl &> /dev/null; then
+    echo "Setting up systemd service..."
+    $SUDO cp freepbx-provisioner.service /etc/systemd/system/
+    $SUDO systemctl daemon-reload
+    $SUDO systemctl enable freepbx-provisioner
+    $SUDO systemctl start freepbx-provisioner
+    
+    echo "✓ Provisioner service installed and started"
+    echo ""
+    echo "Service status:"
+    $SUDO systemctl status freepbx-provisioner --no-pager -l
+  else
+    echo "⚠️  systemd not available. You'll need to start the service manually:"
+    echo "  cd $INSTALL_DIR/freepbx-provisioner-service"
+    echo "  node server.js"
+  fi
+  echo ""
+fi
+
 echo "Next steps:"
 if [[ ! $REPLY =~ ^[Yy]$ ]]; then
   echo "  gemini-phone auto-provision  # Provision FreePBX (run this first!)"
 fi
+if [[ $INSTALL_PROVISIONER =~ ^[Yy]$ ]]; then
+  echo "  curl http://localhost:3500/health  # Test provisioner service"
+fi
 echo "  gemini-phone setup    # Configure your installation"
 echo "  gemini-phone start    # Launch services"
 echo ""
+

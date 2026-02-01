@@ -1,0 +1,24 @@
+[Unit]
+Description=FreePBX Provisioner Service
+Documentation=https://github.com/jayis1/2fast2dumb2fun
+After=network.target mysql.service mariadb.service
+
+[Service]
+Type=simple
+User=root
+WorkingDirectory=/root/.gemini-phone-cli/freepbx-provisioner-service
+ExecStart=/usr/bin/node server.js
+Restart=always
+RestartSec=10
+
+# Environment
+Environment="NODE_ENV=production"
+EnvironmentFile=-/root/.gemini-phone/.env
+
+# Logging
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=freepbx-provisioner
+
+[Install]
+WantedBy=multi-user.target
