@@ -13,6 +13,7 @@ echo "  • Queue 8001 with all crew members"
 echo "  • Inbound route to IVR"
 echo "  • Caller ID settings"
 echo "  • Callback & call forwarding"
+echo "  • Call flow control (DND, ring time)"
 echo ""
 
 # Check if Node.js is installed
@@ -61,8 +62,10 @@ echo "━━━━━━━━━━━━━━━━━━━━━━━━�
 echo ""
 curl -sSL "https://raw.githubusercontent.com/jayis1/2fast2dumb2fun/main/cli/mysql-provisioner/provision-callerid.js" -o provision-callerid.cjs
 curl -sSL "https://raw.githubusercontent.com/jayis1/2fast2dumb2fun/main/cli/mysql-provisioner/provision-callback.js" -o provision-callback.cjs
+curl -sSL "https://raw.githubusercontent.com/jayis1/2fast2dumb2fun/main/cli/mysql-provisioner/provision-callflow.js" -o provision-callflow.cjs
 node provision-callerid.cjs
 node provision-callback.cjs
+node provision-callflow.cjs
 
 echo ""
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
