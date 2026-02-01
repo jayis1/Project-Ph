@@ -23,7 +23,7 @@ TEMP_DIR=$(mktemp -d)
 cd "$TEMP_DIR"
 
 echo "📥 Downloading provisioner..."
-curl -sSL https://raw.githubusercontent.com/jayis1/2fast2dumb2fun/main/cli/mysql-provisioner/provision-enhanced-ivr.js -o provision-enhanced-ivr.js
+curl -sSL https://raw.githubusercontent.com/jayis1/2fast2dumb2fun/main/cli/mysql-provisioner/provision-ivr-standalone.js -o provision-ivr-standalone.js
 
 echo "📦 Installing dependencies..."
 npm init -y > /dev/null 2>&1
@@ -31,7 +31,7 @@ npm install mysql2 chalk ora > /dev/null 2>&1
 
 echo "🔧 Running provisioner..."
 echo ""
-node provision-enhanced-ivr.js
+node provision-ivr-standalone.js
 
 echo ""
 echo "🔄 Reloading FreePBX..."

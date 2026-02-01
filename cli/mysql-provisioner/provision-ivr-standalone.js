@@ -1,14 +1,14 @@
 #!/usr/bin/env node
 
 /**
- * FreePBX Enhanced IVR Provisioner (Standalone)
+ * FreePBX Enhanced IVR Provisioner (Standalone - CommonJS)
  * Run this directly on the FreePBX server
  * No dependencies on gemini-phone CLI
  */
 
-import mysql from 'mysql2/promise';
-import { exec } from 'child_process';
-import { promisify } from 'util';
+const mysql = require('mysql2/promise');
+const { exec } = require('child_process');
+const { promisify } = require('util');
 
 const execAsync = promisify(exec);
 
