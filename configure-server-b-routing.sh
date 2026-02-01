@@ -39,7 +39,7 @@ echo ""
 echo "⏳ Creating SIP trunk to Server A..."
 mysql -u freepbxuser -p"$MYSQL_PASSWORD" asterisk << EOF
 -- Create trunk entry
-INSERT INTO trunks (tech, channelid, name, outcid, keepcid, maxchans, failscript, dialoutprefix, usercontext, provider, disabled, continue, routedisplay)
+INSERT INTO trunks (tech, channelid, name, outcid, keepcid, maxchans, failscript, dialoutprefix, usercontext, provider, disabled, \`continue\`, routedisplay)
 VALUES ('pjsip', 'GatewayServer', 'GatewayServer', '', 'off', '', '', '', '', '', 'off', 'off', 'on');
 
 -- Get the trunk ID
