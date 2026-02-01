@@ -140,7 +140,7 @@ async function createQueue(connection) {
                     extension, descr, grppre, alertinfo, ringing, maxwait,
                     password, ivr_id, dest, cwignore, queuewait, use_queue_context,
                     togglehint, qnoanswer, callconfirm, callback_id, joinannounce_id
-                ) VALUES (?, ?, '', '', 0, '300', '', '0', '', 0, 1, 0, 0, 0, 0, '', NULL)
+                ) VALUES (?, ?, '', '', 0, '300', '', '0', 'app-blackhole,hangup,1', 0, 1, 0, 0, 0, 0, '', NULL)
             `, ['8001', 'Crew Queue']);
 
             log('Queue 8001 created', 'success');
