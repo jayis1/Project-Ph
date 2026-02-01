@@ -243,14 +243,14 @@ export async function provisionIVR(config, pool, progressCallback = () => { }) {
             return { success: true, skipped: true };
         }
 
-        // Create main IVR entry in ivr_details with all required columns
+        // Create main IVR entry in ivr_details with correct FreePBX schema
         await executeMySQLQuery(
             pool,
             `INSERT INTO ivr_details (id, name, description, announcement, directdial, invalid_loops, invalid_retry_recording, 
                 invalid_destination, invalid_recording, retvm, timeout_time, timeout_recording, timeout_retry_recording, 
                 timeout_destination, timeout_loops, timeout_append_announce, invalid_append_announce, timeout_ivr_ret, 
-                invalid_ivr_ret, retvm_dest, on_timeout) 
-             VALUES (?, ?, ?, '', 'CHECKED', 3, '', 'app-blackhole,hangup,1', '', '', 10, '', '', 'app-blackhole,hangup,1', 3, 0, 0, 0, 0, '', '')`,
+                invalid_ivr_ret, timeout_enabled, alertinfo, rvolume, strict_dial_timeout, accept_pound_key) 
+             VALUES (?, ?, ?, NULL, 'CHECKED', 3, '', 'app-blackhole,hangup,1', '', '', 10, '', '', 'app-blackhole,hangup,1', 3, 0, 0, 0, 0, '', '', '', 2, 0)`,
             [ivrId, ivrName, 'Main IVR for AI crew']
         );
 
