@@ -10,8 +10,7 @@ echo "This will provision:"
 echo "  • IVR menu 'Nebuchadnezzar' with 10 options"
 echo "  • Queue 8001 with all crew members"
 echo "  • Inbound route to IVR"
-echo "  • Caller ID settings"
-echo "  • Callback & call forwarding"
+echo "  • Extension settings (Caller ID)"
 echo "  • Call flow control (DND, ring time)"
 echo ""
 
@@ -48,15 +47,11 @@ node provision-ivr.cjs
 
 echo ""
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-echo "  STEP 2: Configuring Caller ID, Callback & Call Flow"
+echo "  STEP 2: Configuring Extension Settings"
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 echo ""
-curl -sSL "https://raw.githubusercontent.com/jayis1/2fast2dumb2fun/main/cli/mysql-provisioner/provision-callerid.js" -o provision-callerid.cjs
-curl -sSL "https://raw.githubusercontent.com/jayis1/2fast2dumb2fun/main/cli/mysql-provisioner/provision-callback.js" -o provision-callback.cjs
-curl -sSL "https://raw.githubusercontent.com/jayis1/2fast2dumb2fun/main/cli/mysql-provisioner/provision-callflow.js" -o provision-callflow.cjs
-node provision-callerid.cjs
-node provision-callback.cjs
-node provision-callflow.cjs
+curl -sSL "https://raw.githubusercontent.com/jayis1/2fast2dumb2fun/main/cli/mysql-provisioner/provision-extension-settings.js" -o provision-settings.cjs
+node provision-settings.cjs
 
 echo ""
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
