@@ -54,8 +54,8 @@ echo "  - 13 IVRs (3-level maze: Main → Departments → Phone Lines)"
 echo "  - 9 Extensions (Nebuchadnezzar crew: 9000-9008)"
 echo ""
 
-# Create a temporary provisioning script
-cat > /tmp/provision.mjs << 'PROVISION_SCRIPT'
+# Create a temporary provisioning script in the current directory (so imports work)
+cat > provision.mjs << 'PROVISION_SCRIPT'
 import { provisionFreePBX } from './lib/freepbx-provisioner.js';
 
 const mysqlPassword = process.argv[2];
@@ -105,10 +105,10 @@ try {
 PROVISION_SCRIPT
 
 # Run the provisioning script
-node /tmp/provision.mjs "$MYSQL_PASSWORD"
+node provision.mjs "$MYSQL_PASSWORD"
 
 # Cleanup
-rm /tmp/provision.mjs
+rm provision.mjs
 
 echo ""
 echo "🎉 IVR Maze provisioning complete!"
