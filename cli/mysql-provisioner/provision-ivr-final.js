@@ -185,6 +185,43 @@ async function createQueue(connection) {
 }
 
 /**
+ * Configure Inbound Route to point to IVR
+ */
+async function configureInboundRoute(connection, ivrId) {
+    log('Configuring inbound route...');
+
+    try {
+        // Check if a default inbound route exists
+        const [routes] = await connection.execute(
+            "SELECT extension, destination FROM incoming WHERE description LIKE '%default%' OR cidnum = '' LIMIT 1"
+        );
+
+        if (routes.length > 0) {
+            // Update existing route to point to IVR
+            await connection.execute(
+                "UPDATE incoming SET destination = ? WHERE extension = ?",
+                [`ivr,${ivrId},1`, routes[0].extension]
+            );
+            log(`Updated inbound route to IVR (ID: ${ivrId})`, 'success');
+        } else {
+            // Create new default inbound route
+            await connection.execute(`
+                INSERT INTO incoming (
+                    description, extension, destination, cidnum
+                ) VALUES (?, 's', ?, '')
+            `, ['Default Route to Nebuchadnezzar IVR', `ivr,${ivrId},1`]);
+            log(`Created inbound route to IVR (ID: ${ivrId})`, 'success');
+        }
+
+        return true;
+    } catch (error) {
+        log(`Inbound route configuration failed: ${error.message}`, 'error');
+        log('You can configure this manually in FreePBX GUI');
+        return false;
+    }
+}
+
+/**
  * Reload FreePBX
  */
 async function reloadFreePBX() {
@@ -217,6 +254,7 @@ async function main() {
         // Run provisioning steps
         const ivrResult = await createIVR(connection);
         const queueResult = await createQueue(connection);
+        const routeResult = await configureInboundRoute(connection, ivrResult.ivrId);
 
         // Reload FreePBX
         await reloadFreePBX();
@@ -225,20 +263,19 @@ async function main() {
         console.log('\n📊 Provisioning Summary:\n');
         console.log(`  IVR Menu:        ${ivrResult.success ? '✓' : '✗'}`);
         console.log(`  Queue (8001):    ${queueResult ? '✓' : '✗'}`);
+        console.log(`  Inbound Route:   ${routeResult ? '✓' : '✗'}`);
 
-        const successCount = (ivrResult.success ? 1 : 0) + (queueResult ? 1 : 0);
-        const totalCount = 2;
+        const successCount = (ivrResult.success ? 1 : 0) + (queueResult ? 1 : 0) + (routeResult ? 1 : 0);
+        const totalCount = 3;
 
         console.log(`\n✅ ${successCount}/${totalCount} items provisioned successfully!\n`);
 
         if (successCount === totalCount) {
-            console.log('🎉 IVR and Queue are now configured!\n');
-            console.log('Next steps:');
-            console.log('  1. Configure Inbound Route to point to IVR');
-            console.log(`     Destination: IVR: Nebuchadnezzar (ID: ${ivrResult.ivrId})`);
-            console.log('  2. Call your main number');
-            console.log('  3. Press 0 to reach all crew members');
-            console.log('  4. Press 1-8 for individual crew members\n');
+            console.log('🎉 Complete! IVR, Queue, and Inbound Route are configured!\n');
+            console.log('Your system is ready:');
+            console.log('  • Call your main number');
+            console.log('  • Press 0 to reach all crew members');
+            console.log('  • Press 1-8 for individual crew members\n');
         }
 
     } catch (error) {
