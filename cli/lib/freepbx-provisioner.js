@@ -458,37 +458,41 @@ export async function provisionTrunk(config, pool, progressCallback = () => { })
  * @param {Function} progressCallback - Progress callback
  * @returns {Promise<object>} Verification result
  */
-export async function verifyProvisioning(config, pool, progressCallback = () => { }) {
+export async function verifyProvisioning(config, pool, options = {}, progressCallback = () => { }) {
     progressCallback({ step: 'verify', status: 'running', message: 'Verifying provisioning...' });
 
     const checks = {
         extensions: false,
         ivr: false,
-        trunk: false
+        trunk: true // Default true, set to false if skipped
     };
 
     try {
-        // Check extensions
+        // Check extensions (check users table for clearer count)
         const extResult = await executeMySQLQuery(
             pool,
-            'SELECT COUNT(*) as count FROM sip WHERE id >= 9000 AND id <= 9008'
+            'SELECT COUNT(*) as count FROM users WHERE extension >= 9000 AND extension <= 9008'
         );
         checks.extensions = extResult.success && extResult.rows[0].count >= 9;
 
-        // Check IVR
+        // Check IVR (Main IVR ID is 1)
         const ivrResult = await executeMySQLQuery(
             pool,
-            'SELECT COUNT(*) as count FROM ivr_details WHERE ivr_id = 7000'
+            'SELECT COUNT(*) as count FROM ivr_details WHERE id = 1'
         );
         checks.ivr = ivrResult.success && ivrResult.rows[0].count > 0;
 
         // Check trunk
-        const trunkResult = await executeMySQLQuery(
-            pool,
-            'SELECT COUNT(*) as count FROM ps_endpoints WHERE id = ?',
-            ['outsideworld']
-        );
-        checks.trunk = trunkResult.success && trunkResult.rows[0].count > 0;
+        if (options.skipTrunks) {
+            checks.trunk = true; // Skip check
+        } else {
+            const trunkResult = await executeMySQLQuery(
+                pool,
+                'SELECT COUNT(*) as count FROM pjsip WHERE id = ? LIMIT 1',
+                ['outsideworld']
+            );
+            checks.trunk = trunkResult.success && trunkResult.rows[0].count > 0;
+        }
 
         const allSuccess = checks.extensions && checks.ivr && checks.trunk;
 
@@ -499,7 +503,15 @@ export async function verifyProvisioning(config, pool, progressCallback = () => 
             details: checks
         });
 
-        return { success: allSuccess, checks };
+        if (!allSuccess) {
+            return {
+                success: false,
+                error: `Verification failed: Extensions=${checks.extensions}, IVR=${checks.ivr}, Trunk=${checks.trunk}`,
+                checks
+            };
+        }
+
+        return { success: true, checks };
     } catch (error) {
         progressCallback({ step: 'verify', status: 'error', message: error.message });
         return { success: false, error: error.message };
@@ -562,12 +574,19 @@ export async function provisionFreePBX(config, options = {}, progressCallback = 
         progressCallback({ step: 'reload', status: 'success', message: 'FreePBX reloaded' });
 
         // Step 6: Verify
-        results.verify = await verifyProvisioning(config, pool, progressCallback);
+        results.verify = await verifyProvisioning(config, pool, options, progressCallback);
 
         const allSuccess = Object.values(results).every(r => r === null || r.success);
 
+        // Populate global error if verify failed without throwing
+        let errorMsg = null;
+        if (!allSuccess && results.verify && !results.verify.success) {
+            errorMsg = results.verify.error || 'Verification failed';
+        }
+
         return {
             success: allSuccess,
+            error: errorMsg,
             results
         };
     } catch (error) {
