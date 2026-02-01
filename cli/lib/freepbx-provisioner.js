@@ -143,10 +143,11 @@ export async function provisionExtensions(config, pool, progressCallback = () =>
                 message: `Provisioning ${member.name} (${member.extension})...`
             });
 
-            // Check if extension exists
+
+            // Check if extension exists (in PJSIP tables)
             const checkResult = await executeMySQLQuery(
                 pool,
-                'SELECT COUNT(*) as count FROM sip WHERE id = ?',
+                'SELECT COUNT(*) as count FROM ps_endpoints WHERE id = ?',
                 [member.extension]
             );
 
@@ -163,40 +164,39 @@ export async function provisionExtensions(config, pool, progressCallback = () =>
                 [member.extension, member.name, `${member.name} <${member.extension}>`, member.extension]
             );
 
-            // Create device entry
+            // Create device entry (using PJSIP)
             await executeMySQLQuery(
                 pool,
                 `INSERT INTO devices (id, tech, dial, devicetype, user, description) 
-                 VALUES (?, 'sip', ?, 'fixed', ?, ?)`,
-                [member.extension, `SIP/${member.extension}`, member.extension, member.name]
+                 VALUES (?, 'pjsip', ?, 'fixed', ?, ?)`,
+                [member.extension, `PJSIP/${member.extension}`, member.extension, member.name]
             );
 
-            // Create extension with all PJSIP fields
-            const pjsipFields = [
-                { keyword: 'account', data: member.extension },
-                { keyword: 'callerid', data: `${member.name} (AI) <${member.extension}>` },
-                { keyword: 'context', data: 'from-internal' },
-                { keyword: 'dial', data: `PJSIP/${member.extension}` },
-                { keyword: 'mailbox', data: `${member.extension}@device` },
-                { keyword: 'secret', data: 'GeminiPhone123!' },
-                { keyword: 'sipdriver', data: 'chan_pjsip' },
-                { keyword: 'transport', data: 'udp' },
-                { keyword: 'dtmfmode', data: 'rfc4733' },
-                { keyword: 'direct_media', data: 'yes' },
-                { keyword: 'rtp_symmetric', data: 'yes' },
-                { keyword: 'force_rport', data: 'yes' },
-                { keyword: 'rewrite_contact', data: 'yes' },
-                { keyword: 'max_contacts', data: '1' },
-                { keyword: 'qualifyfreq', data: '60' }
-            ];
+            // Create PJSIP endpoint
+            await executeMySQLQuery(
+                pool,
+                `INSERT INTO ps_endpoints (id, transport, aors, auth, context, disallow, allow, direct_media, 
+                    rtp_symmetric, force_rport, rewrite_contact, mailboxes, callerid)
+                 VALUES (?, 'transport-udp', ?, ?, 'from-internal', 'all', 'ulaw,alaw', 'yes', 
+                    'yes', 'yes', 'yes', ?, ?)`,
+                [member.extension, member.extension, member.extension, `${member.extension}@device`, `${member.name} (AI) <${member.extension}>`]
+            );
 
-            for (const field of pjsipFields) {
-                await executeMySQLQuery(
-                    pool,
-                    'INSERT INTO sip (id, keyword, data, flags) VALUES (?, ?, ?, 0)',
-                    [member.extension, field.keyword, field.data]
-                );
-            }
+            // Create PJSIP AOR
+            await executeMySQLQuery(
+                pool,
+                `INSERT INTO ps_aors (id, max_contacts, qualify_frequency, remove_existing)
+                 VALUES (?, 1, 60, 'yes')`,
+                [member.extension]
+            );
+
+            // Create PJSIP Auth
+            await executeMySQLQuery(
+                pool,
+                `INSERT INTO ps_auths (id, auth_type, password, username)
+                 VALUES (?, 'userpass', 'GeminiPhone123!', ?)`,
+                [member.extension, member.extension]
+            );
 
             results.created++;
         }
@@ -225,14 +225,14 @@ export async function provisionIVR(config, pool, progressCallback = () => { }) {
     progressCallback({ step: 'ivr', status: 'running', message: 'Provisioning IVR system...' });
 
     try {
-        // Create main IVR (7000)
-        const ivrId = '7000';
-        const ivrName = 'Nebuchadnezzar Main Menu';
+        // Create main IVR (ID = 1, standard FreePBX IVR ID)
+        const ivrId = 1;
+        const ivrName = 'Nebuchadnezzar';
 
         // Check if IVR exists
         const checkResult = await executeMySQLQuery(
             pool,
-            'SELECT COUNT(*) as count FROM ivr_details WHERE ivr_id = ?',
+            'SELECT COUNT(*) as count FROM ivr_details WHERE id = ?',
             [ivrId]
         );
 
@@ -241,27 +241,43 @@ export async function provisionIVR(config, pool, progressCallback = () => { }) {
             return { success: true, skipped: true };
         }
 
-        // Create IVR entries
+        // Create main IVR entry in ivr_details
         await executeMySQLQuery(
             pool,
-            `INSERT INTO ivr_entries (ivr_id, name, description, timeout, invalid_loops, invalid_retry_recording, 
-        invalid_destination, timeout_time, timeout_recording, timeout_destination) 
-       VALUES (?, ?, ?, 10, 3, '', 'ext-local,9000,1', 10, '', 'ext-local,9000,1')`,
+            `INSERT INTO ivr_details (id, name, description, announcement, directdial, invalid_loops, invalid_retry_recording, 
+                invalid_destination, timeout_time, timeout_recording, timeout_destination, retvm) 
+             VALUES (?, ?, ?, '', 'CHECKED', 3, '', 'app-blackhole,hangup,1', 10, '', 'app-blackhole,hangup,1', '')`,
             [ivrId, ivrName, 'Main IVR for Nebuchadnezzar crew']
         );
 
-        // Create IVR options
+        // Create IVR digit mappings in ivr_entries
         const crew = config.crew || DEFAULT_CREW;
-        for (let i = 0; i < Math.min(crew.length, 9); i++) {
+
+        // Map digit 0 to extension 9000 (Morpheus)
+        await executeMySQLQuery(
+            pool,
+            'INSERT INTO ivr_entries (ivr_id, selection, dest, ivr_ret) VALUES (?, ?, ?, 0)',
+            [ivrId, '0', `ext-local,9000,1`]
+        );
+
+        // Map digits 1-8 to extensions 9001-9008
+        for (let i = 1; i < Math.min(crew.length, 9); i++) {
             const member = crew[i];
-            const digit = i === 0 ? '0' : String(i);
+            const digit = String(i);
 
             await executeMySQLQuery(
                 pool,
-                'INSERT INTO ivr_details (ivr_id, selection, dest, ivr_ret) VALUES (?, ?, ?, 0)',
+                'INSERT INTO ivr_entries (ivr_id, selection, dest, ivr_ret) VALUES (?, ?, ?, 0)',
                 [ivrId, digit, `ext-local,${member.extension},1`]
             );
         }
+
+        // Add option 9 to hangup
+        await executeMySQLQuery(
+            pool,
+            'INSERT INTO ivr_entries (ivr_id, selection, dest, ivr_ret) VALUES (?, ?, ?, 0)',
+            [ivrId, '9', 'app-blackhole,hangup,1']
+        );
 
         progressCallback({ step: 'ivr', status: 'success', message: 'IVR system provisioned' });
         return { success: true };
@@ -291,6 +307,21 @@ export async function provisionTrunk(config, pool, progressCallback = () => { })
     const trunkId = 'outsideworld';
 
     try {
+        // Store trunk number and server in sip table for provisioner service
+        await executeMySQLQuery(
+            pool,
+            `INSERT INTO sip (id, keyword, data, flags) VALUES (?, 'trunknum', ?, 0)
+             ON DUPLICATE KEY UPDATE data = VALUES(data)`,
+            [trunkId, trunk.number]
+        );
+
+        await executeMySQLQuery(
+            pool,
+            `INSERT INTO sip (id, keyword, data, flags) VALUES (?, 'trunkserver', ?, 0)
+             ON DUPLICATE KEY UPDATE data = VALUES(data)`,
+            [trunkId, trunk.server || 'voice.redspot.dk']
+        );
+
         // Create PJSIP endpoint
         await executeMySQLQuery(
             pool,
@@ -332,11 +363,11 @@ export async function provisionTrunk(config, pool, progressCallback = () => { })
             ]
         );
 
-        // Create inbound route to IVR
+        // Create inbound route to IVR (using IVR ID 1)
         await executeMySQLQuery(
             pool,
             `INSERT INTO incoming (cidnum, extension, destination, mohclass)
-       VALUES ('', '${trunk.number}', 'ivr,7000,1', 'default')
+       VALUES ('', '${trunk.number}', 'ivr,1,1', 'default')
        ON DUPLICATE KEY UPDATE destination = VALUES(destination)`,
             []
         );
