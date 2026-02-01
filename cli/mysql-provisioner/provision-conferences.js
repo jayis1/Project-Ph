@@ -66,6 +66,18 @@ async function provisionConferences() {
 
         connection = await mysql.createConnection(DB_CONFIG);
 
+        // Check if conferences module is installed
+        const [tables] = await connection.execute(
+            "SHOW TABLES LIKE 'conferences'"
+        );
+
+        if (tables.length === 0) {
+            console.log('⚠️  Conference module not installed - skipping conference provisioning');
+            console.log('   To enable conferences, install the Conference Pro module from Module Admin');
+            await connection.end();
+            process.exit(0);
+        }
+
         for (const conf of CONFERENCES) {
             console.log(`Creating conference room ${conf.exten}: ${conf.description}`);
 

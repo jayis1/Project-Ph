@@ -1,9 +1,9 @@
 #!/bin/bash
 
-# Direct installation script for all FreePBX features
+# Complete FreePBX Provisioning - Matrix AI Scam-Baiting Crew
+# Continues on errors to install as many features as possible
 # Run this on your FreePBX server to install all 5 provisioning steps
 
-set -e
 
 echo "🚀 Installing ALL Gemini Phone FreePBX Features"
 echo ""
