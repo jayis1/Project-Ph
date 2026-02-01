@@ -9,11 +9,15 @@
 const https = require('https');
 const http = require('http');
 
-// Configuration
+// Load environment variables
+require('dotenv').config({ path: require('path').join(require('os').homedir(), '.gemini-phone', '.env') });
+
+// Configuration from environment
 const FREEPBX_CONFIG = {
-    clientId: 'ce8e1437ea49d4d0a86ee1436e4ed8067dbb8206652796888071cdedbd594a9b',
-    clientSecret: '4d873592d662614faca24ad4c5e31e83',
-    apiUrl: 'https://phone.istealyourdomain.org:/admin/api/api/gql'
+    clientId: process.env.FREEPBX_CLIENT_ID || 'ce8e1437ea49d4d0a86ee1436e4ed8067dbb8206652796888071cdedbd594a9b',
+    clientSecret: process.env.FREEPBX_CLIENT_SECRET || '4d873592d662614faca24ad4c5e31e83',
+    apiUrl: process.env.FREEPBX_API_URL || process.env.FREEPBX_GRAPHQL_URL || 'https://[IP_ADDRESS]/admin/api/api/gql',
+    mysqlPassword: process.env.FREEPBX_MYSQL_PASSWORD || 'mTbnCp0W7kqo'
 };
 
 // Crew configuration
@@ -182,7 +186,7 @@ async function updateIVR() {
             const { promisify } = require('util');
             const execAsync = promisify(exec);
 
-            const updateCmd = `mysql -u freepbxuser -pmTbnCp0W7kqo asterisk -e "UPDATE ivr_details SET dest='ext-queues,8001,1' WHERE selection='0' LIMIT 1"`;
+            const updateCmd = `mysql -u freepbxuser -p${FREEPBX_CONFIG.mysqlPassword} asterisk -e "UPDATE ivr_details SET dest='ext-queues,8001,1' WHERE selection='0' LIMIT 1"`;
             await execAsync(updateCmd);
 
             log('IVR updated via MySQL (option 0 → queue 8001)', 'success');
