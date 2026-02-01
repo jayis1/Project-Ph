@@ -4,11 +4,16 @@ set -e
 echo "🔗 Configuring Server B → Server A Routing"
 echo ""
 
-# Get Server A IP from user
-read -p "Enter Server A IP address (e.g., 172.16.1.240): " SERVER_A_IP
+# Get Server A IP from argument or prompt
+SERVER_A_IP="$1"
+
+if [ -z "$SERVER_A_IP" ]; then
+    read -p "Enter Server A IP address (e.g., 172.16.1.240): " SERVER_A_IP
+fi
 
 if [ -z "$SERVER_A_IP" ]; then
     echo "❌ Server A IP is required"
+    echo "Usage: $0 <server_a_ip>"
     exit 1
 fi
 
