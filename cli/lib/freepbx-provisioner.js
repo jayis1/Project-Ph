@@ -155,6 +155,22 @@ export async function provisionExtensions(config, pool, progressCallback = () =>
                 continue;
             }
 
+            // Create user entry
+            await executeMySQLQuery(
+                pool,
+                `INSERT INTO users (extension, name, outboundcid, sipname, noanswer_cid, busy_cid, chanunavail_cid, noanswer_dest, busy_dest, chanunavail_dest) 
+                 VALUES (?, ?, ?, ?, '', '', '', '', '', '')`,
+                [member.extension, member.name, `${member.name} <${member.extension}>`, member.extension]
+            );
+
+            // Create device entry
+            await executeMySQLQuery(
+                pool,
+                `INSERT INTO devices (id, tech, dial, devicetype, user, description) 
+                 VALUES (?, 'sip', ?, 'fixed', ?, ?)`,
+                [member.extension, `SIP/${member.extension}`, member.extension, member.name]
+            );
+
             // Create extension with all PJSIP fields
             const pjsipFields = [
                 { keyword: 'account', data: member.extension },
