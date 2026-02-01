@@ -76,6 +76,75 @@ const CREW = [
 const claims = new Map();
 
 /**
+ * Provision extensions on startup
+ * Creates SIP extensions for all crew members if they don't exist
+ */
+async function provisionExtensions() {
+    console.log('Provisioning extensions...');
+
+    for (const member of CREW) {
+        try {
+            // Check if extension exists
+            const [existing] = await pool.query(
+                'SELECT id FROM sip WHERE id = ? LIMIT 1',
+                [member.extension]
+            );
+
+            if (existing.length > 0) {
+                console.log(`  ✓ Extension ${member.extension} (${member.name}) already exists`);
+                continue;
+            }
+
+            // Generate secure password
+            const password = require('crypto').randomBytes(16).toString('hex');
+
+            // SIP extension fields
+            const fields = [
+                { keyword: 'account', data: member.extension },
+                { keyword: 'secret', data: password },
+                { keyword: 'dtmfmode', data: 'rfc2833' },
+                { keyword: 'canreinvite', data: 'no' },
+                { keyword: 'context', data: 'from-internal' },
+                { keyword: 'host', data: 'dynamic' },
+                { keyword: 'trustrpid', data: 'yes' },
+                { keyword: 'sendrpid', data: 'no' },
+                { keyword: 'type', data: 'friend' },
+                { keyword: 'nat', data: 'yes' },
+                { keyword: 'port', data: '5060' },
+                { keyword: 'qualify', data: 'yes' },
+                { keyword: 'qualifyfreq', data: '60' },
+                { keyword: 'transport', data: 'udp' },
+                { keyword: 'avpf', data: 'no' },
+                { keyword: 'force_avp', data: 'no' },
+                { keyword: 'icesupport', data: 'no' },
+                { keyword: 'encryption', data: 'no' },
+                { keyword: 'callgroup', data: '' },
+                { keyword: 'pickupgroup', data: '' },
+                { keyword: 'dial', data: `SIP/${member.extension}` },
+                { keyword: 'mailbox', data: `${member.extension}@device` },
+                { keyword: 'permit', data: '0.0.0.0/0.0.0.0' },
+                { keyword: 'deny', data: '0.0.0.0/0.0.0.0' },
+                { keyword: 'callerid', data: `${member.name} <${member.extension}>` }
+            ];
+
+            // Insert all fields
+            for (const field of fields) {
+                await pool.query(
+                    'INSERT INTO sip (id, keyword, data, flags) VALUES (?, ?, ?, 0)',
+                    [member.extension, field.keyword, field.data]
+                );
+            }
+
+            console.log(`  ✓ Created extension ${member.extension} (${member.name})`);
+        } catch (error) {
+            console.error(`  ✗ Failed to create extension ${member.extension}:`, error.message);
+        }
+    }
+
+    console.log('✓ Extension provisioning complete\n');
+}
+
+/**
  * GET /health
  * Health check endpoint
  */
@@ -316,22 +385,17 @@ app.post('/release-extension', (req, res) => {
  */
 app.get('/ivr', async (req, res) => {
     try {
-        // Get IVR details from database
-        const [ivrRows] = await pool.query(
-            'SELECT ivr_id, name, description FROM ivr_entries WHERE ivr_id = 7000 LIMIT 1'
+        // Get IVR digit mappings
+        const [mappingRows] = await pool.query(
+            'SELECT selection, dest FROM ivr_details WHERE ivr_id = 1 ORDER BY selection'
         );
 
-        if (ivrRows.length === 0) {
+        if (mappingRows.length === 0) {
             return res.status(404).json({
                 success: false,
                 error: 'IVR not configured'
             });
         }
-
-        // Get IVR digit mappings
-        const [mappingRows] = await pool.query(
-            'SELECT selection, dest FROM ivr_details WHERE ivr_id = 7000 ORDER BY selection'
-        );
 
         const mappings = {};
         mappingRows.forEach(row => {
@@ -343,10 +407,8 @@ app.get('/ivr', async (req, res) => {
         res.json({
             success: true,
             ivr: {
-                number: '7000',
-                id: ivrRows[0].ivr_id,
-                name: ivrRows[0].name,
-                description: ivrRows[0].description,
+                id: 1,
+                name: 'Nebuchadnezzar Main Menu',
                 mappings
             }
         });
@@ -364,26 +426,33 @@ app.get('/ivr', async (req, res) => {
  */
 app.get('/trunk', async (req, res) => {
     try {
-        // Get trunk details from database
+        // Get trunk details from sip table
         const [rows] = await pool.query(
-            'SELECT id, from_user, from_domain FROM ps_endpoints WHERE id = "outsideworld"'
+            'SELECT data FROM sip WHERE id = "outsideworld" AND keyword = "fromuser"'
         );
 
-        if (rows.length === 0) {
+        const trunkNumber = rows.length > 0 ? rows[0].data : null;
+
+        if (!trunkNumber) {
             return res.status(404).json({
                 success: false,
                 error: 'Trunk not configured'
             });
         }
 
-        const trunk = rows[0];
+        // Get trunk server
+        const [serverRows] = await pool.query(
+            'SELECT data FROM sip WHERE id = "outsideworld" AND keyword = "host"'
+        );
+
+        const trunkServer = serverRows.length > 0 ? serverRows[0].data : 'unknown';
 
         res.json({
             success: true,
             trunk: {
-                id: trunk.id,
-                number: trunk.from_user,
-                server: trunk.from_domain,
+                id: 'outsideworld',
+                number: trunkNumber,
+                server: trunkServer,
                 port: 5060
             }
         });
@@ -439,6 +508,7 @@ app.get('/', (req, res) => {
 // Start server
 async function start() {
     await initDatabase();
+    await provisionExtensions();
 
     app.listen(PORT, '0.0.0.0', () => {
         console.log('='.repeat(64));
