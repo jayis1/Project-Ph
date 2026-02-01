@@ -38,55 +38,54 @@ echo ""
 # Create trunk to Server A
 echo "⏳ Creating SIP trunk to Server A..."
 mysql -u freepbxuser -p"$MYSQL_PASSWORD" asterisk << EOF
+-- Clean up any existing entries
+DELETE FROM pjsip WHERE id LIKE 'Gateway%';
+DELETE FROM trunks WHERE name = 'GatewayServer';
+DELETE FROM outbound_routes WHERE name = 'To_Gateway';
+
 -- Create trunk entry
 INSERT INTO trunks (tech, channelid, name, outcid, keepcid, maxchans, failscript, dialoutprefix, usercontext, provider, disabled, \`continue\`, routedisplay)
 VALUES ('pjsip', 'GatewayServer', 'GatewayServer', '', 'off', '', '', '', '', '', 'off', 'off', 'on');
 
--- Get the trunk ID
-SET @trunk_id = LAST_INSERT_ID();
-
--- Create PJSIP endpoint for Server A
-INSERT INTO pjsip (id, keyword, data, flags) VALUES ('GatewayServer', 'type', 'endpoint', 0);
-INSERT INTO pjsip (id, keyword, data, flags) VALUES ('GatewayServer', 'transport', 'transport-udp', 0);
-INSERT INTO pjsip (id, keyword, data, flags) VALUES ('GatewayServer', 'context', 'from-pstn', 0);
-INSERT INTO pjsip (id, keyword, data, flags) VALUES ('GatewayServer', 'disallow', 'all', 0);
-INSERT INTO pjsip (id, keyword, data, flags) VALUES ('GatewayServer', 'allow', 'ulaw,alaw', 0);
-INSERT INTO pjsip (id, keyword, data, flags) VALUES ('GatewayServer', 'direct_media', 'no', 0);
-INSERT INTO pjsip (id, keyword, data, flags) VALUES ('GatewayServer', 'from_domain', '$SERVER_A_IP', 0);
+-- Create PJSIP endpoint
+INSERT INTO pjsip (id, keyword, data, flags) VALUES ('Gateway', 'type', 'endpoint', 0);
+INSERT INTO pjsip (id, keyword, data, flags) VALUES ('Gateway', 'transport', 'transport-udp', 0);
+INSERT INTO pjsip (id, keyword, data, flags) VALUES ('Gateway', 'context', 'from-pstn', 0);
+INSERT INTO pjsip (id, keyword, data, flags) VALUES ('Gateway', 'disallow', 'all', 0);
+INSERT INTO pjsip (id, keyword, data, flags) VALUES ('Gateway', 'allow', 'ulaw,alaw', 0);
+INSERT INTO pjsip (id, keyword, data, flags) VALUES ('Gateway', 'direct_media', 'no', 0);
+INSERT INTO pjsip (id, keyword, data, flags) VALUES ('Gateway', 'from_domain', '$SERVER_A_IP', 0);
 
 -- Create AOR
-INSERT INTO pjsip (id, keyword, data, flags) VALUES ('GatewayServer', 'type', 'aor', 0);
-INSERT INTO pjsip (id, keyword, data, flags) VALUES ('GatewayServer', 'contact', 'sip:$SERVER_A_IP:5060', 0);
+INSERT INTO pjsip (id, keyword, data, flags) VALUES ('Gateway-a', 'type', 'aor', 0);
+INSERT INTO pjsip (id, keyword, data, flags) VALUES ('Gateway-a', 'contact', 'sip:$SERVER_A_IP:5060', 0);
 
--- Create identify for Server A
-INSERT INTO pjsip (id, keyword, data, flags) VALUES ('GatewayServer', 'type', 'identify', 0);
-INSERT INTO pjsip (id, keyword, data, flags) VALUES ('GatewayServer', 'endpoint', 'GatewayServer', 0);
-INSERT INTO pjsip (id, keyword, data, flags) VALUES ('GatewayServer', 'match', '$SERVER_A_IP', 0);
-EOF
+-- Link endpoint to AOR
+INSERT INTO pjsip (id, keyword, data, flags) VALUES ('Gateway', 'aors', 'Gateway-a', 0);
+
+-- Create identify
+INSERT INTO pjsip (id, keyword, data, flags) VALUES ('Gateway-i', 'type', 'identify', 0);
+INSERT INTO pjsip (id, keyword, data, flags) VALUES ('Gateway-i', 'endpoint', 'Gateway', 0);
+INSERT INTO pjsip (id, keyword, data, flags) VALUES ('Gateway-i', 'match', '$SERVER_A_IP', 0);
 
 echo "✅ Trunk created"
-echo ""
 
-# Create outbound route
-echo "⏳ Creating outbound route to Server A..."
-mysql -u freepbxuser -p"$MYSQL_PASSWORD" asterisk << EOF
 -- Create outbound route
-INSERT INTO outbound_routes (name, outcid, outcid_mode, password, emergency_route, intracompany_route, mohclass, time_group_id, dest_restriction)
-VALUES ('To_Gateway', '', 'default', '', '', '', 'default', NULL, '');
+INSERT INTO outbound_routes (name, outcid, outcid_mode, password, emergency_route, intracompany_route, mohclass, time_group_id)
+VALUES ('To_Gateway', '', 'default', '', '', '', 'default', NULL);
 
 SET @route_id = LAST_INSERT_ID();
 
--- Add trunk to route
+-- Link trunk to route
 INSERT INTO outbound_route_trunks (route_id, trunk_id, seq)
 VALUES (@route_id, (SELECT trunkid FROM trunks WHERE name = 'GatewayServer'), 0);
 
--- Add dial pattern (match all external numbers)
+-- Add dial patterns
 INSERT INTO outbound_route_patterns (route_id, match_pattern_prefix, match_pattern_pass, prepend_digits, seq)
-VALUES (@route_id, '', 'NXXNXXXXXX', '', 0);
+VALUES (@route_id, '', 'ZXXXXXXX', '', 0);
 
--- Add international pattern
 INSERT INTO outbound_route_patterns (route_id, match_pattern_prefix, match_pattern_pass, prepend_digits, seq)
-VALUES (@route_id, '', 'ZXXXXXXXXX.', '', 1);
+VALUES (@route_id, '', '00.', '', 1);
 EOF
 
 echo "✅ Outbound route created"
