@@ -98,6 +98,20 @@ async function provisionExtensions() {
             // Generate secure password
             const password = require('crypto').randomBytes(16).toString('hex');
 
+            // Create user entry
+            await pool.query(
+                `INSERT INTO users (extension, name, outboundcid, sipname, noanswer_dest, busy_dest, chanunavail_dest) 
+                 VALUES (?, ?, ?, ?, '', '', '')`,
+                [member.extension, member.name, `${member.name} <${member.extension}>`, member.extension]
+            );
+
+            // Create device entry
+            await pool.query(
+                `INSERT INTO devices (id, tech, dial, devicetype, user, description, emergency_cid) 
+                 VALUES (?, 'sip', ?, 'fixed', ?, ?, '')`,
+                [member.extension, `SIP/${member.extension}`, member.extension, member.name]
+            );
+
             // SIP extension fields
             const fields = [
                 { keyword: 'account', data: member.extension },
