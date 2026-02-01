@@ -6,6 +6,26 @@
 
 set -e
 
+# --- HOTFIX: Patch FreePBX PJSip Driver Bugs ---
+echo "🩹 Patching FreePBX PJSip driver bugs..."
+DRIVERS_PATH=$(find /var/www/html/admin -name PJSip.class.php)
+if [ ! -z "$DRIVERS_PATH" ]; then
+    # Fix 1: Missing trunk_name
+    sed -i "s/\$tn = \$trunk\['trunk_name'\];/\$tn = isset(\$trunk['trunk_name']) ? \$trunk['trunk_name'] : 'unknown';/" $DRIVERS_PATH
+    
+    # Fix 2: Missing retry_interval
+    sed -i "s/'retry_interval' => \$trunk\['retry_interval'\],/'retry_interval' => \!empty(\$trunk['retry_interval']) ? \$trunk['retry_interval'] : 60,/g" $DRIVERS_PATH
+    
+    # Fix 3: Missing expiration
+    sed -i "s/'expiration' => \$trunk\['expiration'\],/'expiration' => \!empty(\$trunk['expiration']) ? \$trunk['expiration'] : 3600,/g" $DRIVERS_PATH
+    
+    echo "✅ Patched PJSip.class.php successfully."
+else
+    echo "⚠️  Could not find PJSip.class.php - skipping patches."
+fi
+
+# --- End Hotfix ---
+
 echo "🚀 Gemini Phone - FreePBX IVR Maze Auto-Provisioner"
 echo ""
 
