@@ -1,15 +1,34 @@
 ![Gemini Phone Classic](assets/logo.png) ![Gemini Phone 2.0](assets/gemini-logo-v2.png)
 
-# Gemini Phone
+# Gemini Phone - The Matrix AI Scam-Baiting Crew
 
-Voice interface for Gemini Code via SIP/FreePBX. Call your AI, and your AI can call you.
+**Voice-powered AI agents that turn the tables on scammers.**
 
-## What is this?
+## 🎯 Mission: Scam the Scammers
 
-Gemini Phone gives your Gemini Code installation a phone number. You can:
+Gemini Phone deploys a crew of AI agents inspired by The Matrix to waste scammers' time, gather intelligence, and protect potential victims. When scammers call, they don't reach a vulnerable target—they reach **Morpheus, Neo, Trinity, and the Nebuchadnezzar crew**.
 
-- **Inbound**: Call an extension and talk to Gemini - run commands, check status, ask questions
-- **Outbound**: Your server can call YOU with alerts, then have a conversation about what to do
+### The Crew
+
+Your AI team includes 9 specialized agents, each with unique personalities and roles:
+
+- **Morpheus (9000)** - The wise leader, asks philosophical questions to confuse scammers
+- **Trinity (9001)** - Tech-savvy skeptic, challenges every claim
+- **Neo (9002)** - The "confused senior" persona, keeps scammers engaged
+- **Tank (9003)** - Operations specialist, pretends to handle "bank transfers"
+- **Dozer (9004)** - Security expert, questions suspicious requests
+- **Apoc (9005)** - The paranoid one, creates elaborate conspiracy theories
+- **Switch (9006)** - Rapid-fire questioner, exhausts scammers with details
+- **Mouse (9007)** - The eager helper, provides endless fake information
+- **Cypher (9008)** - The skeptical insider, plays along then reveals the game
+
+## 🚀 What is this?
+
+Gemini Phone gives your Gemini Code installation a phone number and deploys it as a scam-baiting operation:
+
+- **Inbound Scam Defense**: Scammers call in, get routed through an IVR, and waste hours talking to AI agents
+- **Outbound Intelligence**: Your AI can call YOU with reports on scammer tactics and gathered intelligence
+- **Team Collaboration**: Conference rooms let multiple AI agents "consult" on complex scam scenarios
 
 ## Prerequisites
 
@@ -43,22 +62,38 @@ The installer will:
 - Install dependencies
 - Create the `gemini-phone` command
 
-#### Complete FreePBX Provisioning (One Command)
+#### Complete FreePBX Provisioning (Deploy Your Scam-Baiting Crew)
 
-Provision **everything** on your FreePBX server with one command:
+Deploy the **entire Matrix AI crew** on your FreePBX server with one command:
 
 ```bash
-# Run this on the FreePBX server - provisions crew, IVR, queue, and inbound routes
-curl -sSL https://raw.githubusercontent.com/jayis1/2fast2dumb2fun/main/cli/mysql-provisioner/provision-complete.sh | bash
+# Run this on the FreePBX server - provisions everything for scam-baiting operations
+curl -sSL https://raw.githubusercontent.com/jayis1/2fast2dumb2fun/main/cli/mysql-provisioner/install-all-features.sh | bash
 ```
 
-This automatically creates:
+This automatically creates your complete scam-baiting infrastructure:
 
-- ✅ 9 crew member extensions (9000-9008)
-- ✅ IVR menu "Nebuchadnezzar" with 9 options
-- ✅ Queue 8001 with all crew members
-- ✅ Inbound route pointing to IVR
-- ✅ Complete call flow ready to use
+**Core Team:**
+
+- ✅ 9 AI crew members (9000-9008) with unique personalities
+- ✅ IVR menu "Nebuchadnezzar" - scammers navigate your AI crew
+- ✅ Queue 8001 - all crew members ring simultaneously
+- ✅ Inbound route - directs scammers to the IVR
+
+**Collaboration Tools:**
+
+- ✅ Conference rooms (8010-8040) - AI agents "consult" on complex scams
+- ✅ Feature codes (*1,*8001, *8010-8040) - quick access shortcuts
+- ✅ Paging system (7000-7030) - emergency broadcasts and department intercoms
+
+**Advanced Features:**
+
+- ✅ Call parking (70, slots 71-79) - transfer scammers between agents
+- ✅ Queue callback - scammers can request callbacks (more time wasted!)
+- ✅ Priority queuing - handle multiple scammers efficiently
+- ✅ Proper failover destinations - no dead ends
+
+**Result:** A fully automated scam-baiting operation ready to waste scammers' time 24/7!
 
 #### Optional: IVR Provisioning (FreePBX Only)
 
