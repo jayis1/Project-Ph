@@ -227,7 +227,7 @@ export async function executeMySQLQueryViaSSH(sshConfig, mysqlConfig, query) {
  */
 export async function testFreePBXRunning(sshConfig) {
     try {
-        const result = await executeSSHCommand(sshConfig, 'fwconsole version');
+        const result = await executeSSHCommand(sshConfig, 'fwconsole --version');
 
         if (result.success && result.stdout) {
             return {
