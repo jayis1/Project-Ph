@@ -30,15 +30,15 @@ async function getMySQLConfig() {
         host: config.api?.freepbx?.mysqlHost || 'localhost', // Use localhost when running on FreePBX server
         port: 3306,
         user: config.api?.freepbx?.mysqlUser || 'freepbxuser',
-        password: config.api?.freepbx?.mysqlPassword || 'rCK+gZBKfILF',
+        password: config.api?.freepbx?.mysqlPassword || 'mTbnCp0W7kqo',
         database: 'asterisk'
     };
 }
 
 const SSH_CONFIG = {
-    host: '172.16.1.143',
+    host: '172.16.1.63',
     user: 'root',
-    password: 'Jumbo2601'
+    password: process.env.FREEPBX_ROOT_PASSWORD || 'your-password-here'
 };
 
 // Nebuchadnezzar crew configuration
@@ -366,13 +366,15 @@ async function reloadFreePBX() {
     const spinner = ora('Reloading FreePBX configuration...').start();
 
     try {
-        const sshCommand = `sshpass -p '${SSH_CONFIG.password}' ssh -o StrictHostKeyChecking=no ${SSH_CONFIG.user}@${SSH_CONFIG.host} 'fwconsole reload'`;
+        // Use SSH without password (assumes SSH key or will prompt)
+        const sshCommand = `ssh -o StrictHostKeyChecking=no root@${SSH_CONFIG.host} 'fwconsole reload'`;
         await execAsync(sshCommand);
 
         spinner.succeed('FreePBX configuration reloaded');
         return true;
     } catch (error) {
         spinner.warn(`FreePBX reload failed (non-critical): ${error.message}`);
+        spinner.info('You can manually reload with: ssh root@172.16.1.63 "fwconsole reload"');
         return false;
     }
 }
