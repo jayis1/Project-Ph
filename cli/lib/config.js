@@ -91,6 +91,15 @@ export async function loadConfig() {
       config.admin = config.admin || {};
       config.admin.phoneNumber = env.ADMIN_PHONE_NUMBER;
     }
+
+    // Merge FreePBX MySQL settings from .env
+    if (env.FREEPBX_MYSQL_HOST || env.FREEPBX_MYSQL_USER || env.FREEPBX_MYSQL_PASSWORD) {
+      config.api = config.api || {};
+      config.api.freepbx = config.api.freepbx || {};
+      if (env.FREEPBX_MYSQL_HOST) config.api.freepbx.mysqlHost = env.FREEPBX_MYSQL_HOST;
+      if (env.FREEPBX_MYSQL_USER) config.api.freepbx.mysqlUser = env.FREEPBX_MYSQL_USER;
+      if (env.FREEPBX_MYSQL_PASSWORD) config.api.freepbx.mysqlPassword = env.FREEPBX_MYSQL_PASSWORD;
+    }
   }
 
   return config;
