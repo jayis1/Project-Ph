@@ -15,6 +15,28 @@ echo "  4. Misc Features (Destinations, Feature Codes)"
 echo "  5. Advanced Features (Paging, Parking, Queue Callback)"
 echo ""
 
+# Auto-detect MySQL password from FreePBX config
+if [ -f /etc/freepbx.conf ]; then
+    MYSQL_PASSWORD=$(grep AMPDBPASS /etc/freepbx.conf | sed -n 's/.*"\(.*\)".*/\1/p')
+    echo "✅ Detected MySQL password from FreePBX config"
+else
+    echo "❌ FreePBX config not found at /etc/freepbx.conf"
+    echo "   Please run this script on a FreePBX server"
+    exit 1
+fi
+
+# Create .env file with detected password
+mkdir -p ~/.gemini-phone
+cat > ~/.gemini-phone/.env << EOF
+MYSQL_HOST=localhost
+MYSQL_USER=freepbxuser
+MYSQL_PASSWORD=$MYSQL_PASSWORD
+MYSQL_DATABASE=asterisk
+EOF
+
+echo "✅ Created .env file with MySQL credentials"
+echo ""
+
 # Create temp directory
 TEMP_DIR=$(mktemp -d)
 cd "$TEMP_DIR"
