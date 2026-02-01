@@ -63,6 +63,14 @@ node provision-conferences.cjs
 
 echo ""
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+echo "  STEP 4: Configuring Misc Features"
+echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+echo ""
+curl -sSL "https://raw.githubusercontent.com/jayis1/2fast2dumb2fun/main/cli/mysql-provisioner/provision-misc-features.js" -o provision-misc.cjs
+node provision-misc.cjs
+
+echo ""
+echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 echo "  🎉 PROVISIONING COMPLETE!"
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 echo ""
@@ -88,6 +96,13 @@ echo "   • 8010: Command (Morpheus & Neo)"
 echo "   • 8020: Operations (Tank & Dozer)"
 echo "   • 8030: Tech Team (Apoc, Switch & Mouse)"
 echo "   • 8040: Security (Cypher & Guests)"
+echo ""
+echo "🎹 Feature Codes (Quick Dial):"
+echo "   • *1 - IVR Menu"
+echo "   • *8001 - All Crew Queue"
+echo "   • *8010-8040 - Department Conferences"
+echo ""
+echo "📍 Misc Destinations: Created for routing flexibility"
 echo ""
 echo "📥 Inbound Route: Configured to IVR"
 echo ""
