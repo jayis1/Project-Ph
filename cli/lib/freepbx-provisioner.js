@@ -217,74 +217,155 @@ export async function provisionExtensions(config, pool, progressCallback = () =>
 }
 
 /**
- * Provision IVR system
+ * Helper function to create an IVR with entries
+ */
+async function createIVR(pool, id, name, description, entries) {
+    // Create IVR details
+    await executeMySQLQuery(
+        pool,
+        `INSERT INTO ivr_details (id, name, description, announcement, directdial, invalid_loops, invalid_retry_recording, 
+            invalid_destination, invalid_recording, retvm, timeout_time, timeout_recording, timeout_retry_recording, 
+            timeout_destination, timeout_loops, timeout_append_announce, invalid_append_announce, timeout_ivr_ret, 
+            invalid_ivr_ret, timeout_enabled, alertinfo, rvolume, strict_dial_timeout, accept_pound_key) 
+         VALUES (?, ?, ?, NULL, 'CHECKED', 3, '', 'ivr,1,1', '', '', 10, '', '', 'ivr,1,1', 3, 0, 0, 0, 0, '', '', '', 2, 0)`,
+        [id, name, description]
+    );
+
+    // Create IVR entries
+    for (const entry of entries) {
+        await executeMySQLQuery(
+            pool,
+            'INSERT INTO ivr_entries (ivr_id, selection, dest, ivr_ret) VALUES (?, ?, ?, 0)',
+            [id, entry.digit, entry.dest]
+        );
+    }
+}
+
+/**
+ * Provision multi-level IVR maze system
  * @param {object} config - Configuration
  * @param {object} pool - MySQL connection pool
  * @param {Function} progressCallback - Progress callback
  * @returns {Promise<object>} Provisioning result
  */
 export async function provisionIVR(config, pool, progressCallback = () => { }) {
-    progressCallback({ step: 'ivr', status: 'running', message: 'Provisioning IVR system...' });
+    progressCallback({ step: 'ivr', status: 'running', message: 'Provisioning multi-level IVR maze...' });
 
     try {
-        // Create main IVR (ID = 1, standard FreePBX IVR ID)
-        const ivrId = 1;
-        const ivrName = 'Nebuchadnezzar';
-
-        // Check if IVR exists
+        // Check if main IVR already exists
         const checkResult = await executeMySQLQuery(
             pool,
-            'SELECT COUNT(*) as count FROM ivr_details WHERE id = ?',
-            [ivrId]
+            'SELECT COUNT(*) as count FROM ivr_details WHERE id = 1',
+            []
         );
 
         if (checkResult.success && checkResult.rows[0].count > 0) {
-            progressCallback({ step: 'ivr', status: 'success', message: 'IVR already exists' });
+            progressCallback({ step: 'ivr', status: 'success', message: 'IVR maze already exists' });
             return { success: true, skipped: true };
         }
 
-        // Create main IVR entry in ivr_details with correct FreePBX schema
-        await executeMySQLQuery(
-            pool,
-            `INSERT INTO ivr_details (id, name, description, announcement, directdial, invalid_loops, invalid_retry_recording, 
-                invalid_destination, invalid_recording, retvm, timeout_time, timeout_recording, timeout_retry_recording, 
-                timeout_destination, timeout_loops, timeout_append_announce, invalid_append_announce, timeout_ivr_ret, 
-                invalid_ivr_ret, timeout_enabled, alertinfo, rvolume, strict_dial_timeout, accept_pound_key) 
-             VALUES (?, ?, ?, NULL, 'CHECKED', 3, '', 'app-blackhole,hangup,1', '', '', 10, '', '', 'app-blackhole,hangup,1', 3, 0, 0, 0, 0, '', '', '', 2, 0)`,
-            [ivrId, ivrName, 'Main IVR for AI crew']
-        );
+        // === LEVEL 1: Main IVR (ID 1) ===
+        await createIVR(pool, 1, 'Nebuchadnezzar Bridge', 'Main menu for scam-baiting maze', [
+            { digit: '0', dest: 'ext-local,9000,1' },        // Morpheus (starts chain transfer)
+            { digit: '1', dest: 'ivr,2,1' },                 // Operations Department
+            { digit: '2', dest: 'ivr,3,1' },                 // Engineering Department
+            { digit: '3', dest: 'ivr,4,1' },                 // Security Department
+            { digit: '4', dest: 'ivr,5,1' },                 // Training Department
+            { digit: '7', dest: 'ext-local,9001,1' },        // Trinity (direct)
+            { digit: '8', dest: 'ext-local,9008,1' },        // Cypher (direct)
+            { digit: '9', dest: 'app-blackhole,hangup,1' }   // Hangup
+        ]);
 
-        // Create IVR digit mappings in ivr_entries
-        const crew = config.crew || DEFAULT_CREW;
+        // === LEVEL 2: Department IVRs (IDs 2-5) ===
 
-        // Map digit 0 to extension 9000 (Morpheus)
-        await executeMySQLQuery(
-            pool,
-            'INSERT INTO ivr_entries (ivr_id, selection, dest, ivr_ret) VALUES (?, ?, ?, 0)',
-            [ivrId, '0', `ext-local,9000,1`]
-        );
+        // IVR 2: Operations Department
+        await createIVR(pool, 2, 'Operations', 'Operations department menu', [
+            { digit: '0', dest: 'ivr,1,1' },     // Back to main menu
+            { digit: '1', dest: 'ivr,6,1' },     // Operations Line A
+            { digit: '2', dest: 'ivr,7,1' }      // Operations Line B
+        ]);
 
-        // Map digits 1-8 to extensions 9001-9008
-        for (let i = 1; i < Math.min(crew.length, 9); i++) {
-            const member = crew[i];
-            const digit = String(i);
+        // IVR 3: Engineering Department
+        await createIVR(pool, 3, 'Engineering', 'Engineering department menu', [
+            { digit: '0', dest: 'ivr,1,1' },     // Back to main menu
+            { digit: '1', dest: 'ivr,8,1' },     // Engineering Line A
+            { digit: '2', dest: 'ivr,9,1' }      // Engineering Line B
+        ]);
 
-            await executeMySQLQuery(
-                pool,
-                'INSERT INTO ivr_entries (ivr_id, selection, dest, ivr_ret) VALUES (?, ?, ?, 0)',
-                [ivrId, digit, `ext-local,${member.extension},1`]
-            );
-        }
+        // IVR 4: Security Department
+        await createIVR(pool, 4, 'Security', 'Security department menu', [
+            { digit: '0', dest: 'ivr,1,1' },     // Back to main menu
+            { digit: '1', dest: 'ivr,10,1' },    // Security Line A
+            { digit: '2', dest: 'ivr,11,1' }     // Security Line B
+        ]);
 
-        // Add option 9 to hangup
-        await executeMySQLQuery(
-            pool,
-            'INSERT INTO ivr_entries (ivr_id, selection, dest, ivr_ret) VALUES (?, ?, ?, 0)',
-            [ivrId, '9', 'app-blackhole,hangup,1']
-        );
+        // IVR 5: Training Department
+        await createIVR(pool, 5, 'Training', 'Training department menu', [
+            { digit: '0', dest: 'ivr,1,1' },     // Back to main menu
+            { digit: '1', dest: 'ivr,12,1' },    // Training Line A
+            { digit: '2', dest: 'ivr,13,1' }     // Training Line B
+        ]);
 
-        progressCallback({ step: 'ivr', status: 'success', message: 'IVR system provisioned' });
-        return { success: true };
+        // === LEVEL 3: Phone Line IVRs (IDs 6-13) ===
+
+        // IVR 6: Operations Line A
+        await createIVR(pool, 6, 'Ops Line A', 'Operations team line A', [
+            { digit: '0', dest: 'ivr,2,1' },         // Back to Operations
+            { digit: '1', dest: 'ext-local,9002,1' }, // Neo
+            { digit: '2', dest: 'ext-local,9003,1' }  // Tank
+        ]);
+
+        // IVR 7: Operations Line B
+        await createIVR(pool, 7, 'Ops Line B', 'Operations team line B', [
+            { digit: '0', dest: 'ivr,2,1' },         // Back to Operations
+            { digit: '1', dest: 'ext-local,9004,1' }, // Dozer
+            { digit: '2', dest: 'ext-local,9005,1' }  // Apoc
+        ]);
+
+        // IVR 8: Engineering Line A
+        await createIVR(pool, 8, 'Eng Line A', 'Engineering team line A', [
+            { digit: '0', dest: 'ivr,3,1' },         // Back to Engineering
+            { digit: '1', dest: 'ext-local,9006,1' }, // Switch
+            { digit: '2', dest: 'ext-local,9007,1' }  // Mouse
+        ]);
+
+        // IVR 9: Engineering Line B (repeat crew for confusion)
+        await createIVR(pool, 9, 'Eng Line B', 'Engineering team line B', [
+            { digit: '0', dest: 'ivr,3,1' },         // Back to Engineering
+            { digit: '1', dest: 'ext-local,9002,1' }, // Neo (repeat)
+            { digit: '2', dest: 'ext-local,9003,1' }  // Tank (repeat)
+        ]);
+
+        // IVR 10: Security Line A
+        await createIVR(pool, 10, 'Sec Line A', 'Security team line A', [
+            { digit: '0', dest: 'ivr,4,1' },         // Back to Security
+            { digit: '1', dest: 'ext-local,9004,1' }, // Dozer (repeat)
+            { digit: '2', dest: 'ext-local,9005,1' }  // Apoc (repeat)
+        ]);
+
+        // IVR 11: Security Line B
+        await createIVR(pool, 11, 'Sec Line B', 'Security team line B', [
+            { digit: '0', dest: 'ivr,4,1' },         // Back to Security
+            { digit: '1', dest: 'ext-local,9006,1' }, // Switch (repeat)
+            { digit: '2', dest: 'ext-local,9007,1' }  // Mouse (repeat)
+        ]);
+
+        // IVR 12: Training Line A
+        await createIVR(pool, 12, 'Train Line A', 'Training team line A', [
+            { digit: '0', dest: 'ivr,5,1' },         // Back to Training
+            { digit: '1', dest: 'ext-local,9002,1' }, // Neo (repeat)
+            { digit: '2', dest: 'ext-local,9003,1' }  // Tank (repeat)
+        ]);
+
+        // IVR 13: Training Line B
+        await createIVR(pool, 13, 'Train Line B', 'Training team line B', [
+            { digit: '0', dest: 'ivr,5,1' },         // Back to Training
+            { digit: '1', dest: 'ext-local,9004,1' }, // Dozer (repeat)
+            { digit: '2', dest: 'ext-local,9005,1' }  // Apoc (repeat)
+        ]);
+
+        progressCallback({ step: 'ivr', status: 'success', message: 'Multi-level IVR maze provisioned (13 IVRs)' });
+        return { success: true, ivrsCreated: 13 };
     } catch (error) {
         progressCallback({ step: 'ivr', status: 'error', message: error.message });
         return { success: false, error: error.message };
@@ -474,17 +555,13 @@ export async function provisionFreePBX(config, options = {}, progressCallback = 
             results.ivr = await provisionIVR(config, pool, progressCallback);
         }
 
-        // Step 5: Provision trunk
-        if (!options.skipTrunk) {
-            results.trunk = await provisionTrunk(config, pool, progressCallback);
-        }
 
-        // Step 6: Reload FreePBX
+        // Step 5: Reload FreePBX
         progressCallback({ step: 'reload', status: 'running', message: 'Reloading FreePBX...' });
         await reloadFreePBX(connectionConfig.ssh);
         progressCallback({ step: 'reload', status: 'success', message: 'FreePBX reloaded' });
 
-        // Step 7: Verify
+        // Step 6: Verify
         results.verify = await verifyProvisioning(config, pool, progressCallback);
 
         const allSuccess = Object.values(results).every(r => r === null || r.success);

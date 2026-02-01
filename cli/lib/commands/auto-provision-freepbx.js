@@ -90,52 +90,7 @@ export async function autoProvisionCommand(options = {}) {
         }
     ]);
 
-    console.log(chalk.bold('\n\nStep 2: SIP Trunk Configuration\n'));
-
-    const trunkAnswers = await inquirer.prompt([
-        {
-            type: 'input',
-            name: 'number',
-            message: 'SIP trunk number (DID):',
-            default: config.sipTrunk?.number || options.trunkNumber || '88707695',
-            validate: (input) => input ? true : 'Trunk number is required'
-        },
-        {
-            type: 'input',
-            name: 'username',
-            message: 'SIP trunk username:',
-            default: (answers) => config.sipTrunk?.username || answers.number,
-            validate: (input) => input ? true : 'Trunk username is required'
-        },
-        {
-            type: 'password',
-            name: 'password',
-            message: 'SIP trunk password:',
-            default: config.sipTrunk?.password || options.trunkPassword,
-            validate: (input) => input ? true : 'Trunk password is required'
-        },
-        {
-            type: 'input',
-            name: 'server',
-            message: 'SIP trunk server:',
-            default: config.sipTrunk?.server || options.trunkServer || 'voice.redspot.dk'
-        },
-        {
-            type: 'input',
-            name: 'port',
-            message: 'SIP trunk port:',
-            default: config.sipTrunk?.port || '5060',
-            validate: (input) => {
-                const port = parseInt(input);
-                if (isNaN(port) || port < 1 || port > 65535) {
-                    return 'Port must be between 1 and 65535';
-                }
-                return true;
-            }
-        }
-    ]);
-
-    console.log(chalk.bold('\n\nStep 3: Extension Configuration\n'));
+    console.log(chalk.bold('\n\nStep 2: Extension Configuration\n'));
 
     const extAnswers = await inquirer.prompt([
         {
@@ -158,13 +113,6 @@ export async function autoProvisionCommand(options = {}) {
             mysqlPassword: freepbxAnswers.mysqlPassword,
             botSubnet: freepbxAnswers.botSubnet
         },
-        sipTrunk: {
-            number: trunkAnswers.number,
-            username: trunkAnswers.username,
-            password: trunkAnswers.password,
-            server: trunkAnswers.server,
-            port: trunkAnswers.port
-        },
         crew: extAnswers.useDefaultCrew ? undefined : config.crew
     };
 
@@ -175,11 +123,6 @@ export async function autoProvisionCommand(options = {}) {
     console.log(chalk.gray(`  SSH User: ${freepbxAnswers.sshUser}`));
     console.log(chalk.gray(`  MySQL User: ${freepbxAnswers.mysqlUser}`));
     console.log(chalk.gray(`  Bot Subnet: ${freepbxAnswers.botSubnet}`));
-
-    console.log(chalk.white('\nSIP Trunk:'));
-    console.log(chalk.gray(`  Number: ${trunkAnswers.number}`));
-    console.log(chalk.gray(`  Server: ${trunkAnswers.server}:${trunkAnswers.port}`));
-    console.log(chalk.gray(`  Username: ${trunkAnswers.username}`));
 
     console.log(chalk.white('\nExtensions:'));
     console.log(chalk.gray(`  Range: 9000-9008 (9 extensions)`));
@@ -246,10 +189,10 @@ export async function autoProvisionCommand(options = {}) {
 
             // Show next steps
             console.log(chalk.bold.cyan('📝 Next Steps:\n'));
-            console.log(chalk.white('1. Wait 1-2 minutes for trunk registration'));
-            console.log(chalk.white(`2. Call ${trunkAnswers.number} to test the IVR`));
-            console.log(chalk.white('3. Press 0 to reach Morpheus (9000)'));
-            console.log(chalk.white('4. Press 1-8 for other crew members'));
+            console.log(chalk.white('1. Configure your SIP trunk in FreePBX GUI (Connectivity → Trunks)'));
+            console.log(chalk.white('2. Create an inbound route pointing to IVR (ivr,1,1)'));
+            console.log(chalk.white('3. Test the IVR by calling your trunk number'));
+            console.log(chalk.white('4. Press 0 to reach Morpheus (9000), 1-8 for other crew members'));
             console.log(chalk.white('5. Run "gemini-phone start" to launch voice services\n'));
 
             // Show verification results
