@@ -138,8 +138,8 @@ async function createQueue(connection) {
                 INSERT INTO queues_config (
                     extension, descr, grppre, alertinfo, ringing, maxwait,
                     password, ivr_id, dest, cwignore, queuewait, use_queue_context,
-                    togglehint, qnoanswer, callconfirm, callback_id
-                ) VALUES (?, ?, '', '', 0, '300', '', '0', '', 0, 1, 0, 0, 0, 0, '')
+                    togglehint, qnoanswer, callconfirm, callback_id, joinannounce_id
+                ) VALUES (?, ?, '', '', 0, '300', '', '0', '', 0, 1, 0, 0, 0, 0, '', NULL)
             `, ['8001', 'Crew Queue']);
 
             log('Queue 8001 created', 'success');
@@ -168,18 +168,12 @@ async function createQueue(connection) {
             );
         }
 
-        // Add crew members as static agents
-        // First, delete existing members
-        await connection.execute(
-            "DELETE FROM queues_config WHERE extension = '8001' AND descr = 'Crew Queue' AND member IS NOT NULL"
-        );
-
-        // Add each crew member
+        // Add crew members to queues_details table
         for (const crew of CREW) {
-            await connection.execute(`
-                INSERT INTO queues_config (extension, descr, member, grppre, alertinfo, ringing, maxwait, password, ivr_id, dest, cwignore, queuewait, use_queue_context, togglehint, qnoanswer, callconfirm, callback_id)
-                VALUES ('8001', 'Crew Queue', ?, '', '', 0, '300', '', '0', '', 0, 1, 0, 0, 0, 0, '')
-            `, [`Local/${crew.extension}@from-queue/n`]);
+            await connection.execute(
+                'INSERT INTO queues_details (id, keyword, data, flags) VALUES (?, ?, ?, 2)',
+                ['8001', 'member', `Local/${crew.extension}@from-queue/n`]
+            );
         }
 
         log(`Queue 8001 configured with ${CREW.length} agents`, 'success');
