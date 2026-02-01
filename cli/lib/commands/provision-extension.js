@@ -1,5 +1,5 @@
 import mysql from 'mysql2/promise';
-import { readConfig } from '../config.js';
+import { loadEnv } from '../env-loader.js';
 import chalk from 'chalk';
 
 /**
@@ -9,7 +9,7 @@ import chalk from 'chalk';
 export async function provisionExtension() {
     console.log(chalk.blue('\n🤖 Self-Provisioning Extension on FreePBX...\n'));
 
-    const config = readConfig();
+    const config = loadEnv();
 
     // Validate required config
     const required = ['SIP_EXTENSION', 'SIP_PASSWORD', 'FREEPBX_HOST', 'FREEPBX_DB_USER', 'FREEPBX_DB_PASS'];
