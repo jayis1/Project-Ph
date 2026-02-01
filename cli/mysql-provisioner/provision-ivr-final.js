@@ -85,7 +85,8 @@ async function createIVR(connection) {
             { selection: '5', dest: 'from-did-direct,9005,1', description: 'Apoc' },
             { selection: '6', dest: 'from-did-direct,9006,1', description: 'Switch' },
             { selection: '7', dest: 'from-did-direct,9007,1', description: 'Mouse' },
-            { selection: '8', dest: 'from-did-direct,9008,1', description: 'Cypher' }
+            { selection: '8', dest: 'from-did-direct,9008,1', description: 'Cypher' },
+            { selection: '9', dest: 'app-blackhole,hangup,1', description: 'Admin Cell (placeholder)' }
         ];
 
         // Delete existing entries
