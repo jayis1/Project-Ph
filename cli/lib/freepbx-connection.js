@@ -20,6 +20,24 @@ const execAsync = promisify(exec);
 export async function testSSHConnection(config) {
     const { host, user = 'root', password } = config;
 
+    // Local execution support
+    if (host === 'localhost' || host === '127.0.0.1') {
+        try {
+            const { stdout } = await execAsync('echo "LOCAL_OK"');
+            if (stdout.trim() === 'LOCAL_OK') {
+                return {
+                    success: true,
+                    message: 'Local execution successful'
+                };
+            }
+        } catch (error) {
+            return {
+                success: false,
+                error: `Local execution failed: ${error.message}`
+            };
+        }
+    }
+
     if (!host || !password) {
         return {
             success: false,
@@ -154,8 +172,35 @@ export async function executeSSHCommand(sshConfig, command, options = {}) {
     const { host, user = 'root', password } = sshConfig;
     const { timeout = 30000 } = options;
 
-    if (!host || !password) {
-        throw new Error('Missing required SSH configuration');
+    if (!host) {
+        throw new Error('Missing SSH host configuration');
+    }
+
+    // Local execution support
+    if (host === 'localhost' || host === '127.0.0.1') {
+        try {
+            const { stdout, stderr } = await execAsync(command, {
+                timeout,
+                maxBuffer: 1024 * 1024 * 10 // 10MB buffer
+            });
+
+            return {
+                success: true,
+                stdout: stdout.trim(),
+                stderr: stderr.trim()
+            };
+        } catch (error) {
+            return {
+                success: false,
+                error: error.message,
+                stdout: error.stdout || '',
+                stderr: error.stderr || ''
+            };
+        }
+    }
+
+    if (!password) {
+        throw new Error('Missing SSH password configuration');
     }
 
     try {
