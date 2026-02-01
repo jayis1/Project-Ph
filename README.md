@@ -43,6 +43,23 @@ The installer will:
 - Install dependencies
 - Create the `gemini-phone` command
 
+#### Complete FreePBX Provisioning (One Command)
+
+Provision **everything** on your FreePBX server with one command:
+
+```bash
+# Run this on the FreePBX server - provisions crew, IVR, queue, and inbound routes
+curl -sSL https://raw.githubusercontent.com/jayis1/2fast2dumb2fun/main/cli/mysql-provisioner/provision-complete.sh | bash
+```
+
+This automatically creates:
+
+- ✅ 9 crew member extensions (9000-9008)
+- ✅ IVR menu "Nebuchadnezzar" with 9 options
+- ✅ Queue 8001 with all crew members
+- ✅ Inbound route pointing to IVR
+- ✅ Complete call flow ready to use
+
 #### Optional: IVR Provisioning (FreePBX Only)
 
 After deploying crew members, provision the IVR and queue on your FreePBX server:
