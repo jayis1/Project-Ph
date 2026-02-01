@@ -317,7 +317,32 @@ echo "════════════════════════�
 echo ""
 echo "The 'gemini-phone' command is now available!"
 echo ""
+
+# Automated FreePBX Provisioning
+echo "🎯 FreePBX Auto-Provisioning"
+echo ""
+echo "Would you like to automatically provision your FreePBX server now?"
+echo "This will set up:"
+echo "  • Extensions (9000-9008)"
+echo "  • IVR system"
+echo "  • SIP trunk configuration"
+echo "  • Firewall rules"
+echo ""
+read -p "Auto-provision FreePBX now? (y/N) " -n 1 -r
+echo
+if [[ $REPLY =~ ^[Yy]$ ]]; then
+  echo ""
+  echo "Starting auto-provisioning wizard..."
+  echo ""
+  cd "$INSTALL_DIR/cli"
+  node bin/gemini-phone.js auto-provision
+  echo ""
+fi
+
 echo "Next steps:"
+if [[ ! $REPLY =~ ^[Yy]$ ]]; then
+  echo "  gemini-phone auto-provision  # Provision FreePBX (run this first!)"
+fi
 echo "  gemini-phone setup    # Configure your installation"
 echo "  gemini-phone start    # Launch services"
 echo ""

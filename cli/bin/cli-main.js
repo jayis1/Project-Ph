@@ -7,6 +7,8 @@ import { statusCommand } from '../lib/commands/status.js';
 import { doctorCommand } from '../lib/commands/doctor.js';
 import { provisionCommand } from '../lib/commands/provision.js';
 import { provisionExtension } from '../lib/commands/provision-extension.js';
+import { autoProvisionCommand } from '../lib/commands/auto-provision-freepbx.js';
+import { provisionStatusCommand } from '../lib/commands/provision-status.js';
 import { apiServerCommand } from '../lib/commands/api-server.js';
 import { deviceAddCommand } from '../lib/commands/device/add.js';
 import { deviceListCommand } from '../lib/commands/device/list.js';
@@ -98,6 +100,34 @@ program
       await provisionCommand(options);
     } catch (error) {
       console.error(chalk.red(`\n✗ Provisioning failed: ${error.message}\n`));
+      process.exit(1);
+    }
+  });
+
+program
+  .command('auto-provision')
+  .description('Automatically provision complete FreePBX setup (extensions, IVR, trunk)')
+  .option('--non-interactive', 'Run without prompts (use config file)')
+  .option('--trunk-number <number>', 'SIP trunk number')
+  .option('--trunk-password <password>', 'SIP trunk password')
+  .option('--trunk-server <server>', 'SIP trunk server (default: voice.redspot.dk)')
+  .action(async (options) => {
+    try {
+      await autoProvisionCommand(options);
+    } catch (error) {
+      console.error(chalk.red(`\n✗ Auto-provisioning failed: ${error.message}\n`));
+      process.exit(1);
+    }
+  });
+
+program
+  .command('provision-status')
+  .description('Show FreePBX provisioning status (extensions, IVR, trunk, routes)')
+  .action(async () => {
+    try {
+      await provisionStatusCommand();
+    } catch (error) {
+      console.error(chalk.red(`\n✗ Status check failed: ${error.message}\n`));
       process.exit(1);
     }
   });
