@@ -15,15 +15,45 @@ echo "  4. Misc Features (Destinations, Feature Codes)"
 echo "  5. Advanced Features (Paging, Parking, Queue Callback)"
 echo ""
 
-# Auto-detect MySQL password from FreePBX config
-if [ -f /etc/freepbx.conf ]; then
-    MYSQL_PASSWORD=$(grep AMPDBPASS /etc/freepbx.conf | sed -n 's/.*"\(.*\)".*/\1/p')
-    echo "✅ Detected MySQL password from FreePBX config"
-else
+# Check if FreePBX is installed and configured
+if [ ! -f /etc/freepbx.conf ]; then
     echo "❌ FreePBX config not found at /etc/freepbx.conf"
-    echo "   Please run this script on a FreePBX server"
+    echo ""
+    echo "Please complete the FreePBX web setup wizard first:"
+    echo "  1. Open http://$(hostname -I | awk '{print $1}') in your browser"
+    echo "  2. Complete the setup wizard"
+    echo "  3. Then run this script again"
+    echo ""
     exit 1
 fi
+
+# Auto-detect MySQL password from FreePBX config
+MYSQL_PASSWORD=$(grep AMPDBPASS /etc/freepbx.conf | sed -n 's/.*"\(.*\)".*/\1/p')
+
+if [ -z "$MYSQL_PASSWORD" ]; then
+    echo "❌ Could not detect MySQL password from FreePBX config"
+    echo ""
+    echo "Please complete the FreePBX web setup wizard first:"
+    echo "  1. Open http://$(hostname -I | awk '{print $1}') in your browser"
+    echo "  2. Complete the setup wizard"
+    echo "  3. Then run this script again"
+    echo ""
+    exit 1
+fi
+
+echo "✅ Detected MySQL password from FreePBX config"
+
+# Test MySQL connection
+if ! mysql -u freepbxuser -p"$MYSQL_PASSWORD" asterisk -e "SELECT 1" > /dev/null 2>&1; then
+    echo "❌ MySQL connection failed"
+    echo ""
+    echo "The password was detected but MySQL connection failed."
+    echo "Please verify FreePBX is fully set up and try again."
+    echo ""
+    exit 1
+fi
+
+echo "✅ MySQL connection successful"
 
 # Create .env file with detected password
 mkdir -p ~/.gemini-phone
