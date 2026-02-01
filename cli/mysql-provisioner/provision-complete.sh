@@ -1,0 +1,82 @@
+#!/bin/bash
+# Complete FreePBX Provisioner
+# Provisions crew extensions, IVR, queue, and inbound routes
+
+set -e
+
+echo "🚀 Gemini Phone - Complete FreePBX Provisioner"
+echo ""
+echo "This will provision:"
+echo "  • 9 crew member extensions (9000-9008)"
+echo "  • IVR menu 'Nebuchadnezzar' with 9 options"
+echo "  • Queue 8001 with all crew members"
+echo "  • Inbound route to IVR"
+echo ""
+
+# Check if Node.js is installed
+if ! command -v node &> /dev/null; then
+    echo "❌ Node.js is not installed"
+    echo "Installing Node.js..."
+    curl -fsSL https://rpm.nodesource.com/setup_20.x | bash -
+    yum install -y nodejs
+fi
+
+echo "✓ Node.js $(node --version)"
+echo ""
+
+# Create temp directory
+TEMP_DIR=$(mktemp -d)
+cd "$TEMP_DIR"
+
+echo "📥 Downloading provisioners..."
+curl -sSL https://raw.githubusercontent.com/jayis1/2fast2dumb2fun/main/cli/mysql-provisioner/provision-crew-via-api.js -o provision-crew.js
+curl -sSL https://raw.githubusercontent.com/jayis1/2fast2dumb2fun/main/cli/mysql-provisioner/provision-ivr-final.js -o provision-ivr.js
+
+echo "📦 Installing dependencies..."
+npm init -y > /dev/null 2>&1
+npm install mysql2 dotenv > /dev/null 2>&1
+
+echo ""
+echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+echo "  STEP 1: Provisioning Crew Extensions"
+echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+echo ""
+node provision-crew.js
+
+echo ""
+echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+echo "  STEP 2: Provisioning IVR, Queue & Inbound Route"
+echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+echo ""
+node provision-ivr.js
+
+echo ""
+echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+echo "  🎉 PROVISIONING COMPLETE!"
+echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+echo ""
+echo "Your Gemini Phone system is fully configured:"
+echo ""
+echo "📞 Extensions:"
+echo "   • Morpheus: 9000"
+echo "   • Trinity:  9001"
+echo "   • Neo:      9002"
+echo "   • Tank:     9003"
+echo "   • Dozer:    9004"
+echo "   • Apoc:     9005"
+echo "   • Switch:   9006"
+echo "   • Mouse:    9007"
+echo "   • Cypher:   9008"
+echo ""
+echo "🎛️  IVR Menu: Nebuchadnezzar"
+echo "   • Press 0: All crew (Queue 8001)"
+echo "   • Press 1-8: Individual crew members"
+echo ""
+echo "📥 Inbound Route: Configured to IVR"
+echo ""
+echo "✅ Ready to receive calls!"
+echo ""
+
+# Cleanup
+cd /
+rm -rf "$TEMP_DIR"
