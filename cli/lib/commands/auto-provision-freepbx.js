@@ -202,7 +202,7 @@ export async function autoProvisionCommand(options = {}) {
     // Run provisioning
     console.log(chalk.bold.cyan('\n\n🚀 Starting Provisioning...\n'));
 
-    const spinner = ora('Initializing...').start();
+    let spinner = ora('Initializing...').start();
 
     const progressCallback = ({ _step, status, message, details }) => {
         if (status === 'running') {
@@ -313,7 +313,7 @@ async function runNonInteractive(config, options) {
         config.sipTrunk.server = options.trunkServer;
     }
 
-    const spinner = ora('Starting provisioning...').start();
+    let spinner = ora('Starting provisioning...').start();
 
     const progressCallback = ({ _step, status, message }) => {
         if (status === 'success') {
