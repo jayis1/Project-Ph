@@ -4,16 +4,17 @@ set -e
 echo "🔗 Configuring Server B → Server A Routing"
 echo ""
 
-# Get Server A IP from argument or prompt
-SERVER_A_IP="$1"
-
-if [ -z "$SERVER_A_IP" ]; then
-    read -p "Enter Server A IP address (e.g., 172.16.1.240): " SERVER_A_IP
+# Read from /dev/tty to work when piped from curl
+if [ -t 0 ]; then
+    # Running interactively
+    read -p "Enter Server A IP address (e.g., 172.16.1.146): " SERVER_A_IP
+else
+    # Piped from curl, read from terminal
+    read -p "Enter Server A IP address (e.g., 172.16.1.146): " SERVER_A_IP </dev/tty
 fi
 
 if [ -z "$SERVER_A_IP" ]; then
     echo "❌ Server A IP is required"
-    echo "Usage: $0 <server_a_ip>"
     exit 1
 fi
 
