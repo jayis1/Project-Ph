@@ -55,7 +55,7 @@ echo "  - 9 Extensions (Nebuchadnezzar crew: 9000-9008)"
 echo ""
 
 # Run auto-provision (trunks removed from this command)
-node bin/gemini-phone.js auto-provision-freepbx \
+node bin/gemini-phone.js auto-provision \
     --mysql-password "$MYSQL_PASSWORD"
 
 echo ""
