@@ -7,7 +7,6 @@ set -e
 echo "🚀 Gemini Phone - Complete FreePBX Provisioner"
 echo ""
 echo "This will provision:"
-echo "  • 9 crew member extensions (9000-9008)"
 echo "  • IVR menu 'Nebuchadnezzar' with 10 options"
 echo "  • Queue 8001 with all crew members"
 echo "  • Inbound route to IVR"
@@ -32,32 +31,24 @@ TEMP_DIR=$(mktemp -d)
 cd "$TEMP_DIR"
 
 echo "📥 Downloading provisioners..."
-curl -sSL https://raw.githubusercontent.com/jayis1/2fast2dumb2fun/main/cli/mysql-provisioner/provision-crew-via-api.js -o provision-crew.mjs
 curl -sSL https://raw.githubusercontent.com/jayis1/2fast2dumb2fun/main/cli/mysql-provisioner/provision-ivr-final.js -o provision-ivr.cjs
 
 echo "📦 Installing dependencies..."
 npm init -y > /dev/null 2>&1
 # Set package.json to use ES modules
 node -e "const pkg = require('./package.json'); pkg.type = 'module'; require('fs').writeFileSync('package.json', JSON.stringify(pkg, null, 2));"
-npm install mysql2 dotenv chalk > /dev/null 2>&1
+npm install mysql2 dotenv > /dev/null 2>&1
 
 echo ""
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-echo "  STEP 1: Provisioning Crew Extensions"
-echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-echo ""
-node provision-crew.mjs
-
-echo ""
-echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-echo "  STEP 2: Provisioning IVR, Queue & Inbound Route"
+echo "  STEP 1: Provisioning IVR, Queue & Inbound Route"
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 echo ""
 node provision-ivr.cjs
 
 echo ""
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-echo "  STEP 3: Configuring Caller ID & Callback"
+echo "  STEP 2: Configuring Caller ID, Callback & Call Flow"
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 echo ""
 curl -sSL "https://raw.githubusercontent.com/jayis1/2fast2dumb2fun/main/cli/mysql-provisioner/provision-callerid.js" -o provision-callerid.cjs
