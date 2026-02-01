@@ -54,9 +54,21 @@ echo "  - 13 IVRs (3-level maze: Main → Departments → Phone Lines)"
 echo "  - 9 Extensions (Nebuchadnezzar crew: 9000-9008)"
 echo ""
 
-# Run auto-provision (trunks removed from this command)
-node bin/gemini-phone.js auto-provision \
-    --mysql-password "$MYSQL_PASSWORD"
+# Run provisioner directly with detected MySQL password
+node -e "
+import('./lib/freepbx-provisioner.js').then(async ({ provisionFreePBX }) => {
+  try {
+    await provisionFreePBX({
+      mysqlPassword: '$MYSQL_PASSWORD',
+      skipTrunks: true
+    });
+    console.log('\\n✅ Provisioning complete!');
+  } catch (error) {
+    console.error('\\n❌ Provisioning failed:', error.message);
+    process.exit(1);
+  }
+});
+"
 
 echo ""
 echo "🎉 IVR Maze provisioning complete!"
