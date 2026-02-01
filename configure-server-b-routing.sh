@@ -80,12 +80,12 @@ SET @route_id = LAST_INSERT_ID();
 INSERT INTO outbound_route_trunks (route_id, trunk_id, seq)
 VALUES (@route_id, (SELECT trunkid FROM trunks WHERE name = 'GatewayServer'), 0);
 
--- Add dial patterns
-INSERT INTO outbound_route_patterns (route_id, match_pattern_prefix, match_pattern_pass, prepend_digits, seq)
-VALUES (@route_id, '', 'ZXXXXXXX', '', 0);
+-- Add dial patterns (match_cid is required, blank for any)
+INSERT INTO outbound_route_patterns (route_id, match_pattern_prefix, match_pattern_pass, match_cid, prepend_digits)
+VALUES (@route_id, '', 'ZXXXXXXX', '', '');
 
-INSERT INTO outbound_route_patterns (route_id, match_pattern_prefix, match_pattern_pass, prepend_digits, seq)
-VALUES (@route_id, '', '00.', '', 1);
+INSERT INTO outbound_route_patterns (route_id, match_pattern_prefix, match_pattern_pass, match_cid, prepend_digits)
+VALUES (@route_id, '', '00.', '', '');
 EOF
 
 echo "✅ Outbound route created"
