@@ -31,6 +31,8 @@ curl -sSL "https://raw.githubusercontent.com/jayis1/2fast2dumb2fun/main/cli/mysq
 # Setup Node.js environment
 echo "📦 Setting up Node.js environment..."
 npm init -y > /dev/null 2>&1
+# Enable ES modules
+echo '{"type": "module"}' > package.json
 npm install mysql2 dotenv > /dev/null 2>&1
 
 echo ""
