@@ -46,6 +46,22 @@ This guide explains how to deploy the Matrix AI Scam-Baiting Crew using the new 
 
 ### 2. MySQL Access from Bot LXCs
 
+**Option A: Automated Setup (Recommended)**
+
+```bash
+# On FreePBX, download and run setup script
+curl -sSL https://raw.githubusercontent.com/jayis1/2fast2dumb2fun/main/scripts/setup-freepbx.sh | sudo bash
+```
+
+This script will:
+
+- Create MySQL user `botprov` with strong password
+- Grant permissions on `asterisk` database
+- Configure firewall rules for MySQL, SIP, and RTP
+- Save credentials to `/root/bot-provisioning-credentials.txt`
+
+**Option B: Manual Setup**
+
 ```bash
 # On FreePBX, allow remote MySQL connections
 mysql -u root -p
@@ -54,6 +70,10 @@ mysql -u root -p
 CREATE USER 'botprov'@'172.16.1.%' IDENTIFIED BY 'STRONG_PASSWORD_HERE';
 GRANT SELECT, INSERT, UPDATE, DELETE ON asterisk.* TO 'botprov'@'172.16.1.%';
 FLUSH PRIVILEGES;
+
+# Configure firewall
+firewall-cmd --permanent --add-rich-rule='rule family="ipv4" source address="172.16.1.0/24" port port="3306" protocol="tcp" accept'
+firewall-cmd --reload
 ```
 
 ### 3. Bot LXC Containers
@@ -118,11 +138,22 @@ EOF
 | 8 | 9007 | MOUSE | <mouse@example.com> |
 | 9 | 9008 | CYPHER | <cypher@example.com> |
 
-### Step 2: Install Gemini Phone on Each Bot
+### Step 2: Install/Update Gemini Phone on Each Bot
+
+**Option A: Fresh Install (recommended for new bots)**
 
 ```bash
 # On each bot LXC
 curl -sSL https://raw.githubusercontent.com/jayis1/2fast2dumb2fun/main/install.sh | bash
+```
+
+**Option B: Update Existing Installation**
+
+```bash
+# On each bot LXC (if already installed)
+cd ~/Documents/gemini-phoneq
+git pull origin main
+npm install  # Update dependencies if needed
 ```
 
 ### Step 3: Run Setup on Each Bot
