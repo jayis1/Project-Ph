@@ -8,9 +8,11 @@ echo "🚀 Gemini Phone - Complete FreePBX Provisioner"
 echo ""
 echo "This will provision:"
 echo "  • 9 crew member extensions (9000-9008)"
-echo "  • IVR menu 'Nebuchadnezzar' with 9 options"
+echo "  • IVR menu 'Nebuchadnezzar' with 10 options"
 echo "  • Queue 8001 with all crew members"
 echo "  • Inbound route to IVR"
+echo "  • Caller ID settings"
+echo "  • Callback & call forwarding"
 echo ""
 
 # Check if Node.js is installed
@@ -51,6 +53,16 @@ echo "  STEP 2: Provisioning IVR, Queue & Inbound Route"
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 echo ""
 node provision-ivr.cjs
+
+echo ""
+echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+echo "  STEP 3: Configuring Caller ID & Callback"
+echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+echo ""
+curl -sSL "https://raw.githubusercontent.com/jayis1/2fast2dumb2fun/main/cli/mysql-provisioner/provision-callerid.js" -o provision-callerid.cjs
+curl -sSL "https://raw.githubusercontent.com/jayis1/2fast2dumb2fun/main/cli/mysql-provisioner/provision-callback.js" -o provision-callback.cjs
+node provision-callerid.cjs
+node provision-callback.cjs
 
 echo ""
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
