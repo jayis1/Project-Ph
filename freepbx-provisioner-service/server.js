@@ -76,89 +76,6 @@ const CREW = [
 const claims = new Map();
 
 /**
- * Provision extensions on startup
- * Creates SIP extensions for all crew members if they don't exist
- */
-async function provisionExtensions() {
-    console.log('Provisioning extensions...');
-
-    for (const member of CREW) {
-        try {
-            // Check if extension exists
-            const [existing] = await pool.query(
-                'SELECT id FROM sip WHERE id = ? LIMIT 1',
-                [member.extension]
-            );
-
-            if (existing.length > 0) {
-                console.log(`  ✓ Extension ${member.extension} (${member.name}) already exists`);
-                continue;
-            }
-
-            // Generate secure password
-            const password = require('crypto').randomBytes(16).toString('hex');
-
-            // Create user entry
-            await pool.query(
-                `INSERT INTO users (extension, name, outboundcid, sipname, noanswer_dest, busy_dest, chanunavail_dest) 
-                 VALUES (?, ?, ?, ?, '', '', '')`,
-                [member.extension, member.name, `${member.name} <${member.extension}>`, member.extension]
-            );
-
-            // Create device entry
-            await pool.query(
-                `INSERT INTO devices (id, tech, dial, devicetype, user, description, emergency_cid) 
-                 VALUES (?, 'sip', ?, 'fixed', ?, ?, '')`,
-                [member.extension, `SIP/${member.extension}`, member.extension, member.name]
-            );
-
-            // SIP extension fields
-            const fields = [
-                { keyword: 'account', data: member.extension },
-                { keyword: 'secret', data: password },
-                { keyword: 'dtmfmode', data: 'rfc2833' },
-                { keyword: 'canreinvite', data: 'no' },
-                { keyword: 'context', data: 'from-internal' },
-                { keyword: 'host', data: 'dynamic' },
-                { keyword: 'trustrpid', data: 'yes' },
-                { keyword: 'sendrpid', data: 'no' },
-                { keyword: 'type', data: 'friend' },
-                { keyword: 'nat', data: 'yes' },
-                { keyword: 'port', data: '5060' },
-                { keyword: 'qualify', data: 'yes' },
-                { keyword: 'qualifyfreq', data: '60' },
-                { keyword: 'transport', data: 'udp' },
-                { keyword: 'avpf', data: 'no' },
-                { keyword: 'force_avp', data: 'no' },
-                { keyword: 'icesupport', data: 'no' },
-                { keyword: 'encryption', data: 'no' },
-                { keyword: 'callgroup', data: '' },
-                { keyword: 'pickupgroup', data: '' },
-                { keyword: 'dial', data: `SIP/${member.extension}` },
-                { keyword: 'mailbox', data: `${member.extension}@device` },
-                { keyword: 'permit', data: '0.0.0.0/0.0.0.0' },
-                { keyword: 'deny', data: '0.0.0.0/0.0.0.0' },
-                { keyword: 'callerid', data: `${member.name} <${member.extension}>` }
-            ];
-
-            // Insert all fields
-            for (const field of fields) {
-                await pool.query(
-                    'INSERT INTO sip (id, keyword, data, flags) VALUES (?, ?, ?, 0)',
-                    [member.extension, field.keyword, field.data]
-                );
-            }
-
-            console.log(`  ✓ Created extension ${member.extension} (${member.name})`);
-        } catch (error) {
-            console.error(`  ✗ Failed to create extension ${member.extension}:`, error.message);
-        }
-    }
-
-    console.log('✓ Extension provisioning complete\n');
-}
-
-/**
  * GET /health
  * Health check endpoint
  */
@@ -516,7 +433,6 @@ app.get('/', (req, res) => {
 // Start server
 async function start() {
     await initDatabase();
-    await provisionExtensions();
 
     app.listen(PORT, '0.0.0.0', () => {
         console.log('='.repeat(64));
@@ -526,6 +442,7 @@ async function start() {
         console.log(`Health check: http://localhost:${PORT}/health`);
         console.log('\nDevice Emulation: Yealink T46G (FreePBX free tier)');
         console.log('\nReady to provision bot nodes.\n');
+        console.log('NOTE: Extensions must be created via "gemini-phone auto-provision" first!\n');
     });
 }
 
