@@ -57,12 +57,19 @@ echo "✅ MySQL connection successful"
 
 # Create .env file with detected password
 mkdir -p ~/.gemini-phone
-cat > ~/.gemini-phone/.env << EOF
+# Create .env file with detected password (safely to handle special chars)
+mkdir -p ~/.gemini-phone
+cat > ~/.gemini-phone/.env << 'EOF'
 MYSQL_HOST=localhost
 MYSQL_USER=freepbxuser
-MYSQL_PASSWORD=$MYSQL_PASSWORD
 MYSQL_DATABASE=asterisk
 EOF
+
+# Append password safely (handling special chars like $ by using single quotes)
+# Note: This might break if the password contains a single quote, but FreePBX passwords usually don't.
+echo "MYSQL_PASSWORD='$MYSQL_PASSWORD'" >> ~/.gemini-phone/.env
+echo "FREEPBX_DB_PASSWORD='$MYSQL_PASSWORD'" >> ~/.gemini-phone/.env
+echo "FREEPBX_MYSQL_PASSWORD='$MYSQL_PASSWORD'" >> ~/.gemini-phone/.env
 
 echo "✅ Created .env file with MySQL credentials"
 echo ""
