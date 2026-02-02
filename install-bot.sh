@@ -1,16 +1,19 @@
 #!/bin/bash
 set -e
 
-# Gemini Phone Bot Installer (LXC Mode)
-# Usage: curl -sSL https://raw.githubusercontent.com/jayis1/2fast2dumb2fun/main/install-bot.sh | bash -s -- --registrar 172.16.1.26 --ext 9000 --name Morpheus
+# Gemini Phone Bot Installer
+# Usage: ./install-bot.sh --fleet --registrar 172.16.1.26
+# Or:    ./install-bot.sh --ext 9000 --registrar 172.16.1.26
 
-REPO_URL="https://github.com/jayis1/2fast2dumb2fun.git"
 INSTALL_DIR="$HOME/gemini-bot"
+REPO_URL="https://github.com/jayis1/2fast2dumb2fun.git"
 
 # --- Parse Arguments ---
+FLEET_MODE=false
+
 while [[ "$#" -gt 0 ]]; do
     case $1 in
-        --ext) EXTENSION="$2"; shift ;;
+        --fleet) FLEET_MODE=true ;;
         --ext) EXTENSION="$2"; shift ;;
         --name) INSTANCE_NAME="$2"; shift ;;
         --pass) PASSWORD="$2"; shift ;;
@@ -24,14 +27,13 @@ while [[ "$#" -gt 0 ]]; do
     shift
 done
 
-PASSWORD=${PASSWORD:-"changeme"}
-
-if [ -z "$EXTENSION" ] || [ -z "$REGISTRAR" ]; then
-    echo "Usage: curl ... | bash -s -- --ext 9000 --registrar 172.16.1.26 [--name Name] [--pass Password]"
+if [ -z "$REGISTRAR" ]; then
+    echo "Usage: ./install-bot.sh --fleet --registrar 172.16.1.26"
+    echo "   Or: ./install-bot.sh --ext 9000 --registrar 172.16.1.26"
     exit 1
 fi
 
-echo "🤖 Deploying Bot: $INSTANCE_NAME ($EXTENSION)..."
+echo "🤖 Gemini Bot Installer Initializing..."
 
 # --- 1. System Dependencies ---
 SUDO="sudo"
@@ -47,93 +49,96 @@ fi
 if ! command -v docker &> /dev/null; then
     echo "📦 Installing Docker..."
     curl -fsSL https://get.docker.com | sh
-    # Add user to group if needed
-    $SUDO usermod -aG docker $USER
 fi
 
-# --- 2. Clone Repository ---
+# --- 2. Clone/Update Repo ---
 if [ -d "$INSTALL_DIR" ]; then
-    echo "♻️ Updating existing repo..."
+    echo "♻️  Updating existing repo in $INSTALL_DIR..."
     cd "$INSTALL_DIR"
     git pull
 else
-    echo "📥 Cloning repository..."
+    echo "📥 Cloning repository to $INSTALL_DIR..."
     git clone "$REPO_URL" "$INSTALL_DIR"
     cd "$INSTALL_DIR"
 fi
 
-# --- 3. Configure Environment (IN ROOT) ---
-# We are in $INSTALL_DIR (Repo Root)
-
-# Build dependencies in voice-app?
-# Docker Compose will handle the build via Dockerfile.
-
-# Auto-detect IP if not provided
+# --- 3. Configuration ---
+# Auto-detect IP
 if [ -z "$EXTERNAL_IP" ]; then
     EXTERNAL_IP=$(hostname -I | awk '{print $1}')
 fi
-echo "🌐 Detected IP: $EXTERNAL_IP"
+echo "🌐 Using External IP: $EXTERNAL_IP"
 
-# Auto-calculate API URL if not provided
-if [ -z "$API_URL" ]; then
-  GEMINI_API_URL=http://$REGISTRAR:3333
+# Create .env (Base Config)
+echo "📝 Configuring Environment..."
+cat > .env <<EOF
+# Base Config
+HTTP_PORT=3000
+WS_PORT=3001
+SIP_DOMAIN=$REGISTRAR
+SIP_REGISTRAR=$REGISTRAR
+SIP_REGISTRAR_PORT=5060
+EXTERNAL_IP=$EXTERNAL_IP
+GEMINI_API_URL=${API_URL:-http://$REGISTRAR:3333}
+OPENAI_API_KEY=$OPENAI_API_KEY
+ELEVENLABS_API_KEY=$ELEVENLABS_API_KEY
+
+# Container Services
+DRACHTIO_HOST=drachtio
+DRACHTIO_PORT=9022
+DRACHTIO_SECRET=cymru
+FREESWITCH_HOST=freeswitch
+FREESWITCH_PORT=8021
+FREESWITCH_SECRET=JambonzR0ck$
+AUDIO_DIR=/tmp/voice-audio
+EOF
+
+# --- 4. Fleet Configuration ---
+if [ "$FLEET_MODE" = "true" ]; then
+    echo "🚀 Configuring Full Bot Fleet (Extensions 9000-9008)..."
+    mkdir -p voice-app/config
+    cat > voice-app/config/devices.json <<JSON
+{
+  "9000": { "name": "Morpheus", "extension": "9000", "authId": "9000", "password": "DGHwMW6v25", "voiceId": "JAgnJveGGUh4qy4kh6dF", "prompt": "You are Morpheus from The Matrix. Use under 40 words." },
+  "9001": { "name": "Trinity", "extension": "9001", "authId": "9001", "password": "GeminiPhone123!", "voiceId": "EXAVOICEID_TRINITY", "prompt": "You are Trinity." },
+  "9002": { "name": "Neo", "extension": "9002", "authId": "9002", "password": "GeminiPhone123!", "voiceId": "EXAVOICEID_NEO", "prompt": "You are Neo." },
+  "9003": { "name": "Tank", "extension": "9003", "authId": "9003", "password": "GeminiPhone123!", "voiceId": "EXAVOICEID_TANK", "prompt": "You are Tank." },
+  "9004": { "name": "Dozer", "extension": "9004", "authId": "9004", "password": "GeminiPhone123!", "voiceId": "EXAVOICEID_DOZER", "prompt": "You are Dozer." },
+  "9005": { "name": "Apoc", "extension": "9005", "authId": "9005", "password": "GeminiPhone123!", "voiceId": "EXAVOICEID_APOC", "prompt": "You are Apoc." },
+  "9006": { "name": "Switch", "extension": "9006", "authId": "9006", "password": "GeminiPhone123!", "voiceId": "EXAVOICEID_SWITCH", "prompt": "You are Switch." },
+  "9007": { "name": "Mouse", "extension": "9007", "authId": "9007", "password": "GeminiPhone123!", "voiceId": "EXAVOICEID_MOUSE", "prompt": "You are Mouse." },
+  "9008": { "name": "Cypher", "extension": "9008", "authId": "9008", "password": "GeminiPhone123!", "voiceId": "EXAVOICEID_CYPHER", "prompt": "You are Cypher." }
+}
+JSON
+    echo "✅ Fleet Config Written to voice-app/config/devices.json"
+
 else
-  GEMINI_API_URL=$API_URL
+    # Single Bot Mode
+    if [ -z "$EXTENSION" ]; then
+        echo "❌ Error: Must specify --fleet OR --ext <number>"
+        exit 1
+    fi
+    echo "SIP_EXTENSION=$EXTENSION" >> .env
+    echo "SIP_AUTH_ID=$EXTENSION" >> .env
+    echo "SIP_PASSWORD=${PASSWORD:-changeme}" >> .env
+    echo "INSTANCE_NAME=\"${INSTANCE_NAME:-Bot}\"" >> .env
+    echo "ℹ️  Single Bot Configured (Extension $EXTENSION)"
 fi
 
-echo "📝 Writing .env config (to Root)..."
-echo "# Generated by install-bot.sh" > .env
-echo "HTTP_PORT=3000" >> .env
-echo "WS_PORT=3001" >> .env
-echo "SIP_EXTENSION=$EXTENSION" >> .env
-echo "SIP_AUTH_ID=$EXTENSION" >> .env
-echo "SIP_PASSWORD=$PASSWORD" >> .env
-echo "SIP_DOMAIN=$REGISTRAR" >> .env
-echo "SIP_REGISTRAR=$REGISTRAR" >> .env
-echo "SIP_REGISTRAR_PORT=5060" >> .env
-echo "INSTANCE_NAME=\"$INSTANCE_NAME\"" >> .env
-echo "EXTERNAL_IP=$EXTERNAL_IP" >> .env
+# --- 5. Launch ---
+echo "🔥 Launching Containers..."
+if docker compose version &> /dev/null; then CMD="docker compose"; else CMD="docker-compose"; fi
 
-echo "" >> .env
-echo "# Container Configs" >> .env
-echo "DRACHTIO_HOST=drachtio" >> .env
-echo "DRACHTIO_PORT=9022" >> .env
-echo "DRACHTIO_SECRET=cymru" >> .env
-echo "FREESWITCH_HOST=freeswitch" >> .env
-echo "FREESWITCH_PORT=8021" >> .env
-echo "FREESWITCH_SECRET=JambonzR0ck$" >> .env
-echo "AUDIO_DIR=/tmp/voice-audio" >> .env
+$CMD up -d --build --remove-orphans
 
-echo "" >> .env
-echo "# API & Keys" >> .env
-echo "GEMINI_API_URL=$GEMINI_API_URL" >> .env
-echo "OPENAI_API_KEY=$OPENAI_API_KEY" >> .env
-echo "ELEVENLABS_API_KEY=$ELEVENLABS_API_KEY" >> .env
-
-# --- 4. Launch Container ---
-echo "🚀 Launching Bot Container..."
-
-if docker compose version &> /dev/null; then
-    CMD="docker compose"
-elif command -v docker-compose &> /dev/null; then
-    CMD="docker-compose"
+echo ""
+echo "🎉 Deployment Complete!"
+if [ "$FLEET_MODE" = "true" ]; then
+    echo "   Fleet:  9 Instances (9000-9008)"
 else
-    echo "❌ Docker Compose not found. Installing plugin..."
-    $SUDO apt-get install -y docker-compose-plugin
-    CMD="docker compose"
+    echo "   Bot:    $INSTANCE_NAME ($EXTENSION)"
 fi
-
-# We are in $INSTALL_DIR where docker-compose.yml lives.
-# But we only want to run 'voice-app' and its deps?
-# The docker-compose.yml defines: drachtio, freeswitch, voice-app.
-# Perfect.
-
-$CMD up -d --build
-
+echo "   Host:   $EXTERNAL_IP"
+echo "   PBX:    $REGISTRAR"
 echo ""
-echo "✅ Bot Deployment Complete!"
-echo "   Name: $INSTANCE_NAME"
-echo "   Ext:  $EXTENSION"
-echo "   Host: $EXTERNAL_IP"
-echo "   Registrar: $REGISTRAR"
-echo ""
+

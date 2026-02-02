@@ -19,7 +19,20 @@ if [ ! -z "$DRIVERS_PATH" ]; then
     # Fix 3: Missing expiration
     sed -i "s/'expiration' => \$trunk\['expiration'\],/'expiration' => \!empty(\$trunk['expiration']) ? \$trunk['expiration'] : 3600,/g" $DRIVERS_PATH
     
-    echo "✅ Patched PJSip.class.php successfully."
+    # Fix 4: Missing server_uri (Lines ~552)
+    sed -i "s/'server_uri' => \$trunk\['sip_server'\],/'server_uri' => \!empty(\$trunk['sip_server']) ? \$trunk['sip_server'] : '127.0.0.1',/g" $DRIVERS_PATH
+
+    # Fix 5: Missing client_uri (Lines ~564)
+    sed -i "s/'client_uri' => \$trunk\['sip_server'\],/'client_uri' => \!empty(\$trunk['sip_server']) ? \$trunk['sip_server'] : '127.0.0.1',/g" $DRIVERS_PATH
+
+    # Fix 6: Missing contact (Line ~625)
+    sed -i "s/\$conf\['pjsip.aor.conf'\]\[\$tn\]\['contact'\] = 'sip:'.\$trunk\['sip_server'\];/\$conf['pjsip.aor.conf'][\$tn]['contact'] = 'sip:'.(!empty(\$trunk['sip_server']) ? \$trunk['sip_server'] : '127.0.0.1');/" $DRIVERS_PATH
+
+    # Fix 7: Missing match in identify (Line ~806)
+    # Using 127.0.0.1 as fallback to avoid crashing, user must configure proper trunk manually anyway
+    sed -i "s/'match' => \!empty(\$trunk\['match'\]) ? \$trunk\['match'\] : \$trunk\['sip_server'\]/'match' => \!empty(\$trunk['match']) ? \$trunk['match'] : (\!empty(\$trunk['sip_server']) ? \$trunk['sip_server'] : '127.0.0.1')/" $DRIVERS_PATH
+
+    echo "✅ Patched PJSip.class.php successfully (7 Fixes applied)."
 else
     echo "⚠️  Could not find PJSip.class.php - skipping patches."
 fi
