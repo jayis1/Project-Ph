@@ -6,14 +6,31 @@ echo "🔧 Setting up Gateway (Asterisk)..."
 # Update system
 apt update && apt upgrade -y
 
-# Add Asterisk repo for Debian
-apt install -y gnupg2 curl
-curl -fsSL https://packages.asterisk.org/gpg.key | gpg --dearmor -o /usr/share/keyrings/asterisk-archive-keyring.gpg
-echo "deb [signed-by=/usr/share/keyrings/asterisk-archive-keyring.gpg] https://packages.asterisk.org/deb bookworm main" > /etc/apt/sources.list.d/asterisk.list
-apt update
+# Install dependencies
+apt install -y build-essential wget libssl-dev libncurses5-dev libnewt-dev libxml2-dev linux-headers-$(uname -r) libsqlite3-dev uuid-dev
 
-# Install Asterisk
-apt install -y asterisk
+# Download and install Asterisk 20
+cd /usr/src
+wget https://downloads.asterisk.org/pub/telephony/asterisk/asterisk-20-current.tar.gz
+tar -xzf asterisk-20-current.tar.gz
+cd asterisk-20.*
+
+# Install prerequisites
+contrib/scripts/install_prereq install
+
+# Configure and compile
+./configure --with-jansson-bundled
+make menuselect.makeopts
+menuselect/menuselect --enable app_macro --enable CORE-SOUNDS-EN-WAV --enable MOH-OPSOUND-WAV menuselect.makeopts
+make -j$(nproc)
+make install
+make samples
+make config
+
+# Create asterisk user
+groupadd asterisk
+useradd -r -d /var/lib/asterisk -g asterisk asterisk
+chown -R asterisk:asterisk /etc/asterisk /var/lib/asterisk /var/log/asterisk /var/spool/asterisk /usr/lib/asterisk
 
 # Configure PJSIP
 cat > /etc/asterisk/pjsip.conf <<'EOF'
@@ -87,9 +104,10 @@ EOF
 
 # Start Asterisk
 systemctl enable asterisk
-systemctl restart asterisk
+systemctl start asterisk
 
 echo "✅ Gateway configured!"
 echo ""
 echo "Verifying endpoints..."
+sleep 3
 asterisk -rx 'pjsip show endpoints'
