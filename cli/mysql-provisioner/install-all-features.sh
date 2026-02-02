@@ -110,6 +110,17 @@ export PROVISIONER_DB_USER=freepbxuser
 export PROVISIONER_DB_NAME=asterisk
 
 echo ""
+# HOT PATCH: Fix FreePBX 17 dialplan.php bug (Undefined array key "skip_joinannounce")
+echo "🩹 Patching FreePBX dialplan.php bug..."
+DIALPLAN_FILE="/var/www/html/admin/modules/queues/functions.inc/dialplan.php"
+if [ -f "$DIALPLAN_FILE" ]; then
+    sed -i "s/\$q\['skip_joinannounce'\]/(\$q['skip_joinannounce'] ?? 0)/g" "$DIALPLAN_FILE"
+    echo "   ✅ Patched $DIALPLAN_FILE"
+else
+    echo "   ⚠️  Could not find dialplan.php to patch (Expected at $DIALPLAN_FILE)"
+fi
+
+echo ""
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 echo "  STEP 1: IVR, Queue & Inbound Route"
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
