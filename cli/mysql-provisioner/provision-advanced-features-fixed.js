@@ -138,26 +138,23 @@ async function provisionAdvancedFeatures() {
                     `UPDATE parkplus SET 
             parkpos = ?,
             parkingtime = ?,
-            context = ?,
             parkedmusicclass = ?
           WHERE parkext = ?`,
                     [
                         PARKING_CONFIG.parkpos,
                         PARKING_CONFIG.parkingtime,
-                        PARKING_CONFIG.context,
                         PARKING_CONFIG.parkedmusicclass,
                         PARKING_CONFIG.parkext
                     ]
                 );
             } else {
                 await connection.execute(
-                    `INSERT INTO parkplus (parkext, parkpos, parkingtime, context, parkedmusicclass)
-          VALUES (?, ?, ?, ?, ?)`,
+                    `INSERT INTO parkplus (parkext, parkpos, parkingtime, parkedmusicclass, defaultlot, type, name, numslots)
+          VALUES (?, ?, ?, ?, 'yes', 'public', 'Default Lot', 8)`,
                     [
                         PARKING_CONFIG.parkext,
                         PARKING_CONFIG.parkpos,
                         PARKING_CONFIG.parkingtime,
-                        PARKING_CONFIG.context,
                         PARKING_CONFIG.parkedmusicclass
                     ]
                 );
