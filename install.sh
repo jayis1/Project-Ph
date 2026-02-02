@@ -1,26 +1,12 @@
 #!/bin/bash
 set -e
 
-# Gemini Phone CLI Installer
-# Usage: curl -sSL https://raw.githubusercontent.com/jayis1/claude-phone-but-for-Gemini-and-freepbx/main/install.sh | bash
-
+# Usage: curl -sSL https://raw.githubusercontent.com/jayis1/2fast2dumb2fun/main/install.sh | bash
 INSTALL_DIR="$HOME/.gemini-phone-cli"
 REPO_URL="https://github.com/jayis1/2fast2dumb2fun.git"
 
 echo "🎯 Gemini Phone CLI Installer"
 echo ""
-
-# Define sudo command based on user
-if [ "$EUID" -eq 0 ]; then
-  SUDO=""
-else
-  if command -v sudo &> /dev/null; then
-    SUDO="sudo"
-  else
-    echo "✗ This script requires root privileges or sudo."
-    exit 1
-  fi
-fi
 
 # Detect OS
 OS="$(uname -s)"
@@ -57,19 +43,14 @@ install_nodejs() {
   echo "📦 Installing Node.js..."
   case "$PKG_MANAGER" in
     apt)
-      # Install Node.js 20.x LTS via NodeSource
-      if [ -n "$SUDO" ]; then
-        curl -fsSL https://deb.nodesource.com/setup_20.x | $SUDO -E bash -
-      else
-        curl -fsSL https://deb.nodesource.com/setup_20.x | bash -
-      fi
-      $SUDO apt-get install -y nodejs sshpass sshfs
+      curl -fsSL https://deb.nodesource.com/setup_20.x | sudo -E bash -
+      sudo apt-get install -y nodejs
       ;;
     dnf)
-      $SUDO dnf install -y nodejs npm sshpass fuse-sshfs
+      sudo dnf install -y nodejs npm
       ;;
     pacman)
-      $SUDO pacman -S --noconfirm nodejs npm sshpass sshfs
+      sudo pacman -S --noconfirm nodejs npm
       ;;
     brew)
       brew install node
@@ -89,22 +70,21 @@ install_docker() {
   echo "📦 Installing Docker..."
   case "$PKG_MANAGER" in
     apt)
-      # Install Docker via official script
-      curl -fsSL https://get.docker.com | $SUDO sh
-      $SUDO usermod -aG docker $USER
+      curl -fsSL https://get.docker.com | sudo sh
+      sudo usermod -aG docker $USER
       echo "⚠️  You may need to log out and back in for Docker group to take effect"
       ;;
     dnf)
-      $SUDO dnf install -y docker
-      $SUDO systemctl start docker
-      $SUDO systemctl enable docker
-      $SUDO usermod -aG docker $USER
+      sudo dnf install -y docker
+      sudo systemctl start docker
+      sudo systemctl enable docker
+      sudo usermod -aG docker $USER
       ;;
     pacman)
-      $SUDO pacman -S --noconfirm docker
-      $SUDO systemctl start docker
-      $SUDO systemctl enable docker
-      $SUDO usermod -aG docker $USER
+      sudo pacman -S --noconfirm docker
+      sudo systemctl start docker
+      sudo systemctl enable docker
+      sudo usermod -aG docker $USER
       ;;
     brew)
       echo "📦 Docker Desktop required on macOS"
@@ -126,13 +106,13 @@ install_git() {
   echo "📦 Installing git..."
   case "$PKG_MANAGER" in
     apt)
-      $SUDO apt-get update && $SUDO apt-get install -y git
+      sudo apt-get update && sudo apt-get install -y git
       ;;
     dnf)
-      $SUDO dnf install -y git
+      sudo dnf install -y git
       ;;
     pacman)
-      $SUDO pacman -S --noconfirm git
+      sudo pacman -S --noconfirm git
       ;;
     brew)
       brew install git
@@ -210,7 +190,7 @@ if [ "$OS" = "Linux" ]; then
   if ! docker info &> /dev/null 2>&1; then
     echo "⚠️  Docker permission issue"
     echo "  Adding user to docker group..."
-    $SUDO usermod -aG docker $USER
+    sudo usermod -aG docker $USER
     echo "  ⚠️  You need to log out and back in, OR run: newgrp docker"
     echo ""
     read -p "Continue anyway? (Y/n) " -n 1 -r
@@ -221,22 +201,10 @@ if [ "$OS" = "Linux" ]; then
   fi
 fi
 
-# Check Gemini CLI (optional - needed for API server)
+# Check Gemini CLI (optional - only needed for API server)
 if ! command -v gemini &> /dev/null; then
   echo "⚠️  Gemini CLI not found (needed for API server only)"
-  read -p "  Install Gemini CLI automatically? (Y/n) " -n 1 -r
-  echo
-  if [[ ! $REPLY =~ ^[Nn]$ ]]; then
-    echo "📦 Installing Gemini CLI..."
-    if [ -n "$SUDO" ]; then
-      $SUDO npm install -g @google/gemini-cli
-    else
-      npm install -g @google/gemini-cli
-    fi
-    echo "✓ Gemini CLI installed"
-  else
-    echo "  Manual install: https://geminicli.com/docs/get-started/installation/"
-  fi
+  echo "  Install from: https://github.com/google-gemini/gemini-cli"
 else
   echo "✓ Gemini CLI installed"
 fi
@@ -259,11 +227,6 @@ echo "Installing dependencies..."
 cd "$INSTALL_DIR/cli"
 npm install --silent --production
 
-# Install API server dependencies
-cd "$INSTALL_DIR/gemini-api-server"
-npm install --silent --production
-cd "$INSTALL_DIR"
-
 # Create symlink
 echo ""
 if [ -L "$BIN_DIR/gemini-phone" ]; then
@@ -272,40 +235,19 @@ fi
 
 if [ "$OS" = "Linux" ]; then
   ln -s "$INSTALL_DIR/cli/bin/gemini-phone.js" "$BIN_DIR/gemini-phone"
-  chmod +x "$INSTALL_DIR/cli/bin/gemini-phone.js"
   echo "✓ Installed to: $BIN_DIR/gemini-phone"
 
-  # Add to PATH if not already there
   if [[ ":$PATH:" != *":$HOME/.local/bin:"* ]]; then
     echo ""
     echo "⚠️  Adding $HOME/.local/bin to PATH..."
-    
-    # Add to .bashrc for bash sessions
-    if [ -f ~/.bashrc ]; then
-      if ! grep -q 'export PATH="$HOME/.local/bin:$PATH"' ~/.bashrc; then
-        echo 'export PATH="$HOME/.local/bin:$PATH"' >> ~/.bashrc
-      fi
-    fi
-    
-    # Add to .profile for login shells
-    if [ -f ~/.profile ]; then
-      if ! grep -q 'export PATH="$HOME/.local/bin:$PATH"' ~/.profile; then
-        echo 'export PATH="$HOME/.local/bin:$PATH"' >> ~/.profile
-      fi
-    else
-      echo 'export PATH="$HOME/.local/bin:$PATH"' > ~/.profile
-    fi
-    
-    # Activate for current session
+    echo 'export PATH="$HOME/.local/bin:$PATH"' >> ~/.bashrc
     export PATH="$HOME/.local/bin:$PATH"
-    
-    echo "✓ PATH updated (active now and for future sessions)"
   fi
 else
   if [ -w "$BIN_DIR" ]; then
     ln -s "$INSTALL_DIR/cli/bin/gemini-phone.js" "$BIN_DIR/gemini-phone"
   else
-    $SUDO ln -s "$INSTALL_DIR/cli/bin/gemini-phone.js" "$BIN_DIR/gemini-phone"
+    sudo ln -s "$INSTALL_DIR/cli/bin/gemini-phone.js" "$BIN_DIR/gemini-phone"
   fi
   echo "✓ Installed to: $BIN_DIR/gemini-phone"
 fi
@@ -315,76 +257,7 @@ echo "════════════════════════�
 echo "✓ Installation complete!"
 echo "════════════════════════════════════════════"
 echo ""
-echo "The 'gemini-phone' command is now available!"
-echo ""
-
-# Automated FreePBX Provisioning
-echo "🎯 FreePBX Auto-Provisioning"
-echo ""
-echo "Would you like to automatically provision your FreePBX server now?"
-echo "This will set up:"
-echo "  • Extensions (9000-9008)"
-echo "  • IVR system"
-echo "  • SIP trunk configuration"
-echo "  • Firewall rules"
-echo ""
-read -p "Auto-provision FreePBX now? (y/N) " -n 1 -r
-echo
-if [[ $REPLY =~ ^[Yy]$ ]]; then
-  echo ""
-  echo "Starting auto-provisioning wizard..."
-  echo ""
-  cd "$INSTALL_DIR/cli"
-  node bin/gemini-phone.js auto-provision
-  echo ""
-fi
-
-# FreePBX Provisioner Service Setup
-echo "🔧 FreePBX Provisioner Service"
-echo ""
-echo "Install the provisioner service on this FreePBX server?"
-echo "This allows bot nodes to self-provision by connecting to this server."
-echo ""
-read -p "Install provisioner service? (y/N) " -n 1 -r
-echo
-INSTALL_PROVISIONER=$REPLY
-
-if [[ $INSTALL_PROVISIONER =~ ^[Yy]$ ]]; then
-  echo ""
-  echo "Installing provisioner service..."
-  
-  # Install dependencies
-  cd "$INSTALL_DIR/freepbx-provisioner-service"
-  npm install
-  
-  # Create systemd service
-  if command -v systemctl &> /dev/null; then
-    echo "Setting up systemd service..."
-    $SUDO cp freepbx-provisioner.service /etc/systemd/system/
-    $SUDO systemctl daemon-reload
-    $SUDO systemctl enable freepbx-provisioner
-    $SUDO systemctl start freepbx-provisioner
-    
-    echo "✓ Provisioner service installed and started"
-    echo ""
-    echo "Service status:"
-    $SUDO systemctl status freepbx-provisioner --no-pager -l
-  else
-    echo "⚠️  systemd not available. You'll need to start the service manually:"
-    echo "  cd $INSTALL_DIR/freepbx-provisioner-service"
-    echo "  node server.js"
-  fi
-  echo ""
-fi
-
 echo "Next steps:"
-if [[ ! $REPLY =~ ^[Yy]$ ]]; then
-  echo "  gemini-phone auto-provision  # Provision FreePBX (run this first!)"
-fi
-if [[ $INSTALL_PROVISIONER =~ ^[Yy]$ ]]; then
-  echo "  curl http://localhost:3500/health  # Test provisioner service"
-fi
 echo "  gemini-phone setup    # Configure your installation"
 echo "  gemini-phone start    # Launch services"
 echo ""
-

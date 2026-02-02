@@ -1,23 +1,107 @@
 #!/usr/bin/env node
 
-// Early Node.js version check - ES5 compatible for old Node versions
-// This MUST run before any ES module imports to catch version issues
-var nodeMajor = parseInt(process.versions.node.split('.')[0], 10);
-var requiredMajor = 18;
+/**
+ * Gemini Phone CLI
+ * 
+ * Simple unified command-line interface for Gemini Phone.
+ * Modeled after NetworkChuck's claude-phone for simplicity.
+ */
 
-if (nodeMajor < requiredMajor) {
-  console.error('');
-  console.error('\x1b[31m' + 'ERROR: Node.js version too old' + '\x1b[0m');
-  console.error('  Current: v' + process.versions.node);
-  console.error('  Required: v' + requiredMajor + '.0.0 or higher');
-  console.error('');
-  console.error('\x1b[33m' + 'To install Node.js ' + requiredMajor + '+:' + '\x1b[0m');
-  console.error('  macOS/Linux: curl -fsSL https://fnm.vercel.app/install | bash');
-  console.error('               fnm install 20 && fnm default 20');
-  console.error('  Or visit: https://nodejs.org/');
-  console.error('');
-  process.exit(1);
+import { Command } from 'commander';
+import chalk from 'chalk';
+import { fileURLToPath } from 'url';
+import { dirname, join } from 'path';
+import { readFileSync } from 'fs';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
+const packagePath = join(__dirname, '../../package.json');
+const pkg = JSON.parse(readFileSync(packagePath, 'utf8'));
+
+const program = new Command();
+
+program
+  .name('gemini-phone')
+  .description('Voice interface for Gemini CLI via SIP')
+  .version(pkg.version);
+
+// Setup command
+program
+  .command('setup')
+  .description('Interactive setup wizard')
+  .action(async () => {
+    const { setupCommand } = await import('../lib/commands/setup.js');
+    await setupCommand();
+  });
+
+// Start command
+program
+  .command('start')
+  .description('Start Gemini Phone services')
+  .action(async () => {
+    const { startCommand } = await import('../lib/commands/start.js');
+    await startCommand();
+  });
+
+// Stop command
+program
+  .command('stop')
+  .description('Stop Gemini Phone services')
+  .action(async () => {
+    const { stopCommand } = await import('../lib/commands/stop.js');
+    await stopCommand();
+  });
+
+// Status command
+program
+  .command('status')
+  .description('Check service status')
+  .action(async () => {
+    const { statusCommand } = await import('../lib/commands/status.js');
+    await statusCommand();
+  });
+
+// Doctor command
+program
+  .command('doctor')
+  .description('Run system health checks')
+  .action(async () => {
+    const { doctorCommand } = await import('../lib/commands/doctor.js');
+    await doctorCommand();
+  });
+
+// API Server command (standalone)
+program
+  .command('api-server')
+  .description('Start Gemini API server (standalone mode)')
+  .action(async () => {
+    const { apiServerCommand } = await import('../lib/commands/api-server.js');
+    await apiServerCommand();
+  });
+
+// Config commands
+const config = program.command('config').description('Manage configuration');
+
+config
+  .command('show')
+  .description('Show current configuration')
+  .action(async () => {
+    const { showConfig } = await import('../lib/commands/config/show.js');
+    await showConfig();
+  });
+
+config
+  .command('path')
+  .description('Show config file path')
+  .action(async () => {
+    const { configPath } = await import('../lib/commands/config/path.js');
+    await configPath();
+  });
+
+// Parse arguments
+program.parse(process.argv);
+
+// Show help if no command specified
+if (!process.argv.slice(2).length) {
+  program.outputHelp();
 }
-
-// Node version OK - load the actual CLI
-import('./cli-main.js');
