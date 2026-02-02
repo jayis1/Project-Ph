@@ -82,7 +82,7 @@ cd "$TEMP_DIR"
 # Download all provisioners directly (with cache busting)
 TS=$(date +%s)
 echo "📥 Downloading provisioners..."
-curl -sSL "https://raw.githubusercontent.com/jayis1/2fast2dumb2fun/main/cli/mysql-provisioner/provision-ivr-final.js?v=$TS" -o provision-ivr.cjs
+curl -sSL "https://raw.githubusercontent.com/jayis1/2fast2dumb2fun/main/cli/mysql-provisioner/provision-ivr-final.js?v=$TS" -o provision-ivr-v2.cjs
 curl -sSL "https://raw.githubusercontent.com/jayis1/2fast2dumb2fun/main/cli/mysql-provisioner/provision-extension-settings.js?v=$TS" -o provision-settings.cjs
 curl -sSL "https://raw.githubusercontent.com/jayis1/2fast2dumb2fun/main/cli/mysql-provisioner/provision-conferences.js?v=$TS" -o provision-conferences.mjs
 curl -sSL "https://raw.githubusercontent.com/jayis1/2fast2dumb2fun/main/cli/mysql-provisioner/provision-misc-features.js?v=$TS" -o provision-misc.mjs
@@ -113,7 +113,7 @@ echo ""
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 echo "  STEP 1: IVR, Queue & Inbound Route"
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-node provision-ivr.cjs
+node provision-ivr-v2.cjs
 
 echo ""
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"

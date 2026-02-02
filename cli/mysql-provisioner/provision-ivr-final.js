@@ -159,7 +159,8 @@ async function createQueue(connection) {
             ['autopause', 'no'],
             ['maxlen', '0'],
             ['servicelevel', '60'],
-            ['announce-position', 'yes']
+            ['announce-position', 'yes'],
+            ['skip_joinannounce', '0']
         ];
 
         for (const [keyword, data] of queueDetails) {
