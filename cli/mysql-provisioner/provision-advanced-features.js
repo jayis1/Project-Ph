@@ -94,19 +94,19 @@ async function provisionAdvancedFeatures() {
                 );
 
                 if (existing.length > 0) {
-                    console.log(`  ⚠️  Paging group ${page.page_number} already exists, updating...`);
+                    console.log(`  ⚠️  Paging group ${page.page_number} already exists, clearing extensions...`);
                     await connection.execute(
-                        `UPDATE paging_groups SET 
-              ext_list = ?,
-              duplex = ?
-            WHERE page_number = ?`,
-                        [page.ext_list, page.duplex, page.page_number]
+                        'DELETE FROM paging_groups WHERE page_number = ?',
+                        [page.page_number]
                     );
-                } else {
+                }
+
+                // Split ext_list (e.g., "9000&9001") and insert individual rows
+                const extensions = page.ext_list.split('&');
+                for (const ext of extensions) {
                     await connection.execute(
-                        `INSERT INTO paging_groups (page_number, ext_list, duplex)
-            VALUES (?, ?, ?)`,
-                        [page.page_number, page.ext_list, page.duplex]
+                        'INSERT INTO paging_groups (page_number, ext) VALUES (?, ?)',
+                        [page.page_number, ext]
                     );
                 }
                 console.log(`  ✅ ${page.page_number} - ${page.description}`);
