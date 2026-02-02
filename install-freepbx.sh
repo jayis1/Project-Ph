@@ -87,8 +87,10 @@ echo "  - 13 IVRs (3-level maze: Main → Departments → Phone Lines)"
 echo "  - 9 Extensions (Nebuchadnezzar crew: 9000-9008)"
 echo ""
 
+
+
 # Create a temporary provisioning script in the current directory (so imports work)
-cat > provision.mjs << 'PROVISION_SCRIPT'
+cat > provision.mjs << PROVISION_SCRIPT
 import { provisionFreePBX } from './lib/freepbx-provisioner.js';
 
 const mysqlPassword = process.argv[2];
@@ -110,6 +112,7 @@ const options = {
   skipExtensions: false,
   skipIVR: false
 };
+
 
 const progressCallback = (progress) => {
   if (progress.status === 'running') {
@@ -146,7 +149,35 @@ rm provision.mjs
 echo ""
 echo "🎉 IVR Maze provisioning complete!"
 echo ""
-echo "📞 Extensions created:"
+echo "� Installing FreePBX Provisioner Service..."
+cd "$TEMP_DIR/2fast2dumb2fun/freepbx-provisioner-service"
+npm install --silent
+
+# Create directory
+mkdir -p /opt/freepbx-provisioner
+cp -r . /opt/freepbx-provisioner/
+
+# Configure .env
+cat > /opt/freepbx-provisioner/.env <<ENV
+PROVISIONER_PORT=3333
+MYSQL_HOST=localhost
+MYSQL_PORT=3306
+MYSQL_USER=freepbxuser
+MYSQL_PASSWORD=$MYSQL_PASSWORD
+FREEPBX_HOST=$(hostname -I | awk '{print $1}')
+EXTERNAL_IP=$(curl -s ifconfig.me)
+ENV
+
+# Install Systemd Service
+cp freepbx-provisioner.service /etc/systemd/system/
+systemctl daemon-reload
+systemctl enable freepbx-provisioner
+systemctl restart freepbx-provisioner
+
+echo "✅ Service installed and running on port 3333"
+
+echo ""
+echo "�📞 Extensions created:"
 echo "   9000: Morpheus (Captain)"
 echo "   9001: Trinity (First Mate)"
 echo "   9002: Neo (The One)"

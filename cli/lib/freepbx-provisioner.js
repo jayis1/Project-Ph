@@ -373,6 +373,104 @@ export async function provisionIVR(config, pool, progressCallback = () => { }) {
 }
 
 /**
+ * Provision SIP Trunk
+ * @param {object} config - Configuration
+ * @param {object} pool - MySQL connection pool
+ * @param {Function} progressCallback - Progress callback
+ * @returns {Promise<object>} Provisioning result
+ */
+async function provisionTrunks(config, pool, progressCallback = () => { }) {
+    progressCallback({ step: 'trunk', status: 'running', message: 'Provisioning SIP Trunk...' });
+
+    // Use decrypted credentials or CLI args for the trunk IP
+    // The install-freepbx.sh hot-wires this into the config object as 'gatewayIp'
+    // or we look for it in decrypted.freepbx.gatewayIp
+    const decrypted = decryptConfig(config);
+    const gatewayIp = config.gatewayIp || decrypted.freepbx.gatewayIp;
+
+    if (!gatewayIp) {
+        progressCallback({ step: 'trunk', status: 'warning', message: 'Skipping trunk: No Gateway IP provided' });
+        return { success: true, skipped: true };
+    }
+
+    try {
+        // Check if trunk exists
+        const checkResult = await executeMySQLQuery(
+            pool,
+            'SELECT COUNT(*) as count FROM pjsip WHERE id = "to_gateway"',
+            []
+        );
+
+        if (checkResult.success && checkResult.rows[0].count > 0) {
+            progressCallback({ step: 'trunk', status: 'success', message: 'Trunk already exists' });
+            return { success: true, skipped: true };
+        }
+
+        // 1. Create PJSIP Endpoint (to_gateway)
+        // Note: Using transport-udp (which we assume exists or is 0.0.0.0-udp)
+        // We use the same fields as the GUI would create for an IP-based trunk
+        const pjsipFields = [
+            { keyword: 'account', data: 'to_gateway' },
+            { keyword: 'context', data: 'from-pstn' },
+            { keyword: 'disallow', data: 'all' },
+            { keyword: 'allow', data: 'ulaw,alaw,gsm,g726,g722' },
+            { keyword: 'id', data: 'to_gateway' },
+            { keyword: 'match', data: gatewayIp },
+            { keyword: 'server_uri', data: `sip:${gatewayIp}:5060` },
+            { keyword: 'client_uri', data: `sip:${gatewayIp}:5060` },
+            { keyword: 'aors', data: 'to_gateway' }, // Links to AOR
+            { keyword: 'sipdriver', data: 'chan_pjsip' }, // Critical
+            { keyword: 'transport', data: '0.0.0.0-udp' }, // Explicitly use the default transport name
+            { keyword: 'direct_media', data: 'no' },
+            { keyword: 'force_rport', data: 'yes' },
+            { keyword: 'rewrite_contact', data: 'yes' },
+            { keyword: 'rtp_symmetric', data: 'yes' },
+            { keyword: 'ice_support', data: 'no' }
+        ];
+
+        // Insert endpoint
+        await executeMySQLQuery(pool, 'INSERT INTO pjsip (id, keyword, data, flags) VALUES (?, "endpoint", "to_gateway", 24)', ['to_gateway']);
+
+        for (const field of pjsipFields) {
+            // Some keywords are for AOR, some for Endpoint, some for Identify. PJSIP wizard splits them.
+            // However, inserting into 'pjsip' table with correct ID usually works as a raw dump.
+            // Let's use the standard fields.
+            await executeMySQLQuery(
+                pool,
+                'INSERT INTO pjsip (id, keyword, data, flags) VALUES (?, ?, ?, 0)',
+                ['to_gateway', field.keyword, field.data]
+            );
+        }
+
+        // 2. Create Identify (to match incoming IP)
+        // Important: Identify maps IP -> Endpoint
+        await executeMySQLQuery(pool, 'INSERT INTO pjsip (id, keyword, data, flags) VALUES (?, "identify", "to_gateway", 24)', ['to_gateway']);
+        await executeMySQLQuery(pool, 'INSERT INTO pjsip (id, keyword, data, flags) VALUES (?, "match", ?, 0)', ['to_gateway', gatewayIp]);
+
+        // 3. Create AOR (Address of Record)
+        await executeMySQLQuery(pool, 'INSERT INTO pjsip (id, keyword, data, flags) VALUES (?, "aor", "to_gateway", 24)', ['to_gateway']);
+        await executeMySQLQuery(pool, 'INSERT INTO pjsip (id, keyword, data, flags) VALUES (?, "contact", ?, 0)', ['to_gateway', `sip:${gatewayIp}:5060`]);
+
+        // 4. Create Registration (None for IP peering)
+        // (Skipped)
+
+        // 5. Create Inbound Route (ANY -> IVR)
+        // "dest" format: ivr,<ivr_id>,<return_to_ivr_id> typically 'ivr,1,1' for IVR id 1
+        await executeMySQLQuery(
+            pool,
+            "INSERT INTO incoming (cidnum, extension, destination, description, pmmaxretries, pmminlength) VALUES ('', '', 'ivr,1,1', 'To_Maze', '', '')"
+        );
+
+        progressCallback({ step: 'trunk', status: 'success', message: 'Trunk and Inbound Route provisioned' });
+        return { success: true };
+
+    } catch (error) {
+        progressCallback({ step: 'trunk', status: 'error', message: error.message });
+        return { success: false, error: error.message };
+    }
+}
+
+/**
  * Verify provisioning
  * @param {object} config - Configuration
  * @param {object} pool - MySQL connection pool
@@ -500,6 +598,14 @@ export async function provisionFreePBX(config, options = {}, progressCallback = 
                 "INSERT INTO incoming (cidnum, extension, destination, description, pmmaxretries, pmminlength) VALUES ('', '', 'ivr,1,1', 'To_Maze', '', '')"
             );
             // And maybe a log?
+            // Step 4.5 Ensure Inbound Route
+            // This is now handled in provisionTrunks or here as fallback?
+            // Let's leave IVR provisioning as pure IVR creation.
+        }
+
+        // Step 5: Provision Trunk (Optional)
+        if (!options.skipTrunks) {
+            results.trunk = await provisionTrunks(config, pool, progressCallback);
         }
 
 
