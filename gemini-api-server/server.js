@@ -171,7 +171,17 @@ function runGeminiOnce({ fullPrompt, callId, timestamp, model }) {
   }
 
   return new Promise((resolve, reject) => {
-    const gemini = spawn('gemini', args, {
+    // Use Docker to run Gemini CLI sandbox instead of local gemini command
+    const dockerArgs = [
+      'run',
+      '--rm',
+      '-i',
+      '--env', `GEMINI_API_KEY=${geminiEnv.GEMINI_API_KEY || ''}`,
+      'us-docker.pkg.dev/gemini-code-dev/gemini-cli/sandbox:0.1.1',
+      ...args
+    ];
+
+    const gemini = spawn('docker', dockerArgs, {
       stdio: ['pipe', 'pipe', 'pipe'],
       shell: false,
       env: geminiEnv
