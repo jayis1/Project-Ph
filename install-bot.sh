@@ -16,6 +16,8 @@ while [[ "$#" -gt 0 ]]; do
         --pass) PASSWORD="$2"; shift ;;
         --registrar) REGISTRAR="$2"; shift ;;
         --api-url) API_URL="$2"; shift ;;
+        --openai-key) OPENAI_API_KEY="$2"; shift ;;
+        --elevenlabs-key) ELEVENLABS_API_KEY="$2"; shift ;;
         --external-ip) EXTERNAL_IP="$2"; shift ;;
         *) echo "Unknown parameter: $1"; exit 1 ;;
     esac
@@ -105,6 +107,8 @@ fi
 
 cat >> .env <<EOC
 GEMINI_API_URL=$GEMINI_API_URL
+OPENAI_API_KEY=$OPENAI_API_KEY
+ELEVENLABS_API_KEY=$ELEVENLABS_API_KEY
 EOC
 
 # --- 4. Launch Container ---
