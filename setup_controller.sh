@@ -3,11 +3,8 @@
 
 echo "🔧 Setting up Controller (FreePBX)..."
 
-# Download installer
-curl -sSL https://raw.githubusercontent.com/freepbx/sng_freepbx_debian_install/master/sng_freepbx_debian_install.sh -o /tmp/freepbx_install.sh
-
-# Run with skipversion flag
-bash /tmp/freepbx_install.sh --skipversion
+# Download and run installer with skipversion
+bash <(curl -sSL https://raw.githubusercontent.com/freepbx/sng_freepbx_debian_install/master/sng_freepbx_debian_install.sh) --skipversion
 
 echo ""
 echo "✅ FreePBX installed!"
