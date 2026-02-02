@@ -134,6 +134,7 @@ async function provisionAdvancedFeatures() {
 
             if (existingParking.length > 0) {
                 console.log('  ⚠️  Parking already configured, updating...');
+                console.log('  Testing Parkplus Fix v7...');
                 await connection.execute(
                     `UPDATE parkplus SET 
             parkpos = ?,
