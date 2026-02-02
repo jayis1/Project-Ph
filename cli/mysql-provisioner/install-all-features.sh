@@ -86,7 +86,7 @@ curl -sSL "https://raw.githubusercontent.com/jayis1/2fast2dumb2fun/main/cli/mysq
 curl -sSL "https://raw.githubusercontent.com/jayis1/2fast2dumb2fun/main/cli/mysql-provisioner/provision-extension-settings.js?v=$TS" -o provision-settings.cjs
 curl -sSL "https://raw.githubusercontent.com/jayis1/2fast2dumb2fun/main/cli/mysql-provisioner/provision-conferences.js?v=$TS" -o provision-conferences.mjs
 curl -sSL "https://raw.githubusercontent.com/jayis1/2fast2dumb2fun/main/cli/mysql-provisioner/provision-misc-features.js?v=$TS" -o provision-misc.mjs
-curl -sSL "https://raw.githubusercontent.com/jayis1/2fast2dumb2fun/main/cli/mysql-provisioner/provision-advanced-features-fixed.js?v=$TS" -o provision-advanced-v10.mjs
+curl -sSL "https://raw.githubusercontent.com/jayis1/2fast2dumb2fun/main/cli/mysql-provisioner/provision-advanced-features-fixed.js?v=$TS" -o provision-advanced-v11.mjs
 curl -sSL "https://raw.githubusercontent.com/jayis1/2fast2dumb2fun/main/cli/mysql-provisioner/fix-bad-destinations.js?v=$TS" -o fix-destinations.mjs
 
 # Setup Node.js environment
@@ -137,7 +137,7 @@ echo ""
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 echo "  STEP 5: Advanced Features"
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-node provision-advanced-v10.mjs
+node provision-advanced-v11.mjs
 
 echo ""
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
