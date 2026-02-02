@@ -214,23 +214,8 @@ async function provisionAdvancedFeatures() {
         }
 
         // ============================================
-        // STEP 4: Queue Priorities
+        // STEP 4: Summary Only (Queue Priorities removed due to schema change)
         // ============================================
-        console.log('\n⭐ Configuring Queue Priorities...');
-
-        // Update queue to use priority
-        await connection.execute(
-            `UPDATE queues SET 
-        strategy = 'ringall',
-        timeout = 15,
-        retry = 5,
-        maxlen = 0,
-        announce_frequency = 30,
-        announce_holdtime = 'yes'
-      WHERE extension = ?`,
-            ['8001']
-        );
-        console.log('  ✅ Queue priorities enabled (callers can be prioritized)');
 
         await connection.end();
 
