@@ -190,25 +190,22 @@ async function provisionAdvancedFeatures() {
                 await connection.execute(
                     `UPDATE queuecallback SET 
             enabled = ?,
-            callback_id = ?,
-            description = ?
+            callback_id = ?
           WHERE queue_id = ?`,
                     [
                         QUEUE_CALLBACK_CONFIG.enabled,
                         QUEUE_CALLBACK_CONFIG.callback_id,
-                        QUEUE_CALLBACK_CONFIG.description,
                         QUEUE_CALLBACK_CONFIG.queue_id
                     ]
                 );
             } else {
                 await connection.execute(
-                    `INSERT INTO queuecallback (queue_id, enabled, callback_id, description)
-          VALUES (?, ?, ?, ?)`,
+                    `INSERT INTO queuecallback (queue_id, enabled, callback_id)
+          VALUES (?, ?, ?)`,
                     [
                         QUEUE_CALLBACK_CONFIG.queue_id,
                         QUEUE_CALLBACK_CONFIG.enabled,
-                        QUEUE_CALLBACK_CONFIG.callback_id,
-                        QUEUE_CALLBACK_CONFIG.description
+                        QUEUE_CALLBACK_CONFIG.callback_id
                     ]
                 );
             }
