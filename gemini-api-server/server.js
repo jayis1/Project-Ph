@@ -150,25 +150,14 @@ function parseGeminiStdout(stdout) {
 function runGeminiOnce({ fullPrompt, callId, timestamp, model }) {
   const startTime = Date.now();
 
-  // Updated arguments for modern gemini/claude-code CLI
-  // -y / --yolo: Automatically accept all actions (replaces dangerously-skip-permissions)
-  // --output-format json: Ensure we get machine-readable output including session_id
+  // Simplified arguments for Docker sandbox
+  // The sandbox version doesn't support all CLI flags, just basic -p prompt
   const args = [
-    '--yolo',
-    '-p', fullPrompt,
-    '--model', model || GEMINI_MODEL, // Use passed model or default
-    '--output-format', 'json'
+    '-p', fullPrompt
   ];
 
-  if (callId && sessions.has(callId)) {
-    // Resume existing session using the CLI-generated ID stored in our map
-    const geminiSessionId = sessions.get(callId);
-    args.push('--resume', geminiSessionId);
-    console.log(`[${timestamp}] Resuming session: ${geminiSessionId} (Call: ${callId})`);
-  } else {
-    // Let CLI generate a new session ID, which we will capture from the JSON output
-    console.log(`[${timestamp}] Starting new session for call: ${callId}`);
-  }
+  // Session resume not supported in sandbox mode, skip for now
+  console.log(`[${timestamp}] Starting query for call: ${callId}`);
 
   return new Promise((resolve, reject) => {
     // Use Docker to run Gemini CLI sandbox instead of local gemini command
