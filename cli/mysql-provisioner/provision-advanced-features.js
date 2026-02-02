@@ -97,17 +97,16 @@ async function provisionAdvancedFeatures() {
                     console.log(`  ⚠️  Paging group ${page.page_number} already exists, updating...`);
                     await connection.execute(
                         `UPDATE paging_groups SET 
-              description = ?,
               ext_list = ?,
               duplex = ?
             WHERE page_number = ?`,
-                        [page.description, page.ext_list, page.duplex, page.page_number]
+                        [page.ext_list, page.duplex, page.page_number]
                     );
                 } else {
                     await connection.execute(
-                        `INSERT INTO paging_groups (page_number, description, ext_list, duplex)
-            VALUES (?, ?, ?, ?)`,
-                        [page.page_number, page.description, page.ext_list, page.duplex]
+                        `INSERT INTO paging_groups (page_number, ext_list, duplex)
+            VALUES (?, ?, ?)`,
+                        [page.page_number, page.ext_list, page.duplex]
                     );
                 }
                 console.log(`  ✅ ${page.page_number} - ${page.description}`);
