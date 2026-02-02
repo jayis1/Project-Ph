@@ -209,12 +209,14 @@ if [ "$OS" = "Linux" ]; then
   fi
 fi
 
-# Check Gemini CLI (optional - only needed for API server)
+# Install Gemini CLI (required for API server)
 if ! command -v gemini &> /dev/null; then
-  echo "⚠️  Gemini CLI not found (needed for API server only)"
-  echo "  Install from: https://github.com/google-gemini/gemini-cli"
+  echo ""
+  echo "📦 Installing Gemini CLI..."
+  npm install -g @google/gemini-cli
+  echo "✓ Gemini CLI installed: $(gemini --version)"
 else
-  echo "✓ Gemini CLI installed"
+  echo "✓ Gemini CLI already installed: $(gemini --version)"
 fi
 
 # Clone or update repository
