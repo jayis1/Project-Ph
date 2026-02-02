@@ -87,10 +87,17 @@ npm init -y > /dev/null 2>&1
 echo '{"type": "module"}' > package.json
 npm install mysql2 dotenv > /dev/null 2>&1
 
-# Export variables directly to helper scripts to avoid .env loading issues
+# Export variables directly to helper scripts (Covering ALL standard variations found in scripts)
+export FREEPBX_MYSQL_HOST=localhost
+export FREEPBX_MYSQL_USER=freepbxuser
+export FREEPBX_MYSQL_PASSWORD="$MYSQL_PASSWORD"
+export FREEPBX_DB_PASSWORD="$MYSQL_PASSWORD"
+export PROVISIONER_DB_PASS="$MYSQL_PASSWORD"
+
+# Also helpful to have these
+export FREEPBX_MYSQL_DATABASE=asterisk
 export PROVISIONER_DB_HOST=localhost
 export PROVISIONER_DB_USER=freepbxuser
-export PROVISIONER_DB_PASS="$MYSQL_PASSWORD"
 export PROVISIONER_DB_NAME=asterisk
 
 echo ""
