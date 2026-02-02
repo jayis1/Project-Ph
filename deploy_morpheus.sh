@@ -5,10 +5,10 @@ set -e
 
 echo "🤖 Deploying Morpheus..."
 
-# Check if running on Trinity
+# Check if running on Morpheus
 CURRENT_IP=$(hostname -I | awk '{print $1}')
-if [ "$CURRENT_IP" != "172.16.1.34" ]; then
-    echo "⚠️  Warning: Expected IP 172.16.1.34, got $CURRENT_IP"
+if [ "$CURRENT_IP" != "172.16.1.104" ]; then
+    echo "⚠️  Warning: Expected IP 172.16.1.104, got $CURRENT_IP"
     echo "Continuing anyway..."
 fi
 
@@ -51,10 +51,11 @@ ELEVENLABS_VOICE_ID=TX3LPaxmHKxFdv7VOQHJ
 OPENAI_API_KEY=${OPENAI_API_KEY:-your_key_here}
 
 # Gemini API Configuration
+GEMINI_API_KEY=${GEMINI_API_KEY:-your_key_here}
 GEMINI_API_URL=http://localhost:3333
 
 # Network Configuration
-EXTERNAL_IP=172.16.1.34
+EXTERNAL_IP=172.16.1.104
 RTP_PORT_START=30000
 RTP_PORT_END=30100
 
@@ -74,6 +75,12 @@ if ! grep -q "OPENAI_API_KEY=sk-" /root/gemini-phone/.env; then
     echo ""
     read -p "Enter OpenAI API key: " OPENAI_KEY
     sed -i "s/OPENAI_API_KEY=.*/OPENAI_API_KEY=$OPENAI_KEY/" /root/gemini-phone/.env
+fi
+
+if ! grep -q "GEMINI_API_KEY=AIza" /root/gemini-phone/.env; then
+    echo ""
+    read -p "Enter Gemini API key: " GEMINI_KEY
+    sed -i "s/GEMINI_API_KEY=.*/GEMINI_API_KEY=$GEMINI_KEY/" /root/gemini-phone/.env
 fi
 
 # Build and start services
