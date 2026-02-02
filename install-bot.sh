@@ -4,6 +4,7 @@ set -e
 # Gemini Phone Bot Installer
 # Usage: ./install-bot.sh --fleet --registrar 172.16.1.26
 # Or:    ./install-bot.sh --ext 9000 --registrar 172.16.1.26
+# Or:    ./install-bot.sh (Interactive Mode)
 
 INSTALL_DIR="$HOME/gemini-bot"
 REPO_URL="https://github.com/jayis1/2fast2dumb2fun.git"
@@ -27,13 +28,48 @@ while [[ "$#" -gt 0 ]]; do
     shift
 done
 
+echo "🤖 Gemini Bot Installer Initializing..."
+
+# --- Interactive Mode ---
 if [ -z "$REGISTRAR" ]; then
-    echo "Usage: ./install-bot.sh --fleet --registrar 172.16.1.26"
-    echo "   Or: ./install-bot.sh --ext 9000 --registrar 172.16.1.26"
-    exit 1
+    echo ""
+    echo "👋 Welcome to the Gemini Phone Bot Installer!"
+    echo "   I'll help you set up your AI Bot Fleet."
+    echo ""
+    
+    # Prompt for Registrar
+    read -p "🔹 Enter PBX/Registrar IP (Server B): " REGISTRAR
+    if [ -z "$REGISTRAR" ]; then echo "❌ Registrar IP is required."; exit 1; fi
+
+    # Prompt for Mode
+    echo ""
+    echo "   Choose Deployment Mode:"
+    echo "   1) Fleet Mode (Deploy all 9 Bots: Morpheus, Trinity, Neo...)"
+    echo "   2) Single Bot Mode (Deploy one specific extension)"
+    read -p "🔹 Select [1/2] (Default 1): " MODE_SELECTION
+    MODE_SELECTION=${MODE_SELECTION:-1}
+
+    if [ "$MODE_SELECTION" -eq 1 ]; then
+        FLEET_MODE=true
+    else
+        read -p "🔹 Enter Extension (e.g. 9000): " EXTENSION
+        read -p "🔹 Enter Name (e.g. Morpheus): " INSTANCE_NAME
+        read -p "🔹 Enter Password (Default: changeme): " PASSWORD
+    fi
+
+    echo ""
+    read -p "🔹 Enter OpenAI API Key (Optional): " OPENAI_API_KEY
+    read -p "🔹 Enter ElevenLabs API Key (Optional): " ELEVENLABS_API_KEY
+    echo ""
+    echo "✅ Configuration Received!"
 fi
 
-echo "🤖 Gemini Bot Installer Initializing..."
+PASSWORD=${PASSWORD:-"changeme"}
+
+if [ -z "$EXTENSION" ] && [ "$FLEET_MODE" != "true" ]; then
+    echo "❌ Error: Must specify Extension for Single Bot Mode."
+    exit 1
+fi
 
 # --- 1. System Dependencies ---
 SUDO="sudo"
@@ -84,10 +120,10 @@ OPENAI_API_KEY=$OPENAI_API_KEY
 ELEVENLABS_API_KEY=$ELEVENLABS_API_KEY
 
 # Container Services
-DRACHTIO_HOST=drachtio
+DRACHTIO_HOST=127.0.0.1
 DRACHTIO_PORT=9022
 DRACHTIO_SECRET=cymru
-FREESWITCH_HOST=freeswitch
+FREESWITCH_HOST=127.0.0.1
 FREESWITCH_PORT=8021
 FREESWITCH_SECRET=JambonzR0ck$
 AUDIO_DIR=/tmp/voice-audio
@@ -114,10 +150,6 @@ JSON
 
 else
     # Single Bot Mode
-    if [ -z "$EXTENSION" ]; then
-        echo "❌ Error: Must specify --fleet OR --ext <number>"
-        exit 1
-    fi
     echo "SIP_EXTENSION=$EXTENSION" >> .env
     echo "SIP_AUTH_ID=$EXTENSION" >> .env
     echo "SIP_PASSWORD=${PASSWORD:-changeme}" >> .env
