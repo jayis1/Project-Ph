@@ -11,9 +11,11 @@ INSTALL_DIR="$HOME/gemini-bot"
 while [[ "$#" -gt 0 ]]; do
     case $1 in
         --ext) EXTENSION="$2"; shift ;;
+        --ext) EXTENSION="$2"; shift ;;
         --name) INSTANCE_NAME="$2"; shift ;;
         --pass) PASSWORD="$2"; shift ;;
         --registrar) REGISTRAR="$2"; shift ;;
+        --api-url) API_URL="$2"; shift ;;
         --external-ip) EXTERNAL_IP="$2"; shift ;;
         *) echo "Unknown parameter: $1"; exit 1 ;;
     esac
@@ -95,8 +97,15 @@ AUDIO_DIR=/tmp/voice-audio
 
 # API Server URL (Assuming API server runs on Registrar for now, or localhost?)
 # If API server is needed, we need to know where it is.
-GEMINI_API_URL=http://$REGISTRAR:3333
-EOF
+if [ -z "$API_URL" ]; then
+  GEMINI_API_URL=http://$REGISTRAR:3333
+else
+  GEMINI_API_URL=$API_URL
+fi
+
+cat >> .env <<EOC
+GEMINI_API_URL=$GEMINI_API_URL
+EOC
 
 # --- 4. Launch Container ---
 echo "🚀 Launching Bot Container..."
