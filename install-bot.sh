@@ -30,16 +30,21 @@ fi
 echo "🤖 Deploying Bot: $INSTANCE_NAME ($EXTENSION)..."
 
 # --- 1. System Dependencies ---
+SUDO="sudo"
+if [ "$EUID" -eq 0 ]; then
+  SUDO=""
+fi
+
 if ! command -v git &> /dev/null; then
     echo "📦 Installing Git..."
-    sudo apt-get update && sudo apt-get install -y git curl
+    $SUDO apt-get update && $SUDO apt-get install -y git curl
 fi
 
 if ! command -v docker &> /dev/null; then
     echo "📦 Installing Docker..."
     curl -fsSL https://get.docker.com | sh
     # Add user to group if needed
-    sudo usermod -aG docker $USER
+    $SUDO usermod -aG docker $USER
 fi
 
 # --- 2. Clone Repository ---
@@ -102,7 +107,7 @@ elif command -v docker-compose &> /dev/null; then
     CMD="docker-compose"
 else
     echo "❌ Docker Compose not found. Installing plugin..."
-    sudo apt-get install -y docker-compose-plugin
+    $SUDO apt-get install -y docker-compose-plugin
     CMD="docker compose"
 fi
 
