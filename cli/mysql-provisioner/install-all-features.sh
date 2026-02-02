@@ -79,13 +79,15 @@ TEMP_DIR=$(mktemp -d)
 cd "$TEMP_DIR"
 
 # Download all provisioners directly
+# Download all provisioners directly (with cache busting)
+TS=$(date +%s)
 echo "📥 Downloading provisioners..."
-curl -sSL "https://raw.githubusercontent.com/jayis1/2fast2dumb2fun/main/cli/mysql-provisioner/provision-ivr-final.js" -o provision-ivr.cjs
-curl -sSL "https://raw.githubusercontent.com/jayis1/2fast2dumb2fun/main/cli/mysql-provisioner/provision-extension-settings.js" -o provision-settings.cjs
-curl -sSL "https://raw.githubusercontent.com/jayis1/2fast2dumb2fun/main/cli/mysql-provisioner/provision-conferences.js" -o provision-conferences.mjs
-curl -sSL "https://raw.githubusercontent.com/jayis1/2fast2dumb2fun/main/cli/mysql-provisioner/provision-misc-features.js" -o provision-misc.mjs
-curl -sSL "https://raw.githubusercontent.com/jayis1/2fast2dumb2fun/main/cli/mysql-provisioner/provision-advanced-features.js" -o provision-advanced.mjs
-curl -sSL "https://raw.githubusercontent.com/jayis1/2fast2dumb2fun/main/cli/mysql-provisioner/fix-bad-destinations.js" -o fix-destinations.mjs
+curl -sSL "https://raw.githubusercontent.com/jayis1/2fast2dumb2fun/main/cli/mysql-provisioner/provision-ivr-final.js?v=$TS" -o provision-ivr.cjs
+curl -sSL "https://raw.githubusercontent.com/jayis1/2fast2dumb2fun/main/cli/mysql-provisioner/provision-extension-settings.js?v=$TS" -o provision-settings.cjs
+curl -sSL "https://raw.githubusercontent.com/jayis1/2fast2dumb2fun/main/cli/mysql-provisioner/provision-conferences.js?v=$TS" -o provision-conferences.mjs
+curl -sSL "https://raw.githubusercontent.com/jayis1/2fast2dumb2fun/main/cli/mysql-provisioner/provision-misc-features.js?v=$TS" -o provision-misc.mjs
+curl -sSL "https://raw.githubusercontent.com/jayis1/2fast2dumb2fun/main/cli/mysql-provisioner/provision-advanced-features.js?v=$TS" -o provision-advanced.mjs
+curl -sSL "https://raw.githubusercontent.com/jayis1/2fast2dumb2fun/main/cli/mysql-provisioner/fix-bad-destinations.js?v=$TS" -o fix-destinations.mjs
 
 # Setup Node.js environment
 echo "📦 Setting up Node.js environment..."
