@@ -1,1373 +1,244 @@
 import inquirer from 'inquirer';
 import chalk from 'chalk';
-import ora from 'ora';
-import path from 'path';
-import crypto from 'crypto';
-import fs from 'fs';
-import { execSync } from 'child_process';
-import {
-  loadConfig,
-  saveConfig,
-  configExists
-} from '../config.js';
-import {
-  validateElevenLabsKey,
-  validateOpenAIKey,
-  validateVoiceId,
-  validateExtension,
-  validateIP,
-  validateHostname
-} from '../validators.js';
-import { getLocalIP, getProjectRoot } from '../utils.js';
-import { isRaspberryPi } from '../platform.js';
-import { detectSbc } from '../port-check.js';
-import { checkPiPrerequisites } from '../prerequisites.js';
-import { checkGeminiApiServer } from '../network.js';
-import { runPrereqChecks } from '../prereqs.js';
-import { FreePBXClient } from '../freepbx-api.js';
+import { readFileSync, writeFileSync, existsSync, mkdirSync } from 'fs';
+import { homedir } from 'os';
+import { join } from 'path';
 
-/**
- * Prompt for installation type
- * @param {string} currentType - Current installation type
- * @returns {Promise<string>} Selected installation type
- */
-async function promptInstallationType(currentType = 'both') {
-  const { type } = await inquirer.prompt([{
-    type: 'list',
-    name: 'type',
-    message: 'What type of node are you setting up?',
-    default: currentType,
-    choices: [
-      {
-        name: 'Admin Node - Full stack + manages bot nodes (e.g., Trinity)',
-        value: 'admin'
-      },
-      {
-        name: 'Bot Node - Voice app only, connects to admin (e.g., Morpheus, Neo, Tank)',
-        value: 'device'
-      },
-      {
-        name: 'Standalone - Full stack on one machine (legacy mode)',
-        value: 'both'
-      },
-      {
-        name: 'Voice Server - Handles calls, needs Docker (Pi/Linux)',
-        value: 'voice-server'
-      },
-      {
-        name: 'API Server - Gemini Code wrapper only',
-        value: 'api-server'
-      }
-    ]
-  }]);
+const CONFIG_DIR = join(homedir(), '.config', 'gemini-phone');
+const CONFIG_FILE = join(CONFIG_DIR, 'config.json');
 
-  const typeNames = {
-    'admin': 'Admin Node',
-    'device': 'Bot Node',
-    'both': 'Standalone',
-    'voice-server': 'Voice Server',
-    'api-server': 'API Server'
-  };
+export async function setupCommand() {
+  console.log(chalk.cyan.bold('\n🎯 Gemini Phone Setup Wizard\n'));
 
-  console.log(chalk.cyan(`\nYou selected: ${typeNames[type]}\n`));
-
-  return type;
-}
-
-/**
- * Setup command - Interactive wizard for configuration
- * @param {object} options - Command options
- * @returns {Promise<void>}
- */
-export async function setupCommand(options = {}) {
-  console.log(chalk.bold.cyan('\n🎯 Gemini Phone Setup\n'));
-
-  // Run minimal prerequisite check first (Node.js only)
-  if (!options.skipPrereqs) {
-    const minimalPrereq = await runPrereqChecks({ type: 'minimal' });
-
-    if (!minimalPrereq.success) {
-      console.log(chalk.red('\n❌ Prerequisites not met. Please fix the issues above and try again.\n'));
-      process.exit(1);
-    }
-  } else {
-    console.log(chalk.yellow('⚠️  Skipping prerequisite checks (--skip-prereqs flag)\n'));
+  // Ensure config directory exists
+  if (!existsSync(CONFIG_DIR)) {
+    mkdirSync(CONFIG_DIR, { recursive: true });
   }
 
-  // Check if config exists
-  const hasConfig = configExists();
-  let existingConfig = null;
-
-  if (hasConfig) {
-    console.log(chalk.yellow('⚠️  Configuration already exists.'));
-    const { shouldContinue } = await inquirer.prompt([
-      {
-        type: 'confirm',
-        name: 'shouldContinue',
-        message: 'Do you want to update your configuration?',
-        default: false
-      }
-    ]);
-
-    if (!shouldContinue) {
-      console.log(chalk.gray('Setup cancelled.'));
-      return;
-    }
-
-    existingConfig = await loadConfig();
-  }
-
-  // Prompt for installation type
-  console.log(chalk.bold.cyan('\n📦 Installation Type\n'));
-  const installationType = await promptInstallationType(
-    existingConfig ? existingConfig.installationType : 'both'
-  );
-
-  // Detect platform (for Pi split-mode detection)
-  const isPi = await isRaspberryPi();
-
-  // If Pi detected and user selected "both", recommend voice-server
-  if (isPi && installationType === 'both') {
-    console.log(chalk.yellow('\n⚠️  Raspberry Pi detected!'));
-    console.log(chalk.gray('For best performance, consider selecting "Voice Server" instead of "Both".'));
-    console.log(chalk.gray('This allows the API server to run on a more powerful machine.\n'));
-
-    const { changeToPi } = await inquirer.prompt([
-      {
-        type: 'confirm',
-        name: 'changeToPi',
-        message: 'Switch to Voice Server mode?',
-        default: true
-      }
-    ]);
-
-    if (changeToPi) {
-      // Re-run with voice-server type
-      return setupInstallationType('voice-server', existingConfig, isPi, options);
-    }
-  }
-
-  // Run type-specific setup
-  try {
-    await setupInstallationType(installationType, existingConfig, isPi, options);
-  } catch (error) {
-    console.error(chalk.red('\n\n❌ Setup failed with error:'));
-    console.error(chalk.red(error.message));
-    console.error(chalk.gray('\nStack trace:'));
-    console.error(chalk.gray(error.stack));
-    process.exit(1);
-  }
-}
-
-/**
- * Route to type-specific setup
- * @param {string} installationType - Installation type
- * @param {object} existingConfig - Existing config or null
- * @param {boolean} isPi - Is Raspberry Pi
- * @param {object} options - Command options
- * @returns {Promise<void>}
- */
-async function setupInstallationType(installationType, existingConfig, isPi, options) {
-  // Load existing config or create default
-  const baseConfig = existingConfig || createDefaultConfig();
-
-  // Run type-specific prereq checks (unless skipped)
-  if (!options.skipPrereqs && installationType !== 'api-server') {
-    console.log(chalk.bold.cyan(`\n🔍 Checking ${installationType === 'voice-server' ? 'Voice Server' : 'All'} prerequisites...\n`));
-    const prereqResult = await runPrereqChecks({ type: installationType });
-
-    if (!prereqResult.success) {
-      console.log(chalk.red('\n❌ Prerequisites not met. Please fix the issues above and try again.\n'));
-      process.exit(1);
-    }
-  }
-
-  let config;
-
-  switch (installationType) {
-    case 'api-server':
-      config = await setupApiServer(baseConfig);
-      break;
-
-    case 'voice-server':
-      // Check if Pi - use Pi setup flow
-      if (isPi) {
-        config = await setupPi(baseConfig);
-      } else {
-        config = await setupVoiceServer(baseConfig);
-      }
-      break;
-
-    case 'admin':
-      // Admin node = full stack + crew management
-      if (isPi) {
-        config = await setupPi(baseConfig);
-      } else {
-        config = await setupBoth(baseConfig);
-      }
-      // Mark as admin node
-      if (!config.deployment) config.deployment = {};
-      config.deployment.mode = 'admin';
-      config.deployment.role = 'admin';
-      break;
-
-    case 'device':
-      // Bot node = voice app only
-      config = await setupDeviceNode(baseConfig);
-      break;
-
-    case 'both':
-    default:
-      // Check if Pi - use Pi setup but with "both" type
-      if (isPi) {
-        config = await setupPi(baseConfig);
-      } else {
-        config = await setupBoth(baseConfig);
-      }
-      break;
-  }
-
-  // Set installation type in config
-  config.installationType = installationType;
-
-  // Save configuration
-  const spinner = ora('Saving configuration...').start();
-  try {
-    await saveConfig(config);
-    spinner.succeed('Configuration saved');
-  } catch (error) {
-    spinner.fail(`Failed to save configuration: ${error.message}`);
-    throw error;
-  }
-
-  // Install dependencies for API server types
-  if (installationType === 'api-server' || installationType === 'both') {
-    const apiServerPath = config.paths?.geminiApiServer;
-    if (apiServerPath && fs.existsSync(apiServerPath)) {
-      const nodeModulesPath = path.join(apiServerPath, 'node_modules');
-      if (!fs.existsSync(nodeModulesPath)) {
-        const installSpinner = ora('Installing API server dependencies...').start();
-        try {
-          execSync('npm install', {
-            cwd: apiServerPath,
-            stdio: 'pipe'
-          });
-          installSpinner.succeed('API server dependencies installed');
-        } catch (error) {
-          installSpinner.fail(`Failed to install dependencies: ${error.message}`);
-          console.log(chalk.yellow('\nYou can install manually with:'));
-          console.log(chalk.cyan(`  cd ${apiServerPath} && npm install\n`));
-        }
-      }
-    }
-  }
-
-  // Type-specific success messages
-  console.log(chalk.bold.green('\n✓ Setup complete!\n'));
-
-  if (installationType === 'api-server') {
-    console.log(chalk.gray('To start the API server:'));
-    console.log(chalk.gray('  gemini-phone start\n'));
-    console.log(chalk.gray(`The API server will listen on port ${config.server.geminiApiPort}.`));
-    console.log(chalk.gray('Voice servers can connect to: http://YOUR_IP:' + config.server.geminiApiPort + '\n'));
-  } else if (installationType === 'voice-server') {
-    if (isPi) {
-      console.log(chalk.bold.cyan('📋 API server instructions:\n'));
-      console.log(chalk.gray('  On your API server, run:'));
-      console.log(chalk.white(`    gemini-phone api-server --port ${config.server.geminiApiPort}\n`));
-      console.log(chalk.gray('  This starts the Gemini API wrapper that the Pi will connect to.\n'));
-      console.log(chalk.bold.cyan('📋 Pi-side next steps:\n'));
-      console.log(chalk.gray('  1. Run "gemini-phone start" to launch voice-app'));
-      console.log(chalk.gray('  2. Call extension ' + config.devices[0].extension + ' from your phone'));
-      console.log(chalk.gray('  3. Start talking to Gemini!\n'));
-    } else {
-      console.log(chalk.gray('Make sure your API server is running with:'));
-      console.log(chalk.gray('  gemini-phone api-server (on the API server machine)\n'));
-      console.log(chalk.gray('Next steps:'));
-      console.log(chalk.gray('  1. Run "gemini-phone start" to launch voice services'));
-      console.log(chalk.gray('  2. Call extension ' + config.devices[0].extension + ' from your phone'));
-      console.log(chalk.gray('  3. Start talking to Gemini!\n'));
-    }
-  } else {
-    // Both
-    console.log(chalk.gray('Next steps:'));
-    console.log(chalk.gray('  1. Run "gemini-phone start" to launch all services'));
-    console.log(chalk.gray('  2. Call extension ' + config.devices[0].extension + ' from your phone'));
-    console.log(chalk.gray('  3. Start talking to Gemini!\n'));
-  }
-
-  // Offer automatic provisioning if FreePBX API is configured
-  if (config.api.freepbx && config.api.freepbx.clientId) {
-    console.log(chalk.bold.cyan('✨ Identity Sync Available'));
-    const { shouldProvision } = await inquirer.prompt([
-      {
-        type: 'confirm',
-        name: 'shouldProvision',
-        message: 'Sync Morpheus identity to FreePBX now?',
-        default: true
-      }
-    ]);
-
-    if (shouldProvision) {
-      try {
-        const { provisionCommand } = await import('./provision.js');
-        await provisionCommand();
-      } catch (err) {
-        console.log(chalk.yellow(`\n⚠️  Automatic sync failed: ${err.message}`));
-        console.log(chalk.gray('You can try again later with: gemini-phone provision\n'));
-      }
-    }
-  }
-}
-
-/**
- * API Server only setup (minimal configuration)
- * @param {object} config - Current config
- * @returns {Promise<object>} Updated config
- */
-async function setupApiServer(config) {
-  console.log(chalk.bold.cyan('\n🖥️  API Server Configuration\n'));
-
-  const answers = await inquirer.prompt([{
-    type: 'input',
-    name: 'port',
-    message: 'Gemini API server port:',
-    default: config.server?.geminiApiPort || 3333,
-    validate: (input) => {
-      const port = parseInt(input, 10);
-      if (isNaN(port) || port < 1024 || port > 65535) {
-        return 'Port must be between 1024 and 65535';
-      }
-      return true;
-    }
-  }]);
-
-  return {
-    ...config,
-    server: {
-      ...config.server,
-      geminiApiPort: parseInt(answers.port, 10)
-    }
-  };
-}
-
-/**
- * Voice Server only setup (non-Pi)
- * Asks for SIP, API keys, devices, and API server connection
- * @param {object} config - Current config
- * @returns {Promise<object>} Updated config
- */
-async function setupVoiceServer(config) {
-  // Ensure secrets exist
-  if (!config.secrets) {
-    config.secrets = {
-      drachtio: generateSecret(),
-      freeswitch: generateSecret()
-    };
-  }
-
-  // Set deployment mode
-  if (!config.deployment) {
-    config.deployment = { mode: 'voice-server' };
-  } else {
-    config.deployment.mode = 'voice-server';
-  }
-
-  // Step 1: FreePBX/SIP Configuration
-  console.log(chalk.bold('\n☎️  SIP Configuration'));
-  config = await setupSIP(config);
-
-  // Step 2: API Server Connection
-  console.log(chalk.bold('\n🖥️  API Server Connection'));
-  const apiServerAnswers = await inquirer.prompt([
-    {
-      type: 'input',
-      name: 'apiServerIp',
-      message: 'API Server IP address:',
-      default: config.deployment.apiServerIp || '',
-      validate: (input) => {
-        if (!input || input.trim() === '') {
-          return 'API Server IP is required';
-        }
-        if (!validateIP(input)) {
-          return 'Invalid IP address format';
-        }
-        return true;
-      }
-    },
-    {
-      type: 'input',
-      name: 'apiServerPort',
-      message: 'API Server port:',
-      default: config.server?.geminiApiPort || 3333,
-      validate: (input) => {
-        const port = parseInt(input, 10);
-        if (isNaN(port) || port < 1024 || port > 65535) {
-          return 'Port must be between 1024 and 65535';
-        }
-        return true;
-      }
-    }
-  ]);
-
-  config.deployment.apiServerIp = apiServerAnswers.apiServerIp;
-  config.server = config.server || {};
-  config.server.geminiApiPort = parseInt(apiServerAnswers.apiServerPort, 10);
-
-  // Step 3: API Keys (for TTS/STT)
-  console.log(chalk.bold('\n📡 API Configuration'));
-  config = await setupAPIKeys(config);
-
-  // Step 4: Device Configuration
-  console.log(chalk.bold('\n🤖 Device Configuration'));
-  config = await setupDevice(config);
-
-  // Step 5: Server Configuration (IP only, no API port)
-  console.log(chalk.bold('\n⚙️  Server Configuration'));
-  const localIp = getLocalIP();
-  const serverAnswers = await inquirer.prompt([
-    {
-      type: 'input',
-      name: 'externalIp',
-      message: 'Server LAN IP (for RTP audio):',
-      default: config.server.externalIp === 'auto' ? localIp : config.server.externalIp,
-      validate: (input) => {
-        if (!input || input.trim() === '') {
-          return 'IP address is required';
-        }
-        if (!validateIP(input)) {
-          return 'Invalid IP address format';
-        }
-        return true;
-      }
-    },
-    {
-      type: 'input',
-      name: 'httpPort',
-      message: 'Voice app HTTP port:',
-      default: config.server.httpPort || 3000,
-      validate: (input) => {
-        const port = parseInt(input, 10);
-        if (isNaN(port) || port < 1024 || port > 65535) {
-          return 'Port must be between 1024 and 65535';
-        }
-        return true;
-      }
-    }
-  ]);
-
-  config.server.externalIp = serverAnswers.externalIp;
-  config.server.httpPort = parseInt(serverAnswers.httpPort, 10);
-
-  config = await setupSIP(config);
-
-  config = await setupVoicemail(config);
-
-  return config;
-}
-
-/**
- * Both (all-in-one) setup flow
- * @param {object} config - Current config
- * @returns {Promise<object>} Updated config
- */
-async function setupBoth(config) {
-  // Ensure secrets exist for existing configs (backwards compatibility)
-  if (!config.secrets) {
-    config.secrets = {
-      drachtio: generateSecret(),
-      freeswitch: generateSecret()
-    };
-  }
-
-  // Ensure deployment mode exists
-  if (!config.deployment) {
-    config.deployment = { mode: 'both' };
-  } else {
-    config.deployment.mode = 'both';
-  }
-
-  // Step 1: API Keys
-  console.log(chalk.bold('\n📡 API Configuration'));
-  config = await setupAPIKeys(config);
-
-  // Step 2: FreePBX/SIP Configuration
-  console.log(chalk.bold('\n☎️  SIP Configuration'));
-  config = await setupSIP(config);
-
-  // Step 3: Device Configuration
-  console.log(chalk.bold('\n🤖 Device Configuration'));
-  config = await setupDevice(config);
-
-  // Step 3.5: Voicemail Configuration
-  config = await setupVoicemail(config);
-
-  // Step 4: Server Configuration
-  console.log(chalk.bold('\n⚙️  Server Configuration'));
-  config = await setupServer(config);
-
-  return config;
-}
-
-/**
- * Device node (bot) setup flow
- * Simplified setup for bot nodes that only run voice-app
- * @param {object} config - Current config
- * @returns {Promise<object>} Updated config
- */
-async function setupDeviceNode(config) {
-  console.log(chalk.bold.yellow('\n🤖 Bot Node Setup\n'));
-  console.log(chalk.gray('Bot nodes run voice-app only and connect to an admin node.\n'));
-
-  // Set deployment mode
-  if (!config.deployment) config.deployment = {};
-  config.deployment.mode = 'device';
-  config.deployment.role = 'device';
-
-  // For now, use simplified setup - just run the regular voice-server setup
-  // TODO: Add admin node config pulling in future iteration
-  console.log(chalk.yellow('⚠️  Bot node auto-configuration coming soon!'));
-  console.log(chalk.gray('For now, using standard voice-server setup flow.\n'));
-
-  config = await setupVoiceServer(config);
-
-  return config;
-}
-
-/**
- * Raspberry Pi split-mode setup flow
- * @param {object} config - Current config
- * @returns {Promise<void>}
- */
-async function setupPi(config) {
-  console.log(chalk.bold.yellow('\n🥧 Raspberry Pi Split-Mode Setup\n'));
-  console.log(chalk.gray('In this mode, the Pi runs voice-app (Docker) and your API server runs gemini-api-server.\n'));
-
-  // AC23: Handle existing standard config migration
-  if (config.deployment && config.deployment.mode === 'standard') {
-    console.log(chalk.yellow('\n⚠️  Detected existing standard configuration'));
-    console.log(chalk.gray('Your config will be migrated to Pi split-mode while preserving:'));
-    console.log(chalk.gray('  • API keys (ElevenLabs, OpenAI)'));
-    console.log(chalk.gray('  • Device configurations'));
-    console.log(chalk.gray('  • SIP settings\n'));
-
-    const { confirmMigration } = await inquirer.prompt([
-      {
-        type: 'confirm',
-        name: 'confirmMigration',
-        message: 'Continue with migration to Pi split-mode?',
-        default: true
-      }
-    ]);
-
-    if (!confirmMigration) {
-      console.log(chalk.gray('\nSetup cancelled.\n'));
-      process.exit(0);
-    }
-
-    console.log(chalk.green('✓ Preserving existing configuration\n'));
-  }
-
-  // Check prerequisites
-  console.log(chalk.bold('\n✅ Prerequisites Check'));
-  const prereqs = await checkPiPrerequisites();
-  let allPrereqsPassed = true;
-
-  for (const prereq of prereqs) {
-    if (prereq.installed) {
-      console.log(chalk.green(`  ✓ ${prereq.name}`));
-    } else {
-      console.log(chalk.red(`  ✗ ${prereq.name}: ${prereq.error}`));
-      if (prereq.installUrl) {
-        console.log(chalk.gray(`    → ${prereq.installUrl}`));
-      }
-      allPrereqsPassed = false;
-    }
-  }
-
-  if (!allPrereqsPassed) {
-    console.log(chalk.red('\n✗ Prerequisites missing. Install them before continuing.\n'));
-    process.exit(1);
-  }
-
-  // Ensure secrets exist
-  if (!config.secrets) {
-    config.secrets = {
-      drachtio: generateSecret(),
-      freeswitch: generateSecret()
-    };
-  }
-
-  // Initialize deployment config
-  if (!config.deployment) {
-    config.deployment = { mode: 'pi-split', pi: {} };
-  } else {
-    config.deployment.mode = 'pi-split';
-    if (!config.deployment.pi) {
-      config.deployment.pi = {};
-    }
-  }
-
-  // Detect SBC/Proxy (AC24: Handle port detection failure)
-  console.log(chalk.bold('\n🔍 Network Detection'));
-  const sbcSpinner = ora('Checking for SBC/Proxy (process + UDP/TCP port 5060)...').start();
-
-  let hasSbc;
-  let portCheckError = false;
-
-  try {
-    hasSbc = await detectSbc();
-    if (hasSbc) {
-      sbcSpinner.succeed('SBC/PBX detected - will use port 5070 for drachtio');
-    } else {
-      sbcSpinner.succeed('No SBC/PBX detected - will use standard port 5060');
-    }
-  } catch (err) {
-    portCheckError = true;
-    sbcSpinner.warn('Port detection failed: ' + err.message);
-  }
-
-  // AC24: Manual override when port detection fails
-  if (portCheckError) {
-    console.log(chalk.yellow('\n⚠️  Could not automatically detect SBC/PBX'));
-    const { manualSbc } = await inquirer.prompt([
-      {
-        type: 'confirm',
-        name: 'manualSbc',
-        message: 'Is a PBX/SBC running on port 5060?',
-        default: false
-      }
-    ]);
-    hasSbc = manualSbc;
-
-    if (hasSbc) {
-      console.log(chalk.green('✓ Will use port 5070 for drachtio (avoid conflict with SBC)\n'));
-    } else {
-      console.log(chalk.green('✓ Will use port 5060 for drachtio\n'));
-    }
-  }
-
-  config.deployment.pi.hasSbc = hasSbc;
-  config.deployment.pi.drachtioPort = hasSbc ? 5070 : 5060;
-
-  // Ask for API server IP and port first, then check connectivity
-  const apiServerAnswers = await inquirer.prompt([
-    {
-      type: 'input',
-      name: 'macIp',
-      message: 'API server IP address (where gemini-api-server runs):',
-      default: config.deployment.pi.macIp || '',
-      validate: (input) => {
-        if (!input || input.trim() === '') {
-          return 'API server IP is required';
-        }
-        if (!validateIP(input)) {
-          return 'Invalid IP address format';
-        }
-        return true;
-      }
-    },
-    {
-      type: 'input',
-      name: 'geminiApiPort',
-      message: 'Gemini API server port:',
-      default: String(config.server?.geminiApiPort || 3333),
-      validate: (input) => {
-        const port = parseInt(input, 10);
-        if (isNaN(port) || port < 1024 || port > 65535) {
-          return 'Port must be between 1024 and 65535';
-        }
-        return true;
-      }
-    }
-  ]);
-
-  const { macIp, geminiApiPort } = apiServerAnswers;
-
-  config.deployment.pi.macIp = macIp;
-  config.server = config.server || {};
-  config.server.geminiApiPort = parseInt(geminiApiPort, 10);
-
-  // Now check connectivity on the specified port
-  const reachSpinner = ora(`Checking API server at ${macIp}:${geminiApiPort}...`).start();
-  const apiUrl = `http://${macIp}:${geminiApiPort}`;
-  const apiHealth = await checkGeminiApiServer(apiUrl);
-
-  if (apiHealth.healthy) {
-    reachSpinner.succeed(`API server is healthy at ${apiUrl}`);
-  } else if (apiHealth.reachable) {
-    reachSpinner.warn(`API server reachable but not responding at ${apiUrl}`);
-    console.log(chalk.yellow('  ⚠️  Make sure gemini-api-server is running\n'));
-  } else {
-    reachSpinner.warn(`Cannot reach API server at ${apiUrl}`);
-    console.log(chalk.yellow('  ⚠️  Make sure API server is running and port is open (firewall)\n'));
-  }
-
-  // Step 1: API Keys (only for voice services - TTS/STT)
-  console.log(chalk.bold('\n📡 API Configuration'));
-  config = await setupAPIKeys(config);
-
-  // Step 2: FreePBX SBC Configuration (Pi mode uses SBC)
-  console.log(chalk.bold('\n📡 FreePBX SBC Connection'));
-  config = await setupSBC(config);
-
-  // Step 3: Device Configuration
-  console.log(chalk.bold('\n🤖 Device Configuration'));
-  config = await setupDevice(config);
-
-  // Step 4: Server Configuration (Pi-specific)
-  console.log(chalk.bold('\n⚙️  Server Configuration'));
-  config = await setupPiServer(config);
-
-  // Save configuration
-  const spinner = ora('Saving configuration...').start();
-  try {
-    await saveConfig(config);
-    spinner.succeed('Configuration saved');
-  } catch (error) {
-    spinner.fail(`Failed to save configuration: ${error.message}`);
-    throw error;
-  }
-
-  // Summary
-  console.log(chalk.bold.green('\n✓ Pi Setup complete!\n'));
-  console.log(chalk.bold.cyan('📋 API server instructions:\n'));
-  console.log(chalk.gray('  On your API server, run:'));
-  console.log(chalk.white(`    gemini-phone api-server --port ${config.server.geminiApiPort}\n`));
-  console.log(chalk.gray('  This starts the Gemini API wrapper that the Pi will connect to.\n'));
-  console.log(chalk.bold.cyan('📋 Pi-side next steps:\n'));
-  console.log(chalk.gray('  1. Run "gemini-phone start" to launch voice-app'));
-  console.log(chalk.gray('  2. Call extension ' + config.devices[0].extension + ' from your phone'));
-  console.log(chalk.gray('  3. Start talking to Gemini!\n'));
-
-  return config;
-}
-
-/**
- * Generate a random secret for Docker services
- * @returns {string} Random 32-character hex string
- */
-function generateSecret() {
-  return crypto.randomBytes(16).toString('hex');
-}
-
-/**
- * Create default configuration
- * @returns {object} Default config
- */
-function createDefaultConfig() {
-  return {
-    version: '2.2.0',
-    api: {
-      elevenlabs: { apiKey: '', defaultVoiceId: '', validated: false },
-      openai: { apiKey: '', validated: false },
-      gemini: { apiKey: '' },
-      n8n: { webhookUrl: '' },
-      freepbx: { clientId: '', clientSecret: '', apiUrl: '' }
-    },
-    sip: {
-      domain: '',
-      registrar: '',
-      transport: 'udp'
-    },
-    server: {
-      geminiApiPort: 3333,
-      httpPort: 3000,
-      externalIp: 'auto'
-    },
-    secrets: {
-      drachtio: generateSecret(),
-      freeswitch: generateSecret()
-    },
-    devices: [],
-    paths: {
-      voiceApp: path.join(getProjectRoot(), 'voice-app'),
-      geminiApiServer: path.join(getProjectRoot(), 'gemini-api-server')
-    }
-  };
-}
-
-/**
- * Setup API keys with validation
- * @param {object} config - Current config
- * @returns {Promise<object>} Updated config
- */
-async function setupAPIKeys(config) {
-  // Gemini API Key (Optional)
-  const geminiAnswers = await inquirer.prompt([
-    {
-      type: 'password',
-      name: 'apiKey',
-      message: 'Gemini API key (optional, leave empty to use "gemini login" auth):',
-      default: config.api.gemini?.apiKey || '',
-    }
-  ]);
-
-  if (!config.api.gemini) config.api.gemini = {};
-  config.api.gemini.apiKey = geminiAnswers.apiKey;
-
-  // n8n Webhook URL (Optional)
-  const n8nAnswers = await inquirer.prompt([
-    {
-      type: 'input',
-      name: 'webhookUrl',
-      message: 'n8n Webhook URL (optional):',
-      default: config.api.n8n?.webhookUrl || '',
-    }
-  ]);
-
-  if (!config.api.n8n) config.api.n8n = {};
-  config.api.n8n.webhookUrl = n8nAnswers.webhookUrl;
-
-  // FreePBX API (Optional)
-  const freePBXAnswers = await inquirer.prompt([
-    {
-      type: 'input',
-      name: 'clientId',
-      message: 'FreePBX API Client ID (optional):',
-      default: config.api.freepbx?.clientId || '',
-    },
-    {
-      type: 'password',
-      name: 'clientSecret',
-      message: 'FreePBX API Client Secret (optional):',
-      default: config.api.freepbx?.clientSecret || '',
-    },
-    {
-      type: 'input',
-      name: 'apiUrl',
-      message: 'FreePBX API Graphql URL (optional, e.g. https://ip/admin/api/graphql):',
-      default: config.api.freepbx?.apiUrl || '',
-    }
-  ]);
-
-  if (!config.api.freepbx) config.api.freepbx = {};
-  config.api.freepbx.clientId = freePBXAnswers.clientId;
-  config.api.freepbx.clientSecret = freePBXAnswers.clientSecret;
-  config.api.freepbx.apiUrl = freePBXAnswers.apiUrl;
-
-  // Validate FreePBX API if credentials were provided
-  if (freePBXAnswers.clientId && freePBXAnswers.clientSecret && freePBXAnswers.apiUrl) {
-    const pbxSpinner = ora('Validating FreePBX M2M API connection...').start();
+  // Load existing config if present
+  let existingConfig = {};
+  if (existsSync(CONFIG_FILE)) {
     try {
-      const client = new FreePBXClient({
-        clientId: freePBXAnswers.clientId,
-        clientSecret: freePBXAnswers.clientSecret,
-        apiUrl: freePBXAnswers.apiUrl
-      });
-
-      const pbxResult = await client.testConnection();
-      if (pbxResult.valid) {
-        pbxSpinner.succeed('FreePBX API connection validated');
-      } else {
-        pbxSpinner.warn(`FreePBX API connection failed: ${pbxResult.error}`);
-
-        const { pbxContinue } = await inquirer.prompt([
-          {
-            type: 'confirm',
-            name: 'pbxContinue',
-            message: 'Connection failed. Continue anyway?',
-            default: true
-          }
-        ]);
-        if (!pbxContinue) throw new Error('Setup cancelled');
-      }
-    } catch (err) {
-      pbxSpinner.fail(`FreePBX API Error: ${err.message}`);
-      const { pbxContinue } = await inquirer.prompt([
-        {
-          type: 'confirm',
-          name: 'pbxContinue',
-          message: 'API check failed. Continue anyway?',
-          default: true
-        }
-      ]);
-      if (!pbxContinue) throw new Error('Setup cancelled');
+      existingConfig = JSON.parse(readFileSync(CONFIG_FILE, 'utf8'));
+      console.log(chalk.yellow('Found existing configuration. You can update it.\n'));
+    } catch (e) {
+      console.log(chalk.red('Error reading existing config, starting fresh.\n'));
     }
   }
 
-  // ElevenLabs API Key
-  const elevenLabsAnswers = await inquirer.prompt([
+  // Ask what to install
+  const { installMode } = await inquirer.prompt([
     {
-      type: 'password',
-      name: 'apiKey',
-      message: 'ElevenLabs API key:',
-      default: config.api.elevenlabs.apiKey,
-      validate: (input) => {
-        if (!input || input.trim() === '') {
-          return 'API key is required';
-        }
-        return true;
-      }
+      type: 'list',
+      name: 'installMode',
+      message: 'What would you like to install?',
+      choices: [
+        { name: 'Both (Voice Server + API Server on same machine)', value: 'both' },
+        { name: 'Voice Server Only (connects to remote API server)', value: 'voice' },
+        { name: 'API Server Only (Gemini CLI wrapper)', value: 'api' }
+      ],
+      default: existingConfig.installMode || 'both'
     }
   ]);
 
-  const elevenLabsKey = elevenLabsAnswers.apiKey;
-  const spinner = ora('Validating ElevenLabs API key...').start();
+  const config = { installMode };
 
-  const elevenLabsResult = await validateElevenLabsKey(elevenLabsKey);
-  if (!elevenLabsResult.valid) {
-    spinner.fail(`Invalid ElevenLabs API key: ${elevenLabsResult.error}`);
-    console.log(chalk.yellow('\n⚠️  You can continue setup, but the key may not work.'));
-    const { continueAnyway } = await inquirer.prompt([
+  // Voice server configuration
+  if (installMode === 'both' || installMode === 'voice') {
+    console.log(chalk.cyan('\n📞 Voice Server Configuration\n'));
+
+    const voiceConfig = await inquirer.prompt([
       {
-        type: 'confirm',
-        name: 'continueAnyway',
-        message: 'Continue anyway?',
-        default: false
+        type: 'input',
+        name: 'sipDomain',
+        message: 'SIP Domain/Server IP:',
+        default: existingConfig.sipDomain || '172.16.1.33',
+        validate: (input) => input.trim() !== '' || 'SIP domain is required'
+      },
+      {
+        type: 'input',
+        name: 'sipExtension',
+        message: 'Extension number:',
+        default: existingConfig.sipExtension || '9000',
+        validate: (input) => /^\d+$/.test(input) || 'Must be a number'
+      },
+      {
+        type: 'password',
+        name: 'sipPassword',
+        message: 'SIP Password:',
+        default: existingConfig.sipPassword || '',
+        validate: (input) => input.trim() !== '' || 'Password is required'
+      },
+      {
+        type: 'input',
+        name: 'externalIp',
+        message: 'External IP (for RTP):',
+        default: existingConfig.externalIp || '',
+        validate: (input) => /^\d+\.\d+\.\d+\.\d+$/.test(input) || 'Must be valid IP address'
+      },
+      {
+        type: 'password',
+        name: 'elevenlabsKey',
+        message: 'ElevenLabs API Key:',
+        default: existingConfig.elevenlabsKey || '',
+        validate: (input) => input.trim() !== '' || 'API key is required'
+      },
+      {
+        type: 'password',
+        name: 'openaiKey',
+        message: 'OpenAI API Key:',
+        default: existingConfig.openaiKey || '',
+        validate: (input) => input.trim() !== '' || 'API key is required'
       }
     ]);
 
-    if (!continueAnyway) {
-      throw new Error('Setup cancelled due to invalid API key');
-    }
-
-    config.api.elevenlabs = { apiKey: elevenLabsKey, defaultVoiceId: '', validated: false };
-  } else {
-    spinner.succeed('ElevenLabs API key validated');
-    config.api.elevenlabs = { apiKey: elevenLabsKey, defaultVoiceId: '', validated: true };
+    Object.assign(config, voiceConfig);
   }
 
-  // Ask for default voice ID immediately after API key
-  const voiceIdAnswers = await inquirer.prompt([
-    {
-      type: 'input',
-      name: 'voiceId',
-      message: 'ElevenLabs default voice ID (for all devices):',
-      default: config.api.elevenlabs.defaultVoiceId || '',
-      validate: (input) => {
-        if (!input || input.trim() === '') {
-          return 'Voice ID is required';
-        }
-        return true;
-      }
-    }
-  ]);
+  // API server configuration
+  if (installMode === 'both' || installMode === 'api') {
+    console.log(chalk.cyan('\n🤖 API Server Configuration\n'));
 
-  const defaultVoiceId = voiceIdAnswers.voiceId;
-  const voiceSpinner = ora('Validating ElevenLabs voice ID...').start();
-
-  const voiceValidation = await validateVoiceId(elevenLabsKey, defaultVoiceId);
-  if (!voiceValidation.valid) {
-    voiceSpinner.fail(`Voice ID validation failed: ${voiceValidation.error}`);
-    console.log(chalk.yellow('\n⚠️  You can continue setup, but the voice ID may not work.'));
-    const { continueAnyway } = await inquirer.prompt([
+    // Ask for Gemini API URL or default to localhost
+    const apiConfig = await inquirer.prompt([
       {
-        type: 'confirm',
-        name: 'continueAnyway',
-        message: 'Continue anyway?',
-        default: false
+        type: 'input',
+        name: 'geminiApiUrl',
+        message: 'Gemini API URL:',
+        default: existingConfig.geminiApiUrl || 'http://localhost:3333',
+        when: installMode === 'voice'
       }
     ]);
 
-    if (!continueAnyway) {
-      throw new Error('Setup cancelled due to invalid voice ID');
+    if (installMode === 'both') {
+      config.geminiApiUrl = 'http://localhost:3333';
+    } else if (apiConfig.geminiApiUrl) {
+      config.geminiApiUrl = apiConfig.geminiApiUrl;
     }
-
-    config.api.elevenlabs.defaultVoiceId = defaultVoiceId;
-  } else {
-    voiceSpinner.succeed(`Voice ID validated: ${voiceValidation.name}`);
-    config.api.elevenlabs.defaultVoiceId = defaultVoiceId;
   }
 
-  // OpenAI API Key
-  const openAIAnswers = await inquirer.prompt([
-    {
-      type: 'password',
-      name: 'apiKey',
-      message: 'OpenAI API key (for Whisper STT):',
-      default: config.api.openai.apiKey,
-      validate: (input) => {
-        if (!input || input.trim() === '') {
-          return 'API key is required';
-        }
-        return true;
-      }
-    }
-  ]);
+  // Voice profile
+  if (installMode === 'both' || installMode === 'voice') {
+    console.log(chalk.cyan('\n🎭 AI Personality\n'));
 
-  const openAIKey = openAIAnswers.apiKey;
-  const openAISpinner = ora('Validating OpenAI API key...').start();
-
-  const openAIResult = await validateOpenAIKey(openAIKey);
-  if (!openAIResult.valid) {
-    openAISpinner.fail(`Invalid OpenAI API key: ${openAIResult.error}`);
-    console.log(chalk.yellow('\n⚠️  You can continue setup, but the key may not work.'));
-    const { continueAnyway } = await inquirer.prompt([
+    const { botName, botPrompt, voiceId } = await inquirer.prompt([
       {
-        type: 'confirm',
-        name: 'continueAnyway',
-        message: 'Continue anyway?',
-        default: false
+        type: 'input',
+        name: 'botName',
+        message: 'Bot name:',
+        default: existingConfig.botName || 'Gemini',
+      },
+      {
+        type: 'input',
+        name: 'botPrompt',
+        message: 'System prompt:',
+        default: existingConfig.botPrompt || 'You are a helpful AI assistant. Be concise and friendly.',
+      },
+      {
+        type: 'input',
+        name: 'voiceId',
+        message: 'ElevenLabs Voice ID:',
+        default: existingConfig.voiceId || 'EXAVITQu4vr4xnSDxMaL',
       }
     ]);
 
-    if (!continueAnyway) {
-      throw new Error('Setup cancelled due to invalid API key');
-    }
-
-    config.api.openai = { apiKey: openAIKey, validated: false };
-  } else {
-    openAISpinner.succeed('OpenAI API key validated');
-    config.api.openai = { apiKey: openAIKey, validated: true };
+    config.botName = botName;
+    config.botPrompt = botPrompt;
+    config.voiceId = voiceId;
   }
 
-  return config;
+  // Save configuration
+  try {
+    writeFileSync(CONFIG_FILE, JSON.stringify(config, null, 2));
+    console.log(chalk.green(`\n✅ Configuration saved to: ${CONFIG_FILE}\n`));
+
+    // Create .env file
+    if (installMode === 'both' || installMode === 'voice') {
+      createEnvFile(config);
+    }
+
+    // Create devices.json
+    if (installMode === 'both' || installMode === 'voice') {
+      createDevicesFile(config);
+    }
+
+    console.log(chalk.cyan('Next steps:'));
+    console.log(chalk.white(`  gemini-phone start    ${chalk.gray('# Launch services')}`));
+    console.log(chalk.white(`  gemini-phone status   ${chalk.gray('# Check status')}`));
+    console.log();
+
+  } catch (error) {
+    console.error(chalk.red(`\n✗ Failed to save configuration: ${error.message}\n`));
+    process.exit(1);
+  }
 }
 
-/**
- * Setup SIP configuration (standard mode)
- * @param {object} config - Current config
- * @returns {Promise<object>} Updated config
- */
-async function setupSIP(config) {
-  const answers = await inquirer.prompt([
-    {
-      type: 'input',
-      name: 'domain',
-      message: 'FreePBX domain or IP (e.g., your-freepbx.org):',
-      default: config.sip.domain,
-      validate: (input) => {
-        if (!input || input.trim() === '') {
-          return 'SIP domain is required';
-        }
-        if (!validateHostname(input)) {
-          return 'Invalid hostname format';
-        }
-        return true;
-      }
-    },
-    {
-      type: 'input',
-      name: 'registrar',
-      message: 'FreePBX registrar IP (same as domain if unsure):',
-      default: config.sip.registrar,
-      validate: (input) => {
-        if (!input || input.trim() === '') {
-          return 'SIP registrar IP is required';
-        }
-        if (!validateIP(input)) {
-          return 'Invalid IP address format';
-        }
-        return true;
-      }
-    }
-  ]);
+function createEnvFile(config) {
+  const envPath = join(homedir(), '.gemini-phone-cli', '.env');
+  const envContent = `# Gemini Phone Configuration
+# Generated by: gemini-phone setup
 
-  config.sip.domain = answers.domain;
-  config.sip.registrar = answers.registrar;
+NODE_ENV=production
 
-  return config;
+# FreeSWITCH Connection
+FREESWITCH_HOST=127.0.0.1
+FREESWITCH_PORT=8021
+FREESWITCH_SECRET=ClueCon
+
+# Drachtio SIP Server
+DRACHTIO_HOST=127.0.0.1
+DRACHTIO_PORT=9022
+DRACHTIO_SECRET=cymru
+
+# Media Configuration
+EXTERNAL_IP=${config.externalIp}
+RTP_PORT_START=30000
+RTP_PORT_END=30100
+
+# SIP Configuration
+SIP_DOMAIN=${config.sipDomain}
+SIP_REGISTRAR=${config.sipDomain}
+SIP_REGISTRAR_PORT=5060
+SIP_EXTENSION=${config.sipExtension}
+
+# API Keys
+ELEVENLABS_API_KEY=${config.elevenlabsKey}
+OPENAI_API_KEY=${config.openaiKey}
+
+# Gemini Backend
+GEMINI_API_URL=${config.geminiApiUrl}
+
+# Voice App Server
+HTTP_PORT=3000
+WEBSOCKET_PORT=3001
+
+# Logging
+LOG_LEVEL=info
+`;
+
+  writeFileSync(envPath, envContent);
+  console.log(chalk.green(`✅ Created .env file`));
 }
 
-/**
- * Setup SBC configuration (Pi mode only)
- * @param {object} config - Current config
- * @returns {Promise<object>} Updated config
- */
-async function setupSBC(config) {
-  // Display pre-requisite information
-  console.log(chalk.cyan('\nℹ️  Pre-requisite: You must create an API Application in FreePBX Admin first'));
-  console.log(chalk.gray('   (Admin → Settings → SBC → Add SBC → Raspberry Pi)\n'));
-
-  const answers = await inquirer.prompt([
-    {
-      type: 'input',
-      name: 'fqdn',
-      message: 'FreePBX Domain/FQDN (e.g., pbx.example.com):',
-      default: config.sip.domain,
-      validate: (input) => {
-        if (!input || input.trim() === '') {
-          return 'Domain/FQDN is required';
-        }
-        if (!validateHostname(input)) {
-          return 'Invalid hostname format';
-        }
-        return true;
-      }
+function createDevicesFile(config) {
+  const devicesPath = join(homedir(), '.gemini-phone-cli', 'voice-app', 'config', 'devices.json');
+  const devices = {
+    [config.sipExtension]: {
+      extension: config.sipExtension,
+      authId: config.sipExtension,
+      password: config.sipPassword,
+      name: config.botName,
+      prompt: config.botPrompt,
+      voiceId: config.voiceId
     }
-  ]);
-
-  // Domain is the FreePBX FQDN (for From/To SIP headers)
-  config.sip.domain = answers.fqdn;
-  // Registrar is the LOCAL SBC (drachtio registers with local SBC, not cloud)
-  config.sip.registrar = '127.0.0.1';
-
-  return config;
-}
-
-/**
- * Setup device configuration
- * @param {object} config - Current config
- * @returns {Promise<object>} Updated config
- */
-async function setupDevice(config) {
-  // Get first device or create new
-  const existingDevice = config.devices.length > 0 ? config.devices[0] : null;
-
-  const answers = await inquirer.prompt([
-    {
-      type: 'input',
-      name: 'name',
-      message: 'Device name (e.g., Morpheus):',
-      default: existingDevice?.name || 'Morpheus',
-      validate: (input) => {
-        if (!input || input.trim() === '') {
-          return 'Device name is required';
-        }
-        return true;
-      }
-    },
-    {
-      type: 'input',
-      name: 'extension',
-      message: 'SIP extension number (e.g., 9000):',
-      default: existingDevice?.extension || '9000',
-      validate: (input) => {
-        if (!validateExtension(input)) {
-          return 'Extension must be 4-5 digits';
-        }
-        return true;
-      }
-    },
-    {
-      type: 'input',
-      name: 'authId',
-      message: 'SIP auth ID:',
-      default: existingDevice?.authId || '',
-      validate: (input) => {
-        if (!input || input.trim() === '') {
-          return 'Auth ID is required';
-        }
-        return true;
-      }
-    },
-    {
-      type: 'password',
-      name: 'password',
-      message: 'SIP password:',
-      default: existingDevice?.password || '',
-      validate: (input) => {
-        if (!input || input.trim() === '') {
-          return 'Password is required';
-        }
-        return true;
-      }
-    },
-    {
-      type: 'input',
-      name: 'voiceId',
-      message: 'ElevenLabs voice ID:',
-      default: existingDevice?.voiceId || config.api.elevenlabs.defaultVoiceId || '',
-      validate: (input) => {
-        if (!input || input.trim() === '') {
-          return 'Voice ID is required';
-        }
-        return true;
-      }
-    },
-    {
-      type: 'input',
-      name: 'prompt',
-      message: 'System prompt:',
-      default: existingDevice?.prompt || 'You are a helpful AI assistant. Keep voice responses under 40 words.',
-      validate: (input) => {
-        if (!input || input.trim() === '') {
-          return 'System prompt is required';
-        }
-        return true;
-      }
-    }
-  ]);
-
-  // Validate voice ID with ElevenLabs API
-  const voiceSpinner = ora('Validating ElevenLabs voice ID...').start();
-  const voiceValidation = await validateVoiceId(config.api.elevenlabs.apiKey, answers.voiceId);
-
-  if (!voiceValidation.valid) {
-    voiceSpinner.fail(`Voice ID validation failed: ${voiceValidation.error}`);
-    console.log(chalk.yellow('\n⚠️  You can continue setup, but the voice ID may not work.'));
-    const { continueAnyway } = await inquirer.prompt([
-      {
-        type: 'confirm',
-        name: 'continueAnyway',
-        message: 'Continue anyway?',
-        default: false
-      }
-    ]);
-
-    if (!continueAnyway) {
-      // Let user re-enter voice ID
-      console.log(chalk.gray('\nReturning to device setup...'));
-      return setupDevice(config);
-    }
-  } else {
-    voiceSpinner.succeed(`Voice ID validated: ${voiceValidation.name}`);
-  }
-
-  const device = {
-    name: answers.name,
-    extension: answers.extension,
-    authId: answers.authId,
-    password: answers.password,
-    voiceId: answers.voiceId,
-    prompt: answers.prompt
   };
 
-  // Replace first device or add new
-  if (config.devices.length > 0) {
-    config.devices[0] = device;
-  } else {
-    config.devices.push(device);
+  // Ensure directory exists
+  const dir = join(homedir(), '.gemini-phone-cli', 'voice-app', 'config');
+  if (!existsSync(dir)) {
+    mkdirSync(dir, { recursive: true });
   }
 
-  return config;
-}
-
-/**
- * Setup server configuration (standard mode)
- * @param {object} config - Current config
- * @returns {Promise<object>} Updated config
- */
-async function setupServer(config) {
-  const localIp = getLocalIP();
-
-  const answers = await inquirer.prompt([
-    {
-      type: 'input',
-      name: 'externalIp',
-      message: 'Server LAN IP (for RTP audio):',
-      default: config.server.externalIp === 'auto' ? localIp : config.server.externalIp,
-      validate: (input) => {
-        if (!input || input.trim() === '') {
-          return 'IP address is required';
-        }
-        if (!validateIP(input)) {
-          return 'Invalid IP address format';
-        }
-        return true;
-      }
-    },
-    {
-      type: 'input',
-      name: 'geminiApiPort',
-      message: 'Gemini API server port:',
-      default: config.server.geminiApiPort,
-      validate: (input) => {
-        const port = parseInt(input, 10);
-        if (isNaN(port) || port < 1024 || port > 65535) {
-          return 'Port must be between 1024 and 65535';
-        }
-        return true;
-      }
-    },
-    {
-      type: 'input',
-      name: 'httpPort',
-      message: 'Voice app HTTP port:',
-      default: config.server.httpPort,
-      validate: (input) => {
-        const port = parseInt(input, 10);
-        if (isNaN(port) || port < 1024 || port > 65535) {
-          return 'Port must be between 1024 and 65535';
-        }
-        return true;
-      }
-    }
-  ]);
-
-  config.server.externalIp = answers.externalIp;
-  config.server.geminiApiPort = parseInt(answers.geminiApiPort, 10);
-  config.server.httpPort = parseInt(answers.httpPort, 10);
-
-  return config;
-}
-
-/**
- * Setup Pi-specific server configuration
- * @param {object} config - Current config
- * @returns {Promise<object>} Updated config
- */
-async function setupPiServer(config) {
-  const localIp = getLocalIP();
-
-  const answers = await inquirer.prompt([
-    {
-      type: 'input',
-      name: 'externalIp',
-      message: 'Pi LAN IP (for RTP audio):',
-      default: config.server.externalIp === 'auto' ? localIp : config.server.externalIp,
-      validate: (input) => {
-        if (!input || input.trim() === '') {
-          return 'IP address is required';
-        }
-        if (!validateIP(input)) {
-          return 'Invalid IP address format';
-        }
-        return true;
-      }
-    },
-    {
-      type: 'input',
-      name: 'httpPort',
-      message: 'Voice app HTTP port:',
-      default: config.server.httpPort || 3000,
-      validate: (input) => {
-        const port = parseInt(input, 10);
-        if (isNaN(port) || port < 1024 || port > 65535) {
-          return 'Port must be between 1024 and 65535';
-        }
-        return true;
-      }
-    }
-  ]);
-
-  config.server.externalIp = answers.externalIp;
-  config.server.httpPort = parseInt(answers.httpPort, 10);
-
-  return config;
-}
-/**
- * Setup Remote Voicemail Access
- * @param {object} config - Current config
- * @returns {Promise<object>} Updated config
- */
-async function setupVoicemail(config) {
-  // Create voicemail config if not exists
-  if (!config.voicemail) config.voicemail = {};
-
-  // Step: Remote Voicemail Access
-  const voicemailAnswers = await inquirer.prompt([
-    {
-      type: 'confirm',
-      name: 'enableMount',
-      message: 'Do you want to enable remote voicemail monitoring (SSHFS)?',
-      default: !!config.voicemail.sshPass
-    },
-    {
-      type: 'password',
-      name: 'sshPass',
-      message: 'SSH Password for FreePBX server (root):',
-      when: (answers) => answers.enableMount,
-      default: config.voicemail.sshPass || '',
-      validate: (input) => input.length > 0 ? true : 'Password is required'
-    },
-    {
-      type: 'input',
-      name: 'mountUser',
-      message: 'SSH User for mount (default: root):',
-      when: (answers) => answers.enableMount,
-      default: config.voicemail.mountUser || 'root'
-    }
-  ]);
-
-  if (voicemailAnswers.enableMount) {
-    config.voicemail.sshPass = voicemailAnswers.sshPass;
-    config.voicemail.mountUser = voicemailAnswers.mountUser;
-  } else {
-    config.voicemail.sshPass = '';
-    config.voicemail.mountUser = '';
-  }
-
-  return config;
+  writeFileSync(devicesPath, JSON.stringify(devices, null, 2));
+  console.log(chalk.green(`✅ Created devices.json`));
 }

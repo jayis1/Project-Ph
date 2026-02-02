@@ -1,444 +1,116 @@
 import chalk from 'chalk';
-import ora from 'ora';
-import fs from 'fs';
-import path from 'path';
-import { loadConfig, configExists, getInstallationType, getEnvPath } from '../config.js';
-import { checkDocker, writeDockerConfig, startContainers } from '../docker.js';
-import { startServer, isServerRunning } from '../process-manager.js';
-import { isGeminiInstalled, sleep } from '../utils.js';
-import { checkGeminiApiServer } from '../network.js';
-import { runPrereqChecks } from '../prereqs.js';
-import { exec } from 'child_process';
-import { promisify } from 'util';
+import { existsSync, readFileSync } from 'fs';
+import { homedir } from 'os';
+import { join } from 'path';
+import { spawn } from 'child_process';
 
-const execAsync = promisify(exec);
+const CONFIG_FILE = join(homedir(), '.config', 'gemini-phone', 'config.json');
+const INSTALL_DIR = join(homedir(), '.gemini-phone-cli');
 
-/**
- * Start command - Launch all services
- * @returns {Promise<void>}
- */
 export async function startCommand() {
-  console.log(chalk.bold.cyan('\n🚀 Starting Gemini Phone\n'));
+  console.log(chalk.cyan.bold('\n🚀 Starting Gemini Phone\n'));
 
-  // Check if configured
-  if (!configExists()) {
-    console.log(chalk.red('✗ Configuration not found'));
-    console.log(chalk.gray('  Run "gemini-phone setup" first\n'));
+  // Check if config exists
+  if (!existsSync(CONFIG_FILE)) {
+    console.log(chalk.red('✗ No configuration found'));
+    console.log(chalk.yellow('  Run: gemini-phone setup\n'));
     process.exit(1);
   }
 
-  // Load config and get installation type
-  const config = await loadConfig();
-  const installationType = getInstallationType(config);
-  const isPiMode = config.deployment?.mode === 'pi-split';
-
-  console.log(chalk.gray(`Installation type: ${installationType}\n`));
-
-  // Run prerequisite checks for this installation type
-  const prereqResult = await runPrereqChecks({ type: installationType });
-  if (!prereqResult.success) {
-    console.log(chalk.red('\n❌ Prerequisites not met. Please run "gemini-phone setup" to fix.\n'));
-    process.exit(1);
-  }
-
-  if (isPiMode) {
-    console.log(chalk.cyan('🥧 Pi Split-Mode detected\n'));
-  }
-
-  // Route to type-specific start function
-  switch (installationType) {
-    case 'api-server':
-      await startApiServer(config);
-      break;
-    case 'voice-server':
-      await startVoiceServer(config, isPiMode);
-      break;
-    case 'both':
-    default:
-      await startBoth(config, isPiMode);
-      break;
-  }
-}
-
-/**
- * Start API server only
- * @param {object} config - Configuration
- * @returns {Promise<void>}
- */
-async function startApiServer(config) {
-  // Check Gemini CLI
-  if (!(await isGeminiInstalled())) {
-    console.log(chalk.yellow('⚠️  Gemini CLI not found'));
-    console.log(chalk.gray('  Install from: https://gemini.com/download\n'));
-  }
-
-  // Verify path exists
-  if (!fs.existsSync(config.paths.geminiApiServer)) {
-    console.log(chalk.red(`✗ G emini API server not found at: ${config.paths.geminiApiServer}`));
-    console.log(chalk.gray('  Update paths in configuration\n'));
-    process.exit(1);
-  }
-
-  // Check if dependencies are installed
-  const nodeModulesPath = path.join(config.paths.geminiApiServer, 'node_modules');
-  if (!fs.existsSync(nodeModulesPath)) {
-    console.log(chalk.red('✗ Dependencies not installed in gemini-api-server'));
-    console.log(chalk.yellow('\nRun the following to install dependencies:'));
-    console.log(chalk.cyan(`  cd ${config.paths.geminiApiServer} && npm install\n`));
-    process.exit(1);
-  }
-
-  // Start gemini-api-server
-  const spinner = ora('Starting Gemini API server...').start();
+  // Load config
+  let config;
   try {
-    if (await isServerRunning()) {
-      spinner.warn('Gemini API server already running');
-    } else {
-      const env = {};
-      if (config.api?.gemini?.apiKey) {
-        env.GEMINI_API_KEY = config.api.gemini.apiKey;
-      }
-      await startServer(config.paths.geminiApiServer, config.server.geminiApiPort, env);
-      spinner.succeed(`Gemini API server started on port ${config.server.geminiApiPort}`);
-    }
+    config = JSON.parse(readFileSync(CONFIG_FILE, 'utf8'));
   } catch (error) {
-    spinner.fail(`Failed to start server: ${error.message}`);
-    throw error;
-  }
-
-  // Success
-  console.log(chalk.bold.green('\n✓ API server running!\n'));
-  console.log(chalk.gray('Service:'));
-  console.log(chalk.gray(`  • Gemini API server: http://localhost:${config.server.geminiApiPort}\n`));
-  console.log(chalk.gray('Voice servers can connect to this API server.\n'));
-}
-
-/**
- * Start voice server only
- * @param {object} config - Configuration
- * @param {boolean} isPiMode - Is Pi split-mode
- * @returns {Promise<void>}
- */
-async function startVoiceServer(config, isPiMode) {
-  // Verify voice-app path exists
-  if (!fs.existsSync(config.paths.voiceApp)) {
-    console.log(chalk.red(`✗ Voice app not found at: ${config.paths.voiceApp}`));
-    console.log(chalk.gray('  Update paths in configuration\n'));
+    console.log(chalk.red(`✗ Failed to read config: ${error.message}\n`));
     process.exit(1);
   }
 
-  // In Pi mode or voice-server mode, check API server reachability
-  const apiServerIp = isPiMode ? config.deployment.pi.macIp : config.deployment.apiServerIp;
-  if (apiServerIp) {
-    const apiServerUrl = `http://${apiServerIp}:${config.server.geminiApiPort}`;
-    const apiSpinner = ora(`Checking API server at ${apiServerUrl}...`).start();
-    const apiHealth = await checkGeminiApiServer(apiServerUrl);
-    if (apiHealth.healthy) {
-      apiSpinner.succeed(`API server is healthy at ${apiServerUrl}`);
-    } else {
-      apiSpinner.warn(`API server not responding at ${apiServerUrl}`);
-      console.log(chalk.yellow('  ⚠️  Make sure "gemini-phone api-server" is running on your API server\n'));
-    }
+  const { installMode } = config;
+
+  // Start services based on mode
+  if (installMode === 'both') {
+    await startVoiceServer();
+    await startApiServer();
+  } else if (installMode === 'voice') {
+    await startVoiceServer();
+  } else if (installMode === 'api') {
+    await startApiServer();
   }
 
-  // Check Docker
-  const spinner = ora('Checking Docker...').start();
-  const dockerStatus = await checkDocker();
-
-  if (!dockerStatus.installed || !dockerStatus.running) {
-    spinner.fail(dockerStatus.error);
-    process.exit(1);
-  }
-  spinner.succeed('Docker is ready');
-
-  // Mount Voicemail (if configured)
-  await mountVoicemail(config);
-
-  // Generate Docker config
-  spinner.start('Generating Docker configuration...');
-  try {
-    await writeDockerConfig(config);
-
-    // Also write devices.json to voice-app/config
-    const devicesPath = path.join(config.paths.voiceApp, 'config', 'devices.json');
-    const devicesConfig = {};
-    for (const device of config.devices) {
-      devicesConfig[device.extension] = device;
-    }
-    await fs.promises.writeFile(devicesPath, JSON.stringify(devicesConfig, null, 2), { mode: 0o644 });
-
-    spinner.succeed('Docker configuration generated');
-  } catch (error) {
-    spinner.fail(`Failed to generate config: ${error.message}`);
-    throw error;
-  }
-
-  // Start Docker containers
-  spinner.start('Starting Docker containers...');
-  try {
-    await startContainers();
-    spinner.succeed('Docker containers started');
-  } catch (error) {
-    spinner.fail(`Failed to start containers: ${error.message}`);
-
-    if (error.message.includes('port') || error.message.includes('address already in use')) {
-      console.log(chalk.yellow('\n⚠️  Port conflict detected\n'));
-      console.log(chalk.gray('Possible causes:'));
-      console.log(chalk.gray('  • Another PBX/SBC is running on the configured port'));
-      console.log(chalk.gray('  • A firewall is blocking the registration port'));
-      console.log(chalk.gray('\n  Possible fixes:'));
-      console.log(chalk.gray('  1. If a PBX/SBC is on port 5060, run "gemini-phone setup" again'));
-      console.log(chalk.gray('  2. Check running containers: docker ps'));
-      console.log(chalk.gray('  3. Stop conflicting services: docker compose down\n'));
-    }
-
-    throw error;
-  }
-
-  // Wait a bit for containers to initialize
-  spinner.start('Waiting for containers to initialize...');
-  await sleep(3000);
-  spinner.succeed('Containers initialized');
-
-  // Success
-  console.log(chalk.bold.green('\n✓ Voice server running!\n'));
-  console.log(chalk.gray('Services:'));
-  console.log(chalk.gray(`  • Docker containers: drachtio, freeswitch, voice-app`));
-  if (apiServerIp) {
-    console.log(chalk.gray(`  • API server: http://${apiServerIp}:${config.server.geminiApiPort}`));
-  }
-  console.log(chalk.gray(`  • Voice app API: http://localhost:${config.server.httpPort}\n`));
-  console.log(chalk.gray('Ready to receive calls on:'));
-  for (const device of config.devices) {
-    console.log(chalk.gray(`  • ${device.name}: extension ${device.extension}`));
-  }
+  console.log(chalk.green('\n✅ Services started!\n'));
+  console.log(chalk.cyan('Next steps:'));
+  console.log(chalk.white(`  gemini-phone status   ${chalk.gray('# Check status')}`));
+  console.log(chalk.white(`  gemini-phone stop     ${chalk.gray('# Stop services')}`));
   console.log();
 }
 
-/**
- * Start both API server and voice server
- * @param {object} config - Configuration
- * @param {boolean} isPiMode - Is Pi split-mode
- * @returns {Promise<void>}
- */
-async function startBoth(config, isPiMode) {
-  // Verify voice-app path exists
-  if (!fs.existsSync(config.paths.voiceApp)) {
-    console.log(chalk.red(`✗ Voice app not found at: ${config.paths.voiceApp}`));
-    console.log(chalk.gray('  Update paths in configuration\n'));
+async function startVoiceServer() {
+  console.log(chalk.cyan('📞 Starting voice server...\n'));
+
+  const dockerComposePath = join(INSTALL_DIR, 'docker-compose.yml');
+
+  if (!existsSync(dockerComposePath)) {
+    console.log(chalk.red('✗ docker-compose.yml not found'));
+    console.log(chalk.yellow(`  Expected at: ${dockerComposePath}\n`));
     process.exit(1);
   }
 
-  // Only check gemini-api-server path in standard mode (not Pi mode)
-  if (!isPiMode && !fs.existsSync(config.paths.geminiApiServer)) {
-    console.log(chalk.red(`✗ Gemini API server not found at: ${config.paths.geminiApiServer}`));
-    console.log(chalk.gray('  Update paths in configuration\n'));
-    process.exit(1);
-  }
+  return new Promise((resolve, reject) => {
+    const dockerCompose = spawn('docker-compose', ['up', '-d'], {
+      cwd: INSTALL_DIR,
+      stdio: 'inherit'
+    });
 
-  // Check if dependencies are installed (not in Pi mode)
-  if (!isPiMode) {
-    const nodeModulesPath = path.join(config.paths.geminiApiServer, 'node_modules');
-    if (!fs.existsSync(nodeModulesPath)) {
-      console.log(chalk.red('✗ Dependencies not installed in gemini-api-server'));
-      console.log(chalk.yellow('\nRun the following to install dependencies:'));
-      console.log(chalk.cyan(`  cd ${config.paths.geminiApiServer} && npm install\n`));
-      process.exit(1);
-    }
-  }
-
-  // Check Gemini CLI only in standard mode (Pi mode connects to API server instead)
-  if (!isPiMode && !(await isGeminiInstalled())) {
-    console.log(chalk.yellow('⚠️  Gemini CLI not found'));
-    console.log(chalk.gray('  Install from: https://gemini.com/download\n'));
-  }
-
-  // In Pi mode, verify API server is reachable
-  if (isPiMode) {
-    const apiServerUrl = `http://${config.deployment.pi.macIp}:${config.server.geminiApiPort}`;
-    const apiSpinner = ora(`Checking API server at ${apiServerUrl}...`).start();
-    const apiHealth = await checkGeminiApiServer(apiServerUrl);
-    if (apiHealth.healthy) {
-      apiSpinner.succeed(`API server is healthy at ${apiServerUrl}`);
-    } else {
-      apiSpinner.warn(`API server not responding at ${apiServerUrl}`);
-      console.log(chalk.yellow('  ⚠️  Make sure "gemini-phone api-server" is running on your API server\n'));
-    }
-  }
-
-  // Check Docker
-  const spinner = ora('Checking Docker...').start();
-  const dockerStatus = await checkDocker();
-
-  if (!dockerStatus.installed || !dockerStatus.running) {
-    spinner.fail(dockerStatus.error);
-    process.exit(1);
-  }
-  spinner.succeed('Docker is ready');
-
-  // Mount Voicemail (if configured)
-  await mountVoicemail(config);
-
-  // Generate Docker config
-  spinner.start('Generating Docker configuration...');
-  try {
-    await writeDockerConfig(config);
-
-    // Also write devices.json to voice-app/config
-    const devicesPath = path.join(config.paths.voiceApp, 'config', 'devices.json');
-    const devicesConfig = {};
-    for (const device of config.devices) {
-      devicesConfig[device.extension] = device;
-    }
-    await fs.promises.writeFile(devicesPath, JSON.stringify(devicesConfig, null, 2), { mode: 0o644 });
-
-    spinner.succeed('Docker configuration generated');
-  } catch (error) {
-    spinner.fail(`Failed to generate config: ${error.message}`);
-    throw error;
-  }
-
-  // Start Docker containers
-  spinner.start('Starting Docker containers...');
-  try {
-    await startContainers();
-    spinner.succeed('Docker containers started');
-  } catch (error) {
-    spinner.fail(`Failed to start containers: ${error.message}`);
-
-    // AC25: Detect drachtio port conflict
-    if (error.message.includes('port') || error.message.includes('address already in use')) {
-      console.log(chalk.yellow('\n⚠️  Port conflict detected\n'));
-      console.log(chalk.gray('Possible causes:'));
-      console.log(chalk.gray('  • PBX/SBC is running on the configured port'));
-      console.log(chalk.gray('  • Another service is using the port'));
-      console.log(chalk.gray('\nSuggested fixes:'));
-      console.log(chalk.gray('  1. If a PBX/SBC is on port 5060, run "gemini-phone setup" again'));
-      console.log(chalk.gray('  2. Check running containers: docker ps'));
-      console.log(chalk.gray('  3. Stop conflicting services: docker compose down\n'));
-    }
-
-    throw error;
-  }
-
-  // Wait a bit for containers to initialize
-  spinner.start('Waiting for containers to initialize...');
-  await sleep(3000);
-  spinner.succeed('Containers initialized');
-
-  // Start gemini-api-server (only in standard mode - Pi mode uses remote API server)
-  if (!isPiMode) {
-    spinner.start('Starting Gemini API server...');
-    try {
-      if (await isServerRunning()) {
-        spinner.warn('Gemini API server already running');
+    dockerCompose.on('close', (code) => {
+      if (code === 0) {
+        console.log(chalk.green('✓ Voice server started\n'));
+        resolve();
       } else {
-        const env = {};
-        if (config.api?.gemini?.apiKey) {
-          env.GEMINI_API_KEY = config.api.gemini.apiKey;
-        }
-        await startServer(config.paths.geminiApiServer, config.server.geminiApiPort, env);
-        spinner.succeed(`Gemini API server started on port ${config.server.geminiApiPort}`);
+        console.log(chalk.red(`✗ Voice server failed to start (exit code ${code})\n`));
+        reject(new Error('Docker compose failed'));
       }
-    } catch (error) {
-      spinner.fail(`Failed to start server: ${error.message}`);
-      throw error;
-    }
-  }
+    });
 
-  // Success
-  console.log(chalk.bold.green('\n✓ All services running!\n'));
-  console.log(chalk.gray('Services:'));
-  console.log(chalk.gray(`  • Docker containers: drachtio, freeswitch, voice-app`));
-  if (isPiMode) {
-    console.log(chalk.gray(`  • API server: http://${config.deployment.pi.macIp}:${config.server.geminiApiPort}`));
-  } else {
-    console.log(chalk.gray(`  • Gemini API server: http://localhost:${config.server.geminiApiPort}`));
-  }
-  console.log(chalk.gray(`  • Voice app API: http://localhost:${config.server.httpPort}\n`));
-  console.log(chalk.gray('Ready to receive calls on:'));
-  for (const device of config.devices) {
-    console.log(chalk.gray(`  • ${device.name}: extension ${device.extension}`));
-  }
-  console.log();
+    dockerCompose.on('error', (err) => {
+      console.log(chalk.red(`✗ Failed to start docker-compose: ${err.message}\n`));
+      reject(err);
+    });
+  });
 }
 
-/**
- * Mount remote voicemail directory if configured
- * @param {object} config - Configuration
- */
-async function mountVoicemail(config) {
-  // Load .env variables manually since we don't use dotenv in CLI
-  const envPath = getEnvPath();
-  if (!fs.existsSync(envPath)) return;
+async function startApiServer() {
+  console.log(chalk.cyan('🤖 Starting API server...\n'));
 
-  const envContent = await fs.promises.readFile(envPath, 'utf8');
-  const env = {};
-  envContent.split('\n').forEach(line => {
-    const match = line.match(/^([^=]+)=(.*)$/);
-    if (match) {
-      const key = match[1].trim();
-      let value = match[2].trim();
-      // Remove quotes if present
-      if (value.startsWith('"') && value.endsWith('"')) value = value.slice(1, -1);
-      env[key] = value;
-    }
-  });
+  const apiServerPath = join(INSTALL_DIR, 'gemini-api-server', 'server.js');
 
-  // Skip if SSH_PASS is not defined at all (user didn't use setup)
-  if (env.SSH_PASS === undefined) return;
+  if (!existsSync(apiServerPath)) {
+    console.log(chalk.red('✗ API server not found'));
+    console.log(chalk.yellow(`  Expected at: ${apiServerPath}\n`));
+    process.exit(1);
+  }
 
-  const spinner = ora('Mounting remote voicemail directory...').start();
+  // Start API server in background using pm2 or nohup
+  const { spawn: spawnDetached } = await import('child_process');
 
+  // Try pm2 first
   try {
-    const mountPoint = path.join(config.paths.voiceApp, 'mounts', 'voicemail');
-    const user = env.VOICEMAIL_MOUNT_USER || 'root';
-    const host = env.SIP_REGISTRAR;
-
-    if (!host) {
-      spinner.warn('SIP_REGISTRAR not found in .env. Skipping mount.');
-      return;
-    }
-
-    // Create mount point
-    if (!fs.existsSync(mountPoint)) {
-      await fs.promises.mkdir(mountPoint, { recursive: true });
-    }
-
-    // check if already mounted
-    try {
-      const { stdout } = await execAsync(`mount | grep "${mountPoint}"`);
-      if (stdout) {
-        spinner.succeed('Voicemail directory already mounted');
-        return;
-      }
-    } catch (e) {
-      // grep returns exit code 1 if not found
-    }
-
-    // Mount command
-    let cmd;
-    if (env.SSH_PASS) {
-      // If password provided, use sshpass
-      try {
-        await execAsync('which sshpass');
-      } catch (e) {
-        spinner.warn('sshpass not found. Skipping auto-mount.');
-        console.log(chalk.gray('  Run installer again to get sshpass or install manually.\n'));
-        return;
-      }
-      cmd = `sshpass -p "${env.SSH_PASS}" sshfs -o stricthostkeychecking=no,reconnect,ServerAliveInterval=15,ServerAliveCountMax=3 ${user}@${host}:/var/spool/asterisk/voicemail "${mountPoint}"`;
-    } else {
-      // If password is empty (and SSH_PASS was present in env), try direct sshfs (keys or passwordless)
-      // This supports the "blank password" scenario
-      cmd = `sshfs -o stricthostkeychecking=no,reconnect,ServerAliveInterval=15,ServerAliveCountMax=3 ${user}@${host}:/var/spool/asterisk/voicemail "${mountPoint}"`;
-    }
-
-    await execAsync(cmd);
-    spinner.succeed('Voicemail directory mounted via SSHFS');
-
+    const pm2 = spawnDetached('pm2', ['start', apiServerPath, '--name', 'gemini-api-server'], {
+      cwd: join(INSTALL_DIR, 'gemini-api-server'),
+      stdio: 'ignore',
+      detached: true
+    });
+    pm2.unref();
+    console.log(chalk.green('✓ API server started (managed by pm2)\n'));
   } catch (error) {
-    spinner.fail(`Failed to mount voicemail: ${error.message}`);
-    // console.log(chalk.yellow('  Check SSH credentials and network connectivity to ' + (env.SIP_REGISTRAR || 'FreePBX')));
+    // Fallback to node directly
+    console.log(chalk.yellow('⚠️  pm2 not found, starting with node directly\n'));
+    const node = spawnDetached('node', [apiServerPath], {
+      cwd: join(INSTALL_DIR, 'gemini-api-server'),
+      stdio: 'ignore',
+      detached: true
+    });
+    node.unref();
+    console.log(chalk.green('✓ API server started\n'));
   }
 }
