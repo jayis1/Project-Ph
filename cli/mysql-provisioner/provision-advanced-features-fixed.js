@@ -54,7 +54,8 @@ const PAGING_GROUPS = [
 // Call Parking - park calls and retrieve from any extension
 const PARKING_CONFIG = {
     parkext: '70', // Dial 70 to park a call
-    parkpos: '71-79', // Parking slots 71-79
+    parkpos: '71', // Starting position
+    numslots: 9,   // 9 slots (71-79)
     parkingtime: 45, // 45 seconds before callback
     context: 'parkedcalls',
     parkedmusicclass: 'default'
