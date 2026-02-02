@@ -129,7 +129,8 @@ async function createQueue(connection) {
                 UPDATE queues_config SET
                     descr = ?,
                     maxwait = ?,
-                    queuewait = 1
+                    queuewait = 1,
+                    skip_joinannounce = 0
                 WHERE extension = ?
             `, ['Crew Queue', '300', '8001']);
 
@@ -139,8 +140,8 @@ async function createQueue(connection) {
                 INSERT INTO queues_config (
                     extension, descr, grppre, alertinfo, ringing, maxwait,
                     password, ivr_id, dest, cwignore, queuewait, use_queue_context,
-                    togglehint, qnoanswer, callconfirm, callback_id, joinannounce_id
-                ) VALUES (?, ?, '', '', 0, '300', '', '0', 'app-blackhole,hangup,1', 0, 1, 0, 0, 0, 0, '', NULL)
+                    togglehint, qnoanswer, callconfirm, callback_id, joinannounce_id, skip_joinannounce
+                ) VALUES (?, ?, '', '', 0, '300', '', '0', 'app-blackhole,hangup,1', 0, 1, 0, 0, 0, 0, '', NULL, 0)
             `, ['8001', 'Crew Queue']);
 
             log('Queue 8001 created', 'success');
