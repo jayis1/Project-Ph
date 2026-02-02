@@ -129,7 +129,7 @@ async function provisionAdvancedFeatures() {
 
         if (parkingTableExists.length > 0) {
             const [existingParking] = await connection.execute(
-                'SELECT id FROM parkplus WHERE parkext = ?',
+                'SELECT parkext FROM parkplus WHERE parkext = ?',
                 [PARKING_CONFIG.parkext]
             );
 
@@ -182,7 +182,7 @@ async function provisionAdvancedFeatures() {
 
         if (qcbTableExists.length > 0) {
             const [existingQCB] = await connection.execute(
-                'SELECT id FROM queuecallback WHERE queue_id = ?',
+                'SELECT queue_id FROM queuecallback WHERE queue_id = ?',
                 [QUEUE_CALLBACK_CONFIG.queue_id]
             );
 
