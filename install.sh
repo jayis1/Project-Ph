@@ -51,7 +51,7 @@ install_nodejs() {
   echo "📦 Installing Node.js..."
   case "$PKG_MANAGER" in
     apt)
-      curl -fsSL https://deb.nodesource.com/setup_20.x | $SUDO -E bash -
+      curl -fsSL https://deb.nodesource.com/setup_20.x | bash -
       $SUDO apt-get install -y nodejs
       ;;
     dnf)
