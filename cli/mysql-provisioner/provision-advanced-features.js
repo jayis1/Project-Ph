@@ -99,16 +99,15 @@ async function provisionAdvancedFeatures() {
                         `UPDATE paging_groups SET 
               description = ?,
               ext_list = ?,
-              duplex = ?,
-              default_group = ?
+              duplex = ?
             WHERE page_number = ?`,
-                        [page.description, page.ext_list, page.duplex, page.default_group, page.page_number]
+                        [page.description, page.ext_list, page.duplex, page.page_number]
                     );
                 } else {
                     await connection.execute(
-                        `INSERT INTO paging_groups (page_number, description, ext_list, duplex, default_group)
-            VALUES (?, ?, ?, ?, ?)`,
-                        [page.page_number, page.description, page.ext_list, page.duplex, page.default_group]
+                        `INSERT INTO paging_groups (page_number, description, ext_list, duplex)
+            VALUES (?, ?, ?, ?)`,
+                        [page.page_number, page.description, page.ext_list, page.duplex]
                     );
                 }
                 console.log(`  ✅ ${page.page_number} - ${page.description}`);

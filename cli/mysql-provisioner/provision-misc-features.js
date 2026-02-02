@@ -114,7 +114,7 @@ async function provisionMiscFeatures() {
 
         for (const dest of MISC_DESTINATIONS) {
             const [existing] = await connection.execute(
-                'SELECT id FROM miscdests WHERE description = ?',
+                'SELECT description FROM miscdests WHERE description = ?',
                 [dest.description]
             );
 
@@ -140,7 +140,7 @@ async function provisionMiscFeatures() {
 
         for (const fc of FEATURE_CODES) {
             const [existing] = await connection.execute(
-                'SELECT id FROM featurecodes WHERE featurename = ?',
+                'SELECT featurename FROM featurecodes WHERE featurename = ?',
                 [fc.featurename]
             );
 
