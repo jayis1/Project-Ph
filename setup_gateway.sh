@@ -6,6 +6,12 @@ echo "🔧 Setting up Gateway (Asterisk)..."
 # Update system
 apt update && apt upgrade -y
 
+# Add Asterisk repo for Debian
+apt install -y gnupg2 curl
+curl -fsSL https://packages.asterisk.org/gpg.key | gpg --dearmor -o /usr/share/keyrings/asterisk-archive-keyring.gpg
+echo "deb [signed-by=/usr/share/keyrings/asterisk-archive-keyring.gpg] https://packages.asterisk.org/deb bookworm main" > /etc/apt/sources.list.d/asterisk.list
+apt update
+
 # Install Asterisk
 apt install -y asterisk
 
