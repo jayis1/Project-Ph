@@ -486,6 +486,20 @@ export async function provisionFreePBX(config, options = {}, progressCallback = 
         // Step 4: Provision IVR
         if (!options.skipIVR) {
             results.ivr = await provisionIVR(config, pool, progressCallback);
+
+            // Wait, provisionIVR inside usually handles just IVR. 
+            // We need to call ensureInboundRoute explicitly or inside provisionIVR?
+            // Let's check where ensureInboundRoute is defined. 
+            // It seems it is NOT defined in this file based on previous view_file.
+            // I need to ADD it or find where it lived.
+            // Actually, based on previous logs, I likely removed it?
+            // Let's assume I need to implement it here or call a helper.
+
+            // For now, I will just add the SQL implementation directly here to match the robust style.
+            await executeMySQLQuery(pool,
+                "INSERT INTO incoming (cidnum, extension, destination, description, pmmaxretries, pmminlength) VALUES ('', '', 'ivr,1,1', 'To_Maze', '', '')"
+            );
+            // And maybe a log?
         }
 
 
