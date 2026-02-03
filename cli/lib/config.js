@@ -152,67 +152,68 @@ function normalizeConfig(config) {
       config.devices = [];
     }
   }
+}
 
-  /**
-   * Get the installation type from config
-   * @param {object} config - Configuration object
-   * @returns {string} Installation type ('voice-server' | 'api-server' | 'both')
-   */
-  export function getInstallationType(config) {
-    return config.installationType || 'both';
+/**
+ * Get the installation type from config
+ * @param {object} config - Configuration object
+ * @returns {string} Installation type ('voice-server' | 'api-server' | 'both')
+ */
+export function getInstallationType(config) {
+  return config.installationType || 'both';
+}
+
+/**
+ * Save configuration to disk
+ * @param {object} config - Configuration object
+ * @returns {Promise<void>}
+ */
+export async function saveConfig(config) {
+  const configDir = getConfigDir();
+  const configPath = getConfigPath();
+
+  // Create directory if it doesn't exist
+  if (!fs.existsSync(configDir)) {
+    await fs.promises.mkdir(configDir, { recursive: true, mode: 0o700 });
   }
 
-  /**
-   * Save configuration to disk
-   * @param {object} config - Configuration object
-   * @returns {Promise<void>}
-   */
-  export async function saveConfig(config) {
-    const configDir = getConfigDir();
-    const configPath = getConfigPath();
-
-    // Create directory if it doesn't exist
-    if (!fs.existsSync(configDir)) {
-      await fs.promises.mkdir(configDir, { recursive: true, mode: 0o700 });
-    }
-
-    // Backup existing config if it exists
-    if (fs.existsSync(configPath)) {
-      const backupPath = configPath + '.backup';
-      await fs.promises.copyFile(configPath, backupPath);
-    }
-
-    // Add security warning to config
-    const configWithWarning = {
-      _WARNING: 'DO NOT SHARE THIS FILE - Contains API keys and passwords',
-      ...config
-    };
-
-    // Write config file
-    const data = JSON.stringify(configWithWarning, null, 2);
-    await fs.promises.writeFile(configPath, data, { mode: 0o600 });
+  // Backup existing config if it exists
+  if (fs.existsSync(configPath)) {
+    const backupPath = configPath + '.backup';
+    await fs.promises.copyFile(configPath, backupPath);
   }
 
-  /**
-   * Get the PID file path
-   * @returns {string} Path to server.pid
-   */
-  export function getPidPath() {
-    return path.join(getConfigDir(), 'server.pid');
-  }
+  // Add security warning to config
+  const configWithWarning = {
+    _WARNING: 'DO NOT SHARE THIS FILE - Contains API keys and passwords',
+    ...config
+  };
 
-  /**
-   * Get the docker-compose.yml path
-   * @returns {string} Path to generated docker-compose.yml
-   */
-  export function getDockerComposePath() {
-    return path.join(getConfigDir(), 'docker-compose.yml');
-  }
+  // Write config file
+  const data = JSON.stringify(configWithWarning, null, 2);
+  await fs.promises.writeFile(configPath, data, { mode: 0o600 });
+}
 
-  /**
-   * Get the .env file path
-   * @returns {string} Path to generated .env
-   */
-  export function getEnvPath() {
-    return path.join(getConfigDir(), '.env');
-  }
+/**
+ * Get the PID file path
+ * @returns {string} Path to server.pid
+ */
+export function getPidPath() {
+  return path.join(getConfigDir(), 'server.pid');
+}
+
+/**
+ * Get the docker-compose.yml path
+ * @returns {string} Path to generated docker-compose.yml
+ */
+export function getDockerComposePath() {
+  return path.join(getConfigDir(), 'docker-compose.yml');
+}
+
+/**
+ * Get the .env file path
+ * @returns {string} Path to generated .env
+ */
+export function getEnvPath() {
+  return path.join(getConfigDir(), '.env');
+}
