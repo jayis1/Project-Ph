@@ -46,6 +46,9 @@ export async function loadConfig() {
     config.installationType = 'both';
   }
 
+  // Normalize config structure (Handle flat keys from setup.js)
+  normalizeConfig(config);
+
   // Auto-migrate: If .env doesn't exist but config has dynamic values, create .env
   if (!envExists() && (config.sip?.domain || config.server?.externalIp)) {
     const envVars = migrateConfigToEnv(config);
@@ -106,65 +109,110 @@ export async function loadConfig() {
 }
 
 /**
- * Get the installation type from config
- * @param {object} config - Configuration object
- * @returns {string} Installation type ('voice-server' | 'api-server' | 'both')
+ * Normalize configuration object to V2 structure
+ * @param {object} config - Configuration object to mutate
  */
-export function getInstallationType(config) {
-  return config.installationType || 'both';
-}
+function normalizeConfig(config) {
+  // Ensure objects exist
+  config.server = config.server || {};
+  config.sip = config.sip || {};
+  config.api = config.api || {};
+  config.api.elevenlabs = config.api.elevenlabs || {};
+  config.api.openai = config.api.openai || {};
+  config.api.gemini = config.api.gemini || {};
+  config.api.n8n = config.api.n8n || {};
+  config.api.freepbx = config.api.freepbx || {};
 
-/**
- * Save configuration to disk
- * @param {object} config - Configuration object
- * @returns {Promise<void>}
- */
-export async function saveConfig(config) {
-  const configDir = getConfigDir();
-  const configPath = getConfigPath();
+  // Defaults
+  if (!config.server.geminiApiPort) config.server.geminiApiPort = 3333;
+  if (!config.server.httpPort) config.server.httpPort = 3000;
 
-  // Create directory if it doesn't exist
-  if (!fs.existsSync(configDir)) {
-    await fs.promises.mkdir(configDir, { recursive: true, mode: 0o700 });
+  // Map flat keys to nested structure
+  if (config.externalIp) config.server.externalIp = config.externalIp;
+  if (config.sipDomain) config.sip.domain = config.sipDomain;
+  if (config.sipDomain && !config.sip.registrar) config.sip.registrar = config.sipDomain;
+
+  if (config.elevenlabsKey) config.api.elevenlabs.apiKey = config.elevenlabsKey;
+  if (config.openaiKey) config.api.openai.apiKey = config.openaiKey;
+  if (config.geminiKey) config.api.gemini.apiKey = config.geminiKey;
+  if (config.n8nWebhookUrl) config.api.n8n.webhookUrl = config.n8nWebhookUrl;
+
+  // Map devices
+  if (!config.devices || config.devices.length === 0) {
+    if (config.sipExtension) {
+      config.devices = [{
+        name: config.botName || 'Gemini',
+        extension: config.sipExtension,
+        authId: config.sipExtension,
+        password: config.sipPassword || '',
+        prompt: config.botPrompt || '',
+        voiceId: config.voiceId || ''
+      }];
+    } else {
+      config.devices = [];
+    }
   }
 
-  // Backup existing config if it exists
-  if (fs.existsSync(configPath)) {
-    const backupPath = configPath + '.backup';
-    await fs.promises.copyFile(configPath, backupPath);
+  /**
+   * Get the installation type from config
+   * @param {object} config - Configuration object
+   * @returns {string} Installation type ('voice-server' | 'api-server' | 'both')
+   */
+  export function getInstallationType(config) {
+    return config.installationType || 'both';
   }
 
-  // Add security warning to config
-  const configWithWarning = {
-    _WARNING: 'DO NOT SHARE THIS FILE - Contains API keys and passwords',
-    ...config
-  };
+  /**
+   * Save configuration to disk
+   * @param {object} config - Configuration object
+   * @returns {Promise<void>}
+   */
+  export async function saveConfig(config) {
+    const configDir = getConfigDir();
+    const configPath = getConfigPath();
 
-  // Write config file
-  const data = JSON.stringify(configWithWarning, null, 2);
-  await fs.promises.writeFile(configPath, data, { mode: 0o600 });
-}
+    // Create directory if it doesn't exist
+    if (!fs.existsSync(configDir)) {
+      await fs.promises.mkdir(configDir, { recursive: true, mode: 0o700 });
+    }
 
-/**
- * Get the PID file path
- * @returns {string} Path to server.pid
- */
-export function getPidPath() {
-  return path.join(getConfigDir(), 'server.pid');
-}
+    // Backup existing config if it exists
+    if (fs.existsSync(configPath)) {
+      const backupPath = configPath + '.backup';
+      await fs.promises.copyFile(configPath, backupPath);
+    }
 
-/**
- * Get the docker-compose.yml path
- * @returns {string} Path to generated docker-compose.yml
- */
-export function getDockerComposePath() {
-  return path.join(getConfigDir(), 'docker-compose.yml');
-}
+    // Add security warning to config
+    const configWithWarning = {
+      _WARNING: 'DO NOT SHARE THIS FILE - Contains API keys and passwords',
+      ...config
+    };
 
-/**
- * Get the .env file path
- * @returns {string} Path to generated .env
- */
-export function getEnvPath() {
-  return path.join(getConfigDir(), '.env');
-}
+    // Write config file
+    const data = JSON.stringify(configWithWarning, null, 2);
+    await fs.promises.writeFile(configPath, data, { mode: 0o600 });
+  }
+
+  /**
+   * Get the PID file path
+   * @returns {string} Path to server.pid
+   */
+  export function getPidPath() {
+    return path.join(getConfigDir(), 'server.pid');
+  }
+
+  /**
+   * Get the docker-compose.yml path
+   * @returns {string} Path to generated docker-compose.yml
+   */
+  export function getDockerComposePath() {
+    return path.join(getConfigDir(), 'docker-compose.yml');
+  }
+
+  /**
+   * Get the .env file path
+   * @returns {string} Path to generated .env
+   */
+  export function getEnvPath() {
+    return path.join(getConfigDir(), '.env');
+  }
