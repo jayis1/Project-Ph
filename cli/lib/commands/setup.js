@@ -89,6 +89,13 @@ export async function setupCommand() {
         message: 'OpenAI API Key:',
         default: existingConfig.openaiKey || '',
         validate: (input) => input.trim() !== '' || 'API key is required'
+      },
+      {
+        type: 'password',
+        name: 'geminiKey',
+        message: 'Google Gemini API Key:',
+        default: existingConfig.geminiKey || '',
+        validate: (input) => input.trim() !== '' || 'API key is required'
       }
     ]);
 
@@ -115,6 +122,18 @@ export async function setupCommand() {
     } else if (apiConfig.geminiApiUrl) {
       config.geminiApiUrl = apiConfig.geminiApiUrl;
     }
+
+    // Ask for N8N Webhook URL
+    const { n8nWebhookUrl } = await inquirer.prompt([
+      {
+        type: 'input',
+        name: 'n8nWebhookUrl',
+        message: 'N8N Webhook URL (optional):',
+        default: existingConfig.n8nWebhookUrl || '',
+      }
+    ]);
+
+    config.n8nWebhookUrl = n8nWebhookUrl;
   }
 
   // Voice profile
@@ -204,6 +223,10 @@ SIP_EXTENSION=${config.sipExtension}
 # API Keys
 ELEVENLABS_API_KEY=${config.elevenlabsKey}
 OPENAI_API_KEY=${config.openaiKey}
+GEMINI_API_KEY=${config.geminiKey}
+
+# Integrations
+N8N_WEBHOOK_URL=${config.n8nWebhookUrl}
 
 # Gemini Backend
 GEMINI_API_URL=${config.geminiApiUrl}

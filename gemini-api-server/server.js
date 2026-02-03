@@ -34,68 +34,22 @@ const PORT = process.env.PORT || 3333;
  * with your zsh profile fully loaded.
  */
 function buildGeminiEnvironment() {
-  const HOME = process.env.HOME || '/Users/MadLAbs';
+  const HOME = process.env.HOME || '/root';
   const PAI_DIR = path.join(HOME, '.gemini');
 
-  // Load ~/.gemini/.env (all API keys)
-  const envPath = path.join(PAI_DIR, '.env');
-  const paiEnv = {};
-  if (fs.existsSync(envPath)) {
-    const envContent = fs.readFileSync(envPath, 'utf8');
-    for (const line of envContent.split('\n')) {
-      const trimmed = line.trim();
-      if (trimmed && !trimmed.startsWith('#')) {
-        const [key, ...valueParts] = trimmed.split('=');
-        if (key && valueParts.length > 0) {
-          paiEnv[key] = valueParts.join('=');
-        }
-      }
-    }
-  }
-
-  // Build PATH like zsh profile does
-  const fullPath = [
-    '/opt/homebrew/bin',
-    '/opt/homebrew/opt/python@3.12/bin',
-    '/opt/homebrew/opt/libpq/bin',
-    path.join(HOME, '.bun/bin'),
-    path.join(HOME, '.local/bin'),
-    path.join(HOME, '.pyenv/bin'),
-    path.join(HOME, '.pyenv/shims'),
-    path.join(HOME, 'go/bin'),
-    '/usr/local/go/bin',
-    path.join(HOME, 'bin'),
-    path.join(HOME, '.lmstudio/bin'),
-    path.join(HOME, '.opencode/bin'),
-    '/usr/local/bin',
-    '/usr/bin',
-    '/bin',
-    '/usr/sbin',
-    '/sbin'
-  ].join(':');
-
+  // In Docker, we just need basic PATH and the API key
   const env = {
     ...process.env,
-    ...paiEnv,
-    PATH: fullPath,
     HOME,
     PAI_DIR,
-    PAI_HOME: HOME,
-    DA: 'Morpheus',
-    DA_COLOR: 'purple',
-    GOROOT: '/usr/local/go',
-    GOPATH: path.join(HOME, 'go'),
-    PYENV_ROOT: path.join(HOME, '.pyenv'),
-    BUN_INSTALL: path.join(HOME, '.bun'),
     // CRITICAL: These tell Gemini it's running in the proper environment
     GEMINI: '1',
     GEMINI_ENTRYPOINT: 'cli',
   };
 
-  // ONLY remove GEMINI_API_KEY if it's a placeholder or empty
-  // If it's a valid key, we want to respect it so Gemini CLI uses API auth
-  if (!env.GEMINI_API_KEY || env.GEMINI_API_KEY.includes('change_me') || env.GEMINI_API_KEY.trim() === '') {
-    delete env.GEMINI_API_KEY;
+  // Ensure GEMINI_API_KEY is present
+  if (!env.GEMINI_API_KEY) {
+    console.warn('[WARNING] GEMINI_API_KEY is missing in environment variables!');
   }
 
   return env;
@@ -254,6 +208,16 @@ Example:
 🗣️ CALLBACK: <caller_id_from_context>
 🎯 COMPLETED: Scheduled callback.
 
+WEBHOOKS: If the user asks to trigger an automation, flow, or external action (e.g., "turn on the lights", "add row to spreadsheet", "start the onboarding flow"):
+1. Confirm the action in VOICE_RESPONSE.
+2. Output a WEBHOOK line with a JSON string payload.
+Example:
+"Trigger the marketing flow for email test@example.com"
+🗣️ VOICE_RESPONSE: check! I'm starting the marketing flow for that email now.
+⚡ WEBHOOK: {"flow": "marketing", "email": "test@example.com"}
+🎯 COMPLETED: Triggered marketing flow.
+
+
 `;
 
 // Middleware
@@ -342,6 +306,21 @@ app.post('/ask', async (req, res) => {
     }
 
     console.log(`[${new Date().toISOString()}] RESPONSE (${duration_ms}ms): "${response.substring(0, 100)}..."`);
+
+    // Check for WEBHOOK trigger
+    const webhookMatch = response.match(/⚡ WEBHOOK: (.*)/);
+    if (webhookMatch && process.env.N8N_WEBHOOK_URL) {
+      const payload = webhookMatch[1];
+      console.log(`[${timestamp}] ⚡ TRIGGERING WEBHOOK: ${process.env.N8N_WEBHOOK_URL}`);
+      console.log(`[${timestamp}] PAYLOAD: ${payload}`);
+
+      // Fire and forget webhook
+      fetch(process.env.N8N_WEBHOOK_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: payload
+      }).catch(err => console.error(`[${timestamp}] WEBHOOK ERROR:`, err.message));
+    }
 
     res.json({ success: true, response, sessionId, duration_ms });
 

@@ -5,6 +5,20 @@ version: '3.8'
 # in SDP, making RTP unreachable from external callers.
 
 services:
+  gemini-api-server:
+    build: ./gemini-api-server
+    container_name: gemini-api-server
+    restart: unless-stopped
+    network_mode: host
+    env_file:
+      - .env
+    environment:
+      # Pass through specific env vars from .env file
+      - GEMINI_API_KEY=${GEMINI_API_KEY}
+      - N8N_WEBHOOK_URL=${N8N_WEBHOOK_URL}
+      - PORT=3333
+    # Ports (host mode):
+    # - 3333: HTTP API
   drachtio:
     image: drachtio/drachtio-server:latest
     container_name: drachtio
