@@ -1,10 +1,10 @@
 import chalk from 'chalk';
 import { existsSync, readFileSync } from 'fs';
-import { homedir } from 'os';
-import { join } from 'path';
-import { startContainers } from '../docker.js';
 
-const CONFIG_FILE = join(homedir(), '.config', 'gemini-phone', 'config.json');
+import { startContainers } from '../docker.js';
+import { getConfigPath } from '../config.js';
+
+const CONFIG_FILE = getConfigPath();
 
 export async function startCommand() {
   console.log(chalk.cyan.bold('\n🚀 Starting Gemini Phone\n'));

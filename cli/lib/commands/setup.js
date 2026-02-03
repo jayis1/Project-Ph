@@ -4,9 +4,10 @@ import { readFileSync, writeFileSync, existsSync, mkdirSync } from 'fs';
 import { homedir } from 'os';
 import { join } from 'path';
 import { writeDockerConfig } from '../docker.js';
+import { getConfigPath, getConfigDir } from '../config.js';
 
-const CONFIG_DIR = join(homedir(), '.config', 'gemini-phone');
-const CONFIG_FILE = join(CONFIG_DIR, 'config.json');
+const CONFIG_DIR = getConfigDir();
+const CONFIG_FILE = getConfigPath();
 
 export async function setupCommand() {
   console.log(chalk.cyan.bold('\n🎯 Gemini Phone Setup Wizard\n'));
