@@ -4,7 +4,6 @@ import { spawn } from 'child_process';
 import axios from 'axios';
 import { loadConfig, configExists, getInstallationType } from '../config.js';
 import { checkDocker, getContainerStatus } from '../docker.js';
-import { isServerRunning, getServerPid } from '../process-manager.js';
 import { validateElevenLabsKey, validateOpenAIKey } from '../validators.js';
 import { isReachable, checkGeminiApiServer as checkGeminiApiHealth } from '../network.js';
 import { checkPort } from '../port-check.js';
@@ -152,16 +151,25 @@ async function checkSIPRegistration(port) {
  * @returns {Promise<{running: boolean, pid?: number, healthy?: boolean, error?: string}>}
  */
 async function checkGeminiAPIServer(port) {
-  const running = await isServerRunning();
+  const containers = await getContainerStatus();
+  const apiContainer = containers.find(c => c.name === 'gemini-api-server');
 
-  if (!running) {
+  if (!apiContainer) {
     return {
       running: false,
-      error: 'Process not running'
+      error: 'Container not found'
     };
   }
 
-  const pid = getServerPid();
+  const isRunning = apiContainer.status.toLowerCase().includes('up') ||
+    apiContainer.status.toLowerCase().includes('running');
+
+  if (!isRunning) {
+    return {
+      running: false,
+      error: `Container status: ${apiContainer.status}`
+    };
+  }
 
   // Try HTTP health check
   try {
@@ -172,13 +180,11 @@ async function checkGeminiAPIServer(port) {
     if (response.status === 200) {
       return {
         running: true,
-        pid,
         healthy: true
       };
     } else {
       return {
         running: true,
-        pid,
         healthy: false,
         error: `Health check returned status ${response.status}`
       };
@@ -186,7 +192,6 @@ async function checkGeminiAPIServer(port) {
   } catch (error) {
     return {
       running: true,
-      pid,
       healthy: false,
       error: 'Health endpoint not responding'
     };
@@ -275,10 +280,10 @@ async function runApiServerChecks(config) {
   const apiServerSpinner = ora('Checking Gemini API server...').start();
   const apiServerResult = await checkGeminiAPIServer(config.server.geminiApiPort);
   if (apiServerResult.running && apiServerResult.healthy) {
-    apiServerSpinner.succeed(chalk.green(`Gemini API server running (PID: ${apiServerResult.pid})`));
+    apiServerSpinner.succeed(chalk.green(`Gemini API server running`));
     passedCount++;
   } else if (apiServerResult.running && !apiServerResult.healthy) {
-    apiServerSpinner.warn(chalk.yellow(`Gemini API server running but unhealthy (PID: ${apiServerResult.pid})`));
+    apiServerSpinner.warn(chalk.yellow(`Gemini API server running but unhealthy`));
     console.log(chalk.gray(`  → ${apiServerResult.error}\n`));
     passedCount++; // Count as partial pass
   } else {

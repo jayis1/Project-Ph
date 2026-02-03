@@ -140,6 +140,14 @@ services:
     environment:
       - EXTERNAL_IP=${externalIp}
 
+  gemini-api-server:
+    build: ${config.paths.apiServer || config.paths.voiceApp.replace('voice-app', 'gemini-api-server')}
+    container_name: gemini-api-server
+    restart: unless-stopped
+    network_mode: host
+    env_file:
+      - ${getEnvPath()}
+
   voice-app:
     build: ${config.paths.voiceApp}
     container_name: voice-app
@@ -153,6 +161,7 @@ services:
     depends_on:
       - drachtio
       - freeswitch
+      - gemini-api-server
 `;
 }
 

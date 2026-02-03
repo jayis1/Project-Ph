@@ -1,7 +1,6 @@
 import chalk from 'chalk';
 import { loadConfig, configExists, getInstallationType } from '../config.js';
 import { getContainerStatus } from '../docker.js';
-import { isServerRunning, getServerPid } from '../process-manager.js';
 import { checkGeminiApiServer } from '../network.js';
 import { execSync } from 'child_process';
 
@@ -107,12 +106,14 @@ async function showApiServerStatus(config, isPiSplit) {
       console.log(chalk.gray('    Run "gemini-phone api-server" on your admin node'));
     }
   } else {
-    // Standard mode: Check local server
-    const serverRunning = await isServerRunning();
-    if (serverRunning) {
-      const pid = getServerPid();
-      console.log(chalk.green(`  ✓ Running`));
-      console.log(chalk.gray(`    PID: ${pid}`));
+    // Standard mode: Check local server container
+    const containers = await getContainerStatus();
+    const apiContainer = containers.find(c => c.name === 'gemini-api-server');
+    const isRunning = apiContainer && (apiContainer.status.toLowerCase().includes('up') || apiContainer.status.toLowerCase().includes('running'));
+
+    if (isRunning) {
+      console.log(chalk.green(`  ✓ Running (Container)`));
+      console.log(chalk.gray(`    Status: ${apiContainer.status}`));
       console.log(chalk.gray(`    Port: ${config.server.geminiApiPort}`));
 
       // Check if port is listening
