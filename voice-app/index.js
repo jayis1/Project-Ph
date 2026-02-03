@@ -146,6 +146,11 @@ srf.on("error", function (err) {
   drachtioConnected = false;
 });
 
+// OPTIONS handler for keep-alive checks
+srf.on("options", function (req, res) {
+  res.send(200);
+});
+
 // Initialize FreeSWITCH MRF with retry logic
 var mrf = new Mrf(srf);
 

@@ -12,6 +12,9 @@ const logger = require('./logger');
 const ELEVENLABS_API_KEY = process.env.ELEVENLABS_API_KEY;
 const ELEVENLABS_API_URL = 'https://api.elevenlabs.io/v1';
 
+const OPENAI_API_KEY = process.env.OPENAI_API_KEY;
+const OPENAI_API_URL = 'https://api.openai.com/v1';
+
 // Default voice IDs (can be customized)
 const DEFAULT_VOICE_ID = 'JAgnJveGGUh4qy4kh6dF'; // Morpheus voice
 const MODEL_ID = 'eleven_turbo_v2'; // Fast, low-latency model
@@ -113,13 +116,29 @@ async function generateSpeech(text, voiceId = DEFAULT_VOICE_ID) {
   } catch (error) {
     const latency = Date.now() - startTime;
 
-    logger.error('Speech generation failed', {
+    logger.error('Speech generation failed (ElevenLabs)', {
       error: error.message,
       latency,
       textLength: text?.length,
       responseStatus: error.response?.status,
       responseData: error.response?.data?.toString()
     });
+
+    // Check if we should fallback to OpenAI
+    const shouldFallback =
+      error.response?.status === 401 || // Auth failed (or quota)
+      error.response?.status === 429 || // Rate limited
+      error.message.includes('quota_exceeded') ||
+      error.message.includes('authentication failed');
+
+    if (shouldFallback && OPENAI_API_KEY) {
+      logger.info('Falling back to OpenAI TTS...');
+      try {
+        return await generateOpenAISpeech(text);
+      } catch (fallbackError) {
+        throw new Error(`TTS Fallback failed: ${fallbackError.message}`);
+      }
+    }
 
     // Handle specific errors
     if (error.response?.status === 401) {
@@ -131,6 +150,70 @@ async function generateSpeech(text, voiceId = DEFAULT_VOICE_ID) {
     }
 
     throw new Error(`TTS generation failed: ${error.message}`);
+  }
+}
+
+/**
+ * Generate speech using OpenAI API (Fallback)
+ * @param {string} text - Text to convert
+ * @returns {Promise<string>} HTTP URL to audio file
+ */
+async function generateOpenAISpeech(text) {
+  const startTime = Date.now();
+
+  try {
+    if (!OPENAI_API_KEY) {
+      throw new Error('OPENAI_API_KEY environment variable not set');
+    }
+
+    logger.info('Generating speech with OpenAI', {
+      textLength: text.length,
+      model: 'tts-1'
+    });
+
+    const response = await axios({
+      method: 'POST',
+      url: `${OPENAI_API_URL}/audio/speech`,
+      headers: {
+        'Authorization': `Bearer ${OPENAI_API_KEY}`,
+        'Content-Type': 'application/json'
+      },
+      data: {
+        model: 'tts-1',
+        input: text,
+        voice: 'alloy', // Default OpenAI voice
+        response_format: 'mp3'
+      },
+      responseType: 'arraybuffer'
+    });
+
+    // Generate filename and save audio
+    const filename = generateFilename(text + '-openai'); // Distinguish in cache
+    const filepath = path.join(audioDir, filename);
+
+    fs.writeFileSync(filepath, response.data);
+
+    const latency = Date.now() - startTime;
+    const fileSize = response.data.length;
+
+    logger.info('OpenAI Speech generation successful', {
+      filename,
+      fileSize,
+      latency,
+      textLength: text.length
+    });
+
+    const audioUrl = `http://127.0.0.1:3000/audio-files/${filename}`;
+    return audioUrl;
+
+  } catch (error) {
+    const latency = Date.now() - startTime;
+    logger.error('OpenAI Speech generation failed', {
+      error: error.message,
+      latency,
+      responseStatus: error.response?.status
+    });
+    throw error;
   }
 }
 
