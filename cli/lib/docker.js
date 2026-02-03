@@ -273,9 +273,10 @@ export async function writeDockerConfig(config) {
 
 /**
  * Start Docker containers
+ * @param {string[]} [services=[]] - Specific services to start (empty = all)
  * @returns {Promise<void>}
  */
-export async function startContainers() {
+export async function startContainers(services = []) {
   const configDir = getConfigDir();
   const dockerComposePath = getDockerComposePath();
 
@@ -284,7 +285,7 @@ export async function startContainers() {
   }
 
   const compose = getComposeCommand();
-  const composeArgs = [...compose.args, '-f', dockerComposePath, 'up', '-d', '--build'];
+  const composeArgs = [...compose.args, '-f', dockerComposePath, 'up', '-d', '--build', ...services];
 
   return new Promise((resolve, reject) => {
     const child = spawn(compose.cmd, composeArgs, {
@@ -326,9 +327,10 @@ export async function startContainers() {
 
 /**
  * Stop Docker containers
+ * @param {string[]} [services=[]] - Specific services to stop (empty = all)
  * @returns {Promise<void>}
  */
-export async function stopContainers() {
+export async function stopContainers(services = []) {
   const configDir = getConfigDir();
   const dockerComposePath = getDockerComposePath();
 
@@ -338,7 +340,22 @@ export async function stopContainers() {
   }
 
   const compose = getComposeCommand();
-  const composeArgs = [...compose.args, '-f', dockerComposePath, 'down'];
+  // 'stop' simply stops containers; 'down' removes them.
+  // Generally 'down' is better for full stop, but if stopping specific services, use 'stop' or 'rm -s -v'?
+  // Docker compose down doesn't take service arguments in older versions, but 'stop' does.
+  // However, start.js used 'down' before.
+  // If services are specified, we can't easily use 'down' for just those without affecting network?
+  // 'docker compose stop' works with services.
+
+  // Use 'down' if no services specified (clean shutdown)
+  // Use 'stop' if services specified
+
+  let composeArgs;
+  if (services.length > 0) {
+    composeArgs = [...compose.args, '-f', dockerComposePath, 'stop', ...services];
+  } else {
+    composeArgs = [...compose.args, '-f', dockerComposePath, 'down'];
+  }
 
   return new Promise((resolve, reject) => {
     const child = spawn(compose.cmd, composeArgs, {

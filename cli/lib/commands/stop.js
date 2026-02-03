@@ -2,7 +2,6 @@ import chalk from 'chalk';
 import ora from 'ora';
 import { loadConfig, configExists, getInstallationType } from '../config.js';
 import { stopContainers } from '../docker.js';
-import { stopServer, isServerRunning } from '../process-manager.js';
 
 /**
  * Stop command - Shut down all services
@@ -23,79 +22,26 @@ export async function stopCommand() {
 
   console.log(chalk.gray(`Installation type: ${installationType}\n`));
 
-  // Route to type-specific stop function
-  switch (installationType) {
-    case 'api-server':
-      await stopApiServer();
-      break;
-    case 'voice-server':
-      await stopVoiceServer();
-      break;
-    case 'both':
-    default:
-      await stopBoth();
-      break;
-  }
+  const spinner = ora('Stopping services...').start();
 
-  console.log(chalk.bold.green('\n✓ Services stopped\n'));
-}
-
-/**
- * Stop API server only
- * @returns {Promise<void>}
- */
-async function stopApiServer() {
-  const spinner = ora('Stopping Gemini API server...').start();
   try {
-    if (await isServerRunning()) {
-      await stopServer();
-      spinner.succeed('Gemini API server stopped');
-    } else {
-      spinner.info('Gemini API server not running');
+    // Route to type-specific stop function
+    switch (installationType) {
+      case 'api-server':
+        await stopContainers(['gemini-api-server']);
+        break;
+      case 'voice-server':
+        await stopContainers(['drachtio', 'freeswitch', 'voice-app']);
+        break;
+      case 'both':
+      default:
+        await stopContainers(); // Stops all
+        break;
     }
-  } catch (error) {
-    spinner.fail(`Failed to stop server: ${error.message}`);
-  }
-}
+    spinner.succeed('Services stopped successfully');
+    console.log(chalk.bold.green('\n✓ Gemini Phone stopped\n'));
 
-/**
- * Stop voice server only
- * @returns {Promise<void>}
- */
-async function stopVoiceServer() {
-  const spinner = ora('Stopping Docker containers...').start();
-  try {
-    await stopContainers();
-    spinner.succeed('Docker containers stopped');
   } catch (error) {
-    spinner.fail(`Failed to stop containers: ${error.message}`);
-  }
-}
-
-/**
- * Stop both API server and voice server
- * @returns {Promise<void>}
- */
-async function stopBoth() {
-  // Stop gemini-api-server
-  const spinner = ora('Stopping Gemini API server...').start();
-  try {
-    if (await isServerRunning()) {
-      await stopServer();
-      spinner.succeed('Gemini API server stopped');
-    } else {
-      spinner.info('Gemini API server not running');
-    }
-  } catch (error) {
-    spinner.fail(`Failed to stop server: ${error.message}`);
-  }
-
-  // Stop Docker containers
-  spinner.start('Stopping Docker containers...');
-  try {
-    await stopContainers();
-    spinner.succeed('Docker containers stopped');
-  } catch (error) {
-    spinner.fail(`Failed to stop containers: ${error.message}`);
+    spinner.fail(`Failed to stop services: ${error.message}`);
   }
 }
