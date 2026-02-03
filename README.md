@@ -16,37 +16,69 @@ Gemini Phone gives your Gemini CLI installation a phone number. You can:
 - [OpenAI](https://platform.openai.com/) - Whisper speech-to-text  
 - [Gemini CLI](https://github.com/google-gemini/gemini-cli) - AI backend
 
-## Quick Start
+## Quick Start: Choose Your Agent
 
-### 1. Install
+| **Morpheus (Server A)** | **Trinity (Server B)** |
+|-------------------------|------------------------|
+| Standard Installation   | Manual / Distributed   |
+| Uses Public Images      | Requires Manual Build  |
+
+### Option A: Morpheus (Standard)
+
+The classic all-in-one setup for standard users.
+
+1. **Install**
 
 ```bash
 curl -sSL https://raw.githubusercontent.com/jayis1/2fast2dumb2fun/main/install.sh | bash
 ```
 
-The installer will:
-
-- Check for Node.js 18+, Docker, and git (offers to install if missing)
-- Clone the repository to `~/.gemini-phone-cli`
-- Install dependencies
-- Create the `gemini-phone` command
-
-### 2. Setup
+1. **Setup & Start**
 
 ```bash
-gemini-phone setup
+gemini-phone setup  # Select "Both"
+gemini-phone start
 ```
 
-The setup wizard asks what you're installing:
+### Option B: Trinity (Advanced / Distributed)
 
-- **Both** (recommended) - Voice app + API server on same machine
-- **Voice Server Only** - For Pi/dedicated voice server
-- **API Server Only** - For machine running Gemini CLI
+For distributed setups (e.g. LXC container 172.16.1.128) where you need a local brain but cannot pull the private image.
 
-### 3. Start
+**1. Prepare Trinity Node**
+SSH into your Trinity node and install standard tools:
 
 ```bash
-gemini-phone start
+apt update && apt install -y docker.io git nodejs npm
+```
+
+**2. Deploy Source Code**
+From your workstation (where you have the code):
+
+```bash
+# Copy API Server source to Trinity
+scp -r gemini-api-server root@<TRINITY_IP>:/root/gemini-phone/
+```
+
+**3. Build & Run on Trinity**
+SSH into Trinity and run:
+
+```bash
+# Build the Brain locally
+cd /root/gemini-phone/gemini-api-server
+docker build -t gemini-phone-cli-api-server .
+
+# Configure Environment (Brain + Body)
+mkdir -p /root/gemini-bot
+echo "GEMINI_API_URL=http://localhost:3333" > /root/gemini-bot/.env
+# Add your API keys from another working node or manual entry
+# echo "OPENAI_API_KEY=sk-..." >> /root/gemini-bot/.env
+
+# Run the Brain
+docker run -d --name gemini-api-server --restart unless-stopped --network host --env-file /root/gemini-bot/.env gemini-phone-cli-api-server
+
+# Run the Body (Voice App)
+# (Assuming voice-app is already deployed via standard means or similar manual run)
+docker restart voice-app
 ```
 
 ## Deployment Modes
