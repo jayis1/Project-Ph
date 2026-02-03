@@ -267,6 +267,9 @@ export async function writeDockerConfig(config) {
   const dockerComposeContent = generateDockerCompose(config);
   const envContent = generateEnvFile(config);
 
+  // Ensure directory exists
+  await fs.promises.mkdir(getConfigDir(), { recursive: true });
+
   await fs.promises.writeFile(dockerComposePath, dockerComposeContent, { mode: 0o644 });
   await fs.promises.writeFile(envPath, envContent, { mode: 0o600 });
 }
