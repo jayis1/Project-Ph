@@ -39,6 +39,9 @@ class DeviceRegistry {
 
   /**
    * Load devices from config file
+   * Supports both:
+   * 1. Legacy format: { "9000": { extension, authId, password, ... }, ... }
+   * 2. Template format: { template: {...}, extensions: [...], customizations: {...} }
    */
   load() {
     try {
@@ -57,23 +60,23 @@ class DeviceRegistry {
       }
 
       const configData = fs.readFileSync(CONFIG_PATH, 'utf8');
-      const devicesJson = JSON.parse(configData);
+      const config = JSON.parse(configData);
 
-      if (typeof devicesJson !== 'object') {
+      if (typeof config !== 'object') {
         throw new Error('Device config must be an object');
       }
 
       this.devices = {};
       this.devicesByName = {};
 
-      for (const [extension, device] of Object.entries(devicesJson)) {
-        if (!device.name || !device.extension) {
-          logger.warn('Skipping invalid device config', { extension, device });
-          continue;
-        }
-
-        this.devices[extension] = device;
-        this.devicesByName[device.name.toLowerCase()] = device;
+      // Check if template-based format
+      if (config.template && config.extensions) {
+        logger.info('Loading template-based device config');
+        this._loadTemplateConfig(config);
+      } else {
+        // Legacy format: direct extension mapping
+        logger.info('Loading legacy device config');
+        this._loadLegacyConfig(config);
       }
 
       // Only use Morpheus default if NO devices are configured
@@ -94,6 +97,47 @@ class DeviceRegistry {
       this.devices = { [MORPHEUS_DEFAULT.extension]: MORPHEUS_DEFAULT };
       this.devicesByName = { [MORPHEUS_DEFAULT.name.toLowerCase()]: MORPHEUS_DEFAULT };
       this.loaded = true;
+    }
+  }
+
+  /**
+   * Load template-based configuration
+   * Format: { template: { password, voiceId, ... }, extensions: ["9000", ...], customizations: { "9000": { name, prompt, ... } } }
+   */
+  _loadTemplateConfig(config) {
+    const { template, extensions, customizations = {} } = config;
+
+    for (const extension of extensions) {
+      const custom = customizations[extension] || {};
+
+      // Merge template with customization
+      const device = {
+        extension: extension,
+        authId: custom.authId || extension, // Default authId = extension
+        password: custom.password || template.password,
+        name: custom.name || `Bot-${extension}`,
+        prompt: custom.prompt || template.prompt || 'You are a helpful AI assistant.',
+        voiceId: custom.voiceId || template.voiceId || 'EXAVITQu4vr4xnSDxMaL'
+      };
+
+      this.devices[extension] = device;
+      this.devicesByName[device.name.toLowerCase()] = device;
+    }
+  }
+
+  /**
+   * Load legacy direct-mapping configuration
+   * Format: { "9000": { extension, authId, password, ... }, ... }
+   */
+  _loadLegacyConfig(config) {
+    for (const [extension, device] of Object.entries(config)) {
+      if (!device.name || !device.extension) {
+        logger.warn('Skipping invalid device config', { extension, device });
+        continue;
+      }
+
+      this.devices[extension] = device;
+      this.devicesByName[device.name.toLowerCase()] = device;
     }
   }
 

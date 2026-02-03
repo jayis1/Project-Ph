@@ -135,7 +135,7 @@ if [ "$FLEET_MODE" = "true" ]; then
     mkdir -p voice-app/config
     cat > voice-app/config/devices.json <<JSON
 {
-  "9000": { "name": "Morpheus", "extension": "9000", "authId": "9000", "password": "DGHwMW6v25", "voiceId": "JAgnJveGGUh4qy4kh6dF", "prompt": "You are Morpheus from The Matrix. Use under 40 words." },
+  "9000": { "name": "Morpheus", "extension": "9000", "authId": "9000", "password": "GeminiPhone123!", "voiceId": "JAgnJveGGUh4qy4kh6dF", "prompt": "You are Morpheus from The Matrix. Use under 40 words." },
   "9001": { "name": "Trinity", "extension": "9001", "authId": "9001", "password": "GeminiPhone123!", "voiceId": "EXAVOICEID_TRINITY", "prompt": "You are Trinity." },
   "9002": { "name": "Neo", "extension": "9002", "authId": "9002", "password": "GeminiPhone123!", "voiceId": "EXAVOICEID_NEO", "prompt": "You are Neo." },
   "9003": { "name": "Tank", "extension": "9003", "authId": "9003", "password": "GeminiPhone123!", "voiceId": "EXAVOICEID_TANK", "prompt": "You are Tank." },

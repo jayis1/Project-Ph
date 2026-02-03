@@ -49,7 +49,7 @@ VALUES ('pjsip', 'GatewayServer', 'GatewayServer', '', 'off', '', '', '', '', ''
 
 -- Create PJSIP endpoint
 INSERT INTO pjsip (id, keyword, data, flags) VALUES ('Gateway', 'type', 'endpoint', 0);
-INSERT INTO pjsip (id, keyword, data, flags) VALUES ('Gateway', 'transport', 'transport-udp', 0);
+INSERT INTO pjsip (id, keyword, data, flags) VALUES ('Gateway', 'transport', '0.0.0.0-udp', 0);
 INSERT INTO pjsip (id, keyword, data, flags) VALUES ('Gateway', 'context', 'from-pstn', 0);
 INSERT INTO pjsip (id, keyword, data, flags) VALUES ('Gateway', 'disallow', 'all', 0);
 INSERT INTO pjsip (id, keyword, data, flags) VALUES ('Gateway', 'allow', 'ulaw,alaw', 0);

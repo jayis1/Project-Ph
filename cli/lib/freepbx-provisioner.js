@@ -181,7 +181,7 @@ export async function provisionExtensions(config, pool, progressCallback = () =>
                 { keyword: 'mailbox', data: `${member.extension}@device` },
                 { keyword: 'secret', data: 'GeminiPhone123!' },
                 { keyword: 'sipdriver', data: 'chan_pjsip' },
-                { keyword: 'transport', data: 'transport-udp' },
+                { keyword: 'transport', data: '0.0.0.0-udp' },
                 { keyword: 'disallow', data: 'all' },
                 { keyword: 'allow', data: 'ulaw,alaw' },
                 { keyword: 'direct_media', data: 'yes' },
