@@ -25,7 +25,7 @@ export async function provisionCommand(options = {}) {
         {
             type: 'confirm',
             name: 'setupRoute',
-            message: 'Configure an Inbound Route for Morpheus?',
+            message: 'Configure an Inbound Route for the device?',
             default: true
         },
         {
@@ -53,7 +53,7 @@ export async function provisionCommand(options = {}) {
         }
 
         // Step 2: Sync Extension Identity
-        spinner.text = 'Syncing identity for Morpheus...';
+        spinner.text = 'Syncing identity for device...';
 
         const device = config.devices[0];
         if (!device) {
@@ -117,58 +117,16 @@ export async function provisionCommand(options = {}) {
             spinner.info(chalk.cyan(`Ring Group 8000 ${ringGroupExists ? 'updated' : 'created'} with ${extensions.length} AI(s)`));
         }
 
-        // Step 5: Provision Ring Group 8000 (Nebuchadnezzar Crew)
-        if (options.full) {
-            spinner.text = 'Provisioning Ring Group 8000 (Nebuchadnezzar Crew)...';
-
-            // Full crew list
-            const crewExtensions = [
-                '9000', '9001', '9002', '9003', '9004',
-                '9005', '9006', '9007', '9008'
-            ];
-
-            try {
-                // 8000: All Crew
-                const rgExists = await client.ringGroupExists('8000');
-                await client.createOrUpdateRingGroup('8000', 'Nebuchadnezzar Crew', crewExtensions, 'ringall');
-                spinner.succeed(chalk.cyan(`Ring Group 8000 (Hub) ${rgExists ? 'updated' : 'created'}`));
-
-                // 8001: Command (Morpheus, Trinity)
-                const commandExts = ['9000', '9001'];
-                await client.createOrUpdateRingGroup('8001', 'Command Deck', commandExts, 'ringall');
-                spinner.succeed(chalk.cyan(`Ring Group 8001 (Command) created`));
-
-                // 8002: IT/Ops (Neo, Cypher, Tank, Link, Mouse)
-                const opsExts = ['9002', '9003', '9004', '9008', '9007'];
-                await client.createOrUpdateRingGroup('8002', 'Operators', opsExts, 'ringall');
-                spinner.succeed(chalk.cyan(`Ring Group 8002 (Operators) created`));
-
-                // 8003: Deck/Engineering (Dozer, Apoc, Switch)
-                const deckExts = ['9005', '9006', '9007']; // Switch is sort of both but primarily deck muscle here
-                await client.createOrUpdateRingGroup('8003', 'Engineering', deckExts, 'ringall');
-                spinner.succeed(chalk.cyan(`Ring Group 8003 (Engineering) created`));
-
-            } catch (error) {
-                spinner.warn(chalk.yellow(`Could not provision Ring Groups: ${error.message}`));
-            }
-
-            // IVR instructions or automation
-            spinner.info(chalk.cyan('ℹ️  To provision IVR 7000 (MySQL):'));
-            spinner.info(chalk.gray('   cd cli/mysql-provisioner'));
-            spinner.info(chalk.gray('   npm install'));
-            spinner.info(chalk.gray('   node provision-ivr-mysql.js'));
-        } else if (config.devices.length > 1) {
-            // Standard multi-device logic (local devices only)
-            // ... existing logic ...
-            spinner.warn(chalk.yellow('⚠️  IVR provisioning not supported by FreePBX GraphQL API'));
-            // ...
+        // Replaced Ring Group logic with generic device check warning if skipping group creation natively
+        if (config.devices.length > 1) {
+            spinner.warn(chalk.yellow('⚠️ Multiple devices found. Routing only to Ring Group 8000 if created manually, or primarily handling just the first config.'));
         }
 
         // Step 6: Apply Config
         spinner.text = 'Applying configuration...';
         await client.applyConfig();
 
-        spinner.succeed(chalk.green(`Successfully provisioned Morpheus to extension ${device.extension}!`));
+        spinner.succeed(chalk.green(`Successfully provisioned AI device to extension ${device.extension}!`));
         console.log(chalk.gray(`  Name: ${name}`));
         console.log(chalk.gray(`  CID:  ${cid}`));
         if (setupRoute) {

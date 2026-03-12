@@ -68,10 +68,7 @@ var config = {
   http_port: parseInt(process.env.HTTP_PORT) || 3000,
   ws_port: parseInt(process.env.WS_PORT) || 3001,
   audio_dir: process.env.AUDIO_DIR || "/tmp/voice-audio",
-  instance_name: process.env.INSTANCE_NAME || null, // Optional friendly name like "Server 1" or "Main"
-  n8n: {
-    webhook_url: process.env.N8N_WEBHOOK_URL
-  }
+  instance_name: process.env.INSTANCE_NAME || null // Optional friendly name like "Server 1" or "Main"
 };
 
 // Global state for active calls
@@ -225,11 +222,6 @@ function initializeServers() {
   httpServer.app.use("/api", outboundRouter);
   console.log("[" + new Date().toISOString() + "] OUTBOUND Calling API enabled");
 
-  // ========== N8N CONTROL ROUTES ==========
-  var n8nControl = require("./lib/n8n-control");
-  httpServer.app.use("/api", n8nControl.createN8nRouter(activeCalls));
-  console.log("[" + new Date().toISOString() + "] N8N CONTROL API enabled (/api/calls/:callId/command)");
-
   // ========== QUERY API ROUTES ==========
   setupQueryRoutes({
     geminiBridge: geminiBridge
@@ -297,7 +289,6 @@ function checkReadyState() {
         wsPort: config.ws_port,
         externalIp: config.external_ip,
         activeCalls: activeCalls,
-        n8nConfig: config.n8n,
         srf: srf
       }).catch(function (err) {
         console.error("[" + new Date().toISOString() + "] CALL Error: " + err.message);

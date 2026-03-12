@@ -134,6 +134,14 @@ async function updateViaGit(projectRoot) {
       stdio: 'inherit'
     });
 
+    // Update npm to latest
+    console.log(chalk.gray('\nUpdating npm to latest...'));
+    try {
+      execSync('npm install -g npm@latest', { stdio: 'inherit' });
+    } catch (npmError) {
+      console.log(chalk.yellow(`⚠️  Failed to update npm automatically: ${npmError.message}`));
+    }
+
     console.log(chalk.green('\n✓ Update complete\n'));
     console.log(chalk.gray('Run "gemini-phone status" to verify services\n'));
   } catch (error) {

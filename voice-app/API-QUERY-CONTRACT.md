@@ -149,54 +149,7 @@ If the LLM returns text with markdown ticks (e.g., \`\`\`json ... \`\`\`), the `
 
 ---
 
-## 6. n8n Integration Guide
 
-### 6.1 HTTP Request Node Configuration
-
-- **Method:** POST
-- **URL:** `http://10.70.7.81:3000/api/query`
-- **Body Parameters:**
-
-  ```json
-  {
-    "target": "Cephanie",
-    "query": "Is the server room temperature okay? It's currently 72F.",
-    "format": "json"
-  }
-  ```
-
-### 6.2 The IF Node (Conditional Logic)
-
-Assuming the n8n HTTP Node outputs the API response, you can route based on the device's decision.
-
-**Scenario:** "Ask Cephanie if I can reboot the server."
-
-**Response Data (`body.response.data`):**
-
-```json
-{
-  "approved": false,
-  "reason": "I am currently scrubbing the filesystem. Do not touch me.",
-  "metadata": { "job_id": "scrub_291" }
-}
-```
-
-**IF Node Expression:**
-
-*Condition: Boolean*
-
-```javascript
-// Expression to check approval
-{{ $json.body.response.data.approved }}
-```
-
-**Fallback Expression (Safety):**
-
-If parsing fails, default to `false`:
-
-```javascript
-{{ $json.body.response.data ? $json.body.response.data.approved : false }}
-```
 
 ## 7. Example Scenarios
 

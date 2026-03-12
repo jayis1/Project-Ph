@@ -1,124 +1,88 @@
 /**
- * OpenAI Whisper API Client for Speech-to-Text
- * Converts audio buffers (L16 PCM from FreeSWITCH) to text
+ * Local Whisper STT Client
+ * Sends audio to a local Whisper-compatible HTTP endpoint (e.g. whisper.cpp server)
+ * No OpenAI API key required.
  */
 
-const OpenAI = require("openai");
-const WaveFile = require("wavefile").WaveFile;
-const fs = require("fs");
-const path = require("path");
+const axios = require('axios');
+const FormData = require('form-data');
+const WaveFile = require('wavefile').WaveFile;
+const fs = require('fs');
+const path = require('path');
 
-// Lazy-initialized OpenAI client
-let openai = null;
-
-function getOpenAIClient() {
-  if (!openai) {
-    if (!process.env.OPENAI_API_KEY) {
-      console.warn("[WHISPER] OPENAI_API_KEY not set - STT will not work");
-      return null;
-    }
-    openai = new OpenAI({
-      apiKey: process.env.OPENAI_API_KEY
-    });
-  }
-  return openai;
-}
+const LOCAL_STT_URL = process.env.LOCAL_STT_URL || 'http://host.docker.internal:8080/v1';
 
 /**
- * Convert L16 PCM buffer to WAV format for Whisper API
- * @param {Buffer} pcmBuffer - Raw L16 PCM audio data
- * @param {number} sampleRate - Sample rate (default: 8000 Hz for telephony)
- * @returns {Buffer} WAV file buffer
+ * Convert L16 PCM buffer to WAV
+ * @param {Buffer} pcmBuffer
+ * @param {number} sampleRate
+ * @returns {Buffer}
  */
 function pcmToWav(pcmBuffer, sampleRate = 8000) {
   const wav = new WaveFile();
-
-  // Convert Buffer to Int16Array for wavefile library
   const samples = new Int16Array(pcmBuffer.buffer, pcmBuffer.byteOffset, pcmBuffer.length / 2);
-
-  // Create WAV from raw PCM data
-  wav.fromScratch(1, sampleRate, "16", samples);
-
+  wav.fromScratch(1, sampleRate, '16', samples);
   return Buffer.from(wav.toBuffer());
 }
 
 /**
- * Transcribe audio using OpenAI Whisper API
- * @param {Buffer} audioBuffer - Audio data (either WAV or raw PCM)
- * @param {Object} options - Transcription options
- * @param {string} options.format - Input format: "wav" or "pcm" (default: "pcm")
- * @param {number} options.sampleRate - Sample rate for PCM (default: 8000)
- * @param {string} options.language - Language code (default: "en")
+ * Transcribe audio using a local Whisper-compatible server
+ * @param {Buffer} audioBuffer - Raw PCM or WAV audio
+ * @param {Object} options
+ * @param {string} options.format - 'pcm' or 'wav' (default: 'pcm')
+ * @param {number} options.sampleRate - PCM sample rate (default: 8000)
+ * @param {string} options.language - Language hint (default: 'en')
  * @returns {Promise<string>} Transcribed text
  */
 async function transcribe(audioBuffer, options = {}) {
-  const {
-    format = "pcm",
-    sampleRate = 8000,
-    language = "en"
-  } = options;
-
-  const client = getOpenAIClient();
-  if (!client) {
-    throw new Error("OpenAI API key not configured");
-  }
-
-  // Convert PCM to WAV if needed
-  let wavBuffer;
-  if (format === "pcm") {
-    wavBuffer = pcmToWav(audioBuffer, sampleRate);
-  } else {
-    wavBuffer = audioBuffer;
-  }
-
-  // Write to temp file (Whisper API requires a file)
-  const tempFile = path.join("/tmp", "whisper-" + Date.now() + ".wav");
+  const { format = 'pcm', sampleRate = 8000, language = 'en' } = options;
   const timestamp = new Date().toISOString();
 
+  // Convert to WAV if needed
+  const wavBuffer = format === 'pcm' ? pcmToWav(audioBuffer, sampleRate) : audioBuffer;
+
+  const tempFile = path.join('/tmp', `whisper-${Date.now()}.wav`);
+
   try {
-    console.log(`[${timestamp}] WHISPER Writing ${wavBuffer.length} bytes to ${tempFile}`);
     fs.writeFileSync(tempFile, wavBuffer);
+    console.log(`[${timestamp}] WHISPER Sending ${wavBuffer.length} bytes to ${LOCAL_STT_URL}`);
 
-    console.log(`[${timestamp}] WHISPER Sending request to OpenAI...`);
-    const transcription = await client.audio.transcriptions.create({
-      file: fs.createReadStream(tempFile),
-      model: "whisper-1",
-      language: language,
-      response_format: "text"
-    }, {
-      timeout: 30000, // Increase to 30s
-      maxRetries: 0   // Disable auto-retries to see true error
-    });
+    const form = new FormData();
+    form.append('file', fs.createReadStream(tempFile), { filename: 'audio.wav', contentType: 'audio/wav' });
+    form.append('model', 'whisper-1');
+    form.append('language', language);
+    form.append('response_format', 'text');
 
-    console.log(`[${timestamp}] WHISPER Transcribed: ${transcription.substring(0, 100)}${transcription.length > 100 ? "..." : ""}`);
+    const response = await axios.post(
+      `${LOCAL_STT_URL}/audio/transcriptions`,
+      form,
+      {
+        headers: form.getHeaders(),
+        timeout: 30000,
+        maxContentLength: Infinity,
+        maxBodyLength: Infinity
+      }
+    );
 
-    return transcription;
+    const text = typeof response.data === 'string' ? response.data.trim() : (response.data.text || '').trim();
+    console.log(`[${timestamp}] WHISPER Transcribed: "${text.substring(0, 80)}${text.length > 80 ? '...' : ''}"`);
+    return text;
+
   } catch (error) {
     console.error(`[${timestamp}] WHISPER Error: ${error.message}`);
     throw error;
   } finally {
-    // Clean up temp file
     if (fs.existsSync(tempFile)) {
-      try {
-        fs.unlinkSync(tempFile);
-      } catch (e) {
-        // Ignore cleanup errors
-        console.warn(`[${timestamp}] WHISPER Cleanup warning: ${e.message}`);
-      }
+      try { fs.unlinkSync(tempFile); } catch (_) { /* ignore */ }
     }
   }
 }
 
 /**
- * Check if Whisper API is configured and available
- * @returns {boolean} True if API key is set
+ * Whisper is always considered available (local server)
  */
 function isAvailable() {
-  return !!process.env.OPENAI_API_KEY;
+  return true;
 }
 
-module.exports = {
-  transcribe,
-  pcmToWav,
-  isAvailable
-};
+module.exports = { transcribe, pcmToWav, isAvailable };

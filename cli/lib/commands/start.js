@@ -28,24 +28,8 @@ export async function startCommand() {
   const { installMode } = config;
 
   try {
-    // Start services based on mode
-    if (installMode === 'both') {
-      console.log(chalk.cyan('📞 Starting Voice + API Server...'));
-      await startContainers();
-    } else if (installMode === 'voice') {
-      console.log(chalk.cyan('📞 Starting Voice Server containers...'));
-      // Only start voice-related services
-      // Note: If docker-compose.yml defines dependencies, other services might start. 
-      // But passing specific services usually starts dependencies too.
-      await startContainers(['drachtio', 'freeswitch', 'voice-app']);
-    } else if (installMode === 'api') {
-      console.log(chalk.cyan('🤖 Starting API Server container...'));
-      await startContainers(['gemini-api-server']);
-    } else {
-      // Fallback for older configs
-      console.log(chalk.cyan('📞 Starting all services...'));
-      await startContainers();
-    }
+    console.log(chalk.cyan('📞 Starting services...'));
+    await startContainers(['drachtio', 'freeswitch', 'voice-app']);
 
     console.log(chalk.green('\n✅ Services started!\n'));
     console.log(chalk.cyan('Next steps:'));

@@ -62,6 +62,11 @@ export async function installNode(platform) {
 
   if (check.passed) {
     console.log(chalk.green(`✓ Node.js v${check.version} installed successfully\n`));
+
+    // Update npm to latest
+    console.log(chalk.cyan('⬆️  Updating npm to latest...'));
+    await runWithLogging('npm install -g npm@latest');
+
     return { success: true };
   } else {
     console.error(chalk.red('\n❌ Node.js installation verification failed'));

@@ -110,7 +110,7 @@ function extractVoiceLine(response) {
  * @param {Object} deviceConfig - Device configuration (name, prompt, voiceId, etc.) or null for default
  */
 async function conversationLoop(endpoint, dialog, callUuid, options, deviceConfig) {
-  const { ttsService, whisperClient, geminiBridge, wsPort, audioForkServer, activeCalls, n8nConfig, srf, mediaServer, callerId } = options;
+  const { ttsService, whisperClient, geminiBridge, wsPort, audioForkServer, activeCalls, srf, mediaServer, callerId } = options;
 
   let session = null;
   let forkRunning = false;
@@ -155,23 +155,7 @@ async function conversationLoop(endpoint, dialog, callUuid, options, deviceConfi
       });
     }
 
-    // Helper to send webhooks
-    const sendWebhook = async (event, payload) => {
-      if (!n8nConfig || !n8nConfig.webhook_url) return;
-      try {
-        const axios = require('axios');
-        await axios.post(n8nConfig.webhook_url, {
-          event,
-          callId: callUuid,
-          timestamp: new Date().toISOString(),
-          ...payload
-        });
-      } catch (err) {
-        console.error(`[Webhook] Failed to send ${event}:`, err.message);
-      }
-    };
 
-    await sendWebhook('start', { from: 'unknown', to: 'unknown' }); // TODO: extract these if needed
 
     // Play device-specific greeting with device voice
     const greetingUrl = await ttsService.generateSpeech(greeting, voiceId);
@@ -238,9 +222,7 @@ async function conversationLoop(endpoint, dialog, callUuid, options, deviceConfi
         sampleRate: 16000
       });
 
-      console.log('[' + new Date().toISOString() + '] WHISPER: "' + transcript + '"');
 
-      await sendWebhook('speech', { transcript });
 
       if (!transcript || transcript.trim().length < 2) {
         const clarifyUrl = await ttsService.generateSpeech("Sorry, I didn't catch that. Could you repeat?", voiceId);
@@ -320,20 +302,6 @@ async function conversationLoop(endpoint, dialog, callUuid, options, deviceConfi
 
     if (activeCalls) activeCalls.delete(callUuid);
 
-    // We can't access sendWebhook here easily without redefining, or we can assume it was defined in scope.
-    // Ideally we define sendWebhook outside/top of function or reuse. 
-    // Re-instantiating axios for cleanup webhook if needed, or just skip for now to avoid complexity in this replace block.
-    // But let's try to be clean.
-    if (n8nConfig && n8nConfig.webhook_url) {
-      try {
-        const axios = require('axios');
-        axios.post(n8nConfig.webhook_url, {
-          event: 'end',
-          callId: callUuid,
-          timestamp: new Date().toISOString()
-        }).catch(e => console.error('Webhook end fail', e.message));
-      } catch (e) { }
-    }
 
     try {
       await geminiBridge.endSession(callUuid);

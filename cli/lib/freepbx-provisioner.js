@@ -12,17 +12,9 @@ import { decryptConfig } from './credential-manager.js';
  * Coordinates all provisioning steps for complete FreePBX setup
  */
 
-// Nebuchadnezzar crew configuration
-const DEFAULT_CREW = [
-    { name: 'Morpheus', extension: '9000', voiceId: 'pNInz6obpgDQGcFmaJgB' },
-    { name: 'Trinity', extension: '9001', voiceId: '21m00Tcm4TlvDq8ikWAM' },
-    { name: 'Neo', extension: '9002', voiceId: 'pNInz6obpgDQGcFmaJgB' },
-    { name: 'Tank', extension: '9003', voiceId: 'pNInz6obpgDQGcFmaJgB' },
-    { name: 'Dozer', extension: '9004', voiceId: 'pNInz6obpgDQGcFmaJgB' },
-    { name: 'Apoc', extension: '9005', voiceId: 'pNInz6obpgDQGcFmaJgB' },
-    { name: 'Switch', extension: '9006', voiceId: '21m00Tcm4TlvDq8ikWAM' },
-    { name: 'Mouse', extension: '9007', voiceId: 'pNInz6obpgDQGcFmaJgB' },
-    { name: 'Cypher', extension: '9008', voiceId: 'pNInz6obpgDQGcFmaJgB' }
+// Default device configuration
+const DEFAULT_DEVICE = [
+    { name: 'gemini-phone', extension: '9001', voiceId: 'EXAVITQu4vr4xnSDxMaL' }
 ];
 
 /**
@@ -130,13 +122,15 @@ export async function provisionInfrastructure(config, connectionConfig, progress
  * @returns {Promise<object>} Provisioning result
  */
 export async function provisionExtensions(config, pool, progressCallback = () => { }) {
-    progressCallback({ step: 'extensions', status: 'running', message: 'Provisioning extensions...' });
+    progressCallback({ step: 'extensions', status: 'running', message: 'Provisioning device...' });
 
-    const crew = config.crew || DEFAULT_CREW;
+    // Use devices config if available, otherwise fallback to DEFAULT_DEVICE
+    // In gemini-phone, config.devices is an array, often with one object.
+    const devices = (config.devices && config.devices.length > 0) ? config.devices : DEFAULT_DEVICE;
     const results = { created: 0, skipped: 0, failed: 0 };
 
     try {
-        for (const member of crew) {
+        for (const member of devices) {
             progressCallback({
                 step: 'extensions',
                 status: 'running',
@@ -216,161 +210,7 @@ export async function provisionExtensions(config, pool, progressCallback = () =>
     }
 }
 
-/**
- * Helper function to create an IVR with entries
- */
-async function createIVR(pool, id, name, description, entries) {
-    // Create IVR details
-    await executeMySQLQuery(
-        pool,
-        `INSERT INTO ivr_details (id, name, description, announcement, directdial, invalid_loops, invalid_retry_recording, 
-            invalid_destination, invalid_recording, retvm, timeout_time, timeout_recording, timeout_retry_recording, 
-            timeout_destination, timeout_loops, timeout_append_announce, invalid_append_announce, timeout_ivr_ret, 
-            invalid_ivr_ret, timeout_enabled, alertinfo, rvolume, strict_dial_timeout, accept_pound_key) 
-         VALUES (?, ?, ?, NULL, 'CHECKED', 3, '', 'app-blackhole,hangup,1', '', '', 10, '', '', 'app-blackhole,hangup,1', 3, 0, 0, 0, 0, '', '', '', 2, 0)`,
-        [id, name, description]
-    );
-
-    // Create IVR entries
-    for (const entry of entries) {
-        await executeMySQLQuery(
-            pool,
-            'INSERT INTO ivr_entries (ivr_id, selection, dest, ivr_ret) VALUES (?, ?, ?, 0)',
-            [id, entry.digit, entry.dest]
-        );
-    }
-}
-
-/**
- * Provision multi-level IVR maze system
- * @param {object} config - Configuration
- * @param {object} pool - MySQL connection pool
- * @param {Function} progressCallback - Progress callback
- * @returns {Promise<object>} Provisioning result
- */
-export async function provisionIVR(config, pool, progressCallback = () => { }) {
-    progressCallback({ step: 'ivr', status: 'running', message: 'Provisioning multi-level IVR maze...' });
-
-    try {
-        // Check if main IVR already exists
-        const checkResult = await executeMySQLQuery(
-            pool,
-            'SELECT COUNT(*) as count FROM ivr_details WHERE id = 1',
-            []
-        );
-
-        if (checkResult.success && checkResult.rows[0].count > 0) {
-            progressCallback({ step: 'ivr', status: 'success', message: 'IVR maze already exists' });
-            return { success: true, skipped: true };
-        }
-
-        // === LEVEL 1: Main IVR (ID 1) ===
-        await createIVR(pool, 1, 'Nebuchadnezzar Bridge', 'Main menu for scam-baiting maze', [
-            { digit: '0', dest: 'ext-local,9000,1' },        // Morpheus (starts chain transfer)
-            { digit: '1', dest: 'ivr,2,1' },                 // Operations Department
-            { digit: '2', dest: 'ivr,3,1' },                 // Engineering Department
-            { digit: '3', dest: 'ivr,4,1' },                 // Security Department
-            { digit: '4', dest: 'ivr,5,1' },                 // Training Department
-            { digit: '7', dest: 'ext-local,9001,1' },        // Trinity (direct)
-            { digit: '8', dest: 'ext-local,9008,1' },        // Cypher (direct)
-            { digit: '9', dest: 'app-blackhole,hangup,1' }   // Hangup
-        ]);
-
-        // === LEVEL 2: Department IVRs (IDs 2-5) ===
-
-        // IVR 2: Operations Department
-        await createIVR(pool, 2, 'Operations', 'Operations department menu', [
-            { digit: '0', dest: 'ivr,1,1' },     // Back to main menu
-            { digit: '1', dest: 'ivr,6,1' },     // Operations Line A
-            { digit: '2', dest: 'ivr,7,1' }      // Operations Line B
-        ]);
-
-        // IVR 3: Engineering Department
-        await createIVR(pool, 3, 'Engineering', 'Engineering department menu', [
-            { digit: '0', dest: 'ivr,1,1' },     // Back to main menu
-            { digit: '1', dest: 'ivr,8,1' },     // Engineering Line A
-            { digit: '2', dest: 'ivr,9,1' }      // Engineering Line B
-        ]);
-
-        // IVR 4: Security Department
-        await createIVR(pool, 4, 'Security', 'Security department menu', [
-            { digit: '0', dest: 'ivr,1,1' },     // Back to main menu
-            { digit: '1', dest: 'ivr,10,1' },    // Security Line A
-            { digit: '2', dest: 'ivr,11,1' }     // Security Line B
-        ]);
-
-        // IVR 5: Training Department
-        await createIVR(pool, 5, 'Training', 'Training department menu', [
-            { digit: '0', dest: 'ivr,1,1' },     // Back to main menu
-            { digit: '1', dest: 'ivr,12,1' },    // Training Line A
-            { digit: '2', dest: 'ivr,13,1' }     // Training Line B
-        ]);
-
-        // === LEVEL 3: Phone Line IVRs (IDs 6-13) ===
-
-        // IVR 6: Operations Line A
-        await createIVR(pool, 6, 'Ops Line A', 'Operations team line A', [
-            { digit: '0', dest: 'ivr,2,1' },         // Back to Operations
-            { digit: '1', dest: 'ext-local,9002,1' }, // Neo
-            { digit: '2', dest: 'ext-local,9003,1' }  // Tank
-        ]);
-
-        // IVR 7: Operations Line B
-        await createIVR(pool, 7, 'Ops Line B', 'Operations team line B', [
-            { digit: '0', dest: 'ivr,2,1' },         // Back to Operations
-            { digit: '1', dest: 'ext-local,9004,1' }, // Dozer
-            { digit: '2', dest: 'ext-local,9005,1' }  // Apoc
-        ]);
-
-        // IVR 8: Engineering Line A
-        await createIVR(pool, 8, 'Eng Line A', 'Engineering team line A', [
-            { digit: '0', dest: 'ivr,3,1' },         // Back to Engineering
-            { digit: '1', dest: 'ext-local,9006,1' }, // Switch
-            { digit: '2', dest: 'ext-local,9007,1' }  // Mouse
-        ]);
-
-        // IVR 9: Engineering Line B (repeat crew for confusion)
-        await createIVR(pool, 9, 'Eng Line B', 'Engineering team line B', [
-            { digit: '0', dest: 'ivr,3,1' },         // Back to Engineering
-            { digit: '1', dest: 'ext-local,9002,1' }, // Neo (repeat)
-            { digit: '2', dest: 'ext-local,9003,1' }  // Tank (repeat)
-        ]);
-
-        // IVR 10: Security Line A
-        await createIVR(pool, 10, 'Sec Line A', 'Security team line A', [
-            { digit: '0', dest: 'ivr,4,1' },         // Back to Security
-            { digit: '1', dest: 'ext-local,9004,1' }, // Dozer (repeat)
-            { digit: '2', dest: 'ext-local,9005,1' }  // Apoc (repeat)
-        ]);
-
-        // IVR 11: Security Line B
-        await createIVR(pool, 11, 'Sec Line B', 'Security team line B', [
-            { digit: '0', dest: 'ivr,4,1' },         // Back to Security
-            { digit: '1', dest: 'ext-local,9006,1' }, // Switch (repeat)
-            { digit: '2', dest: 'ext-local,9007,1' }  // Mouse (repeat)
-        ]);
-
-        // IVR 12: Training Line A
-        await createIVR(pool, 12, 'Train Line A', 'Training team line A', [
-            { digit: '0', dest: 'ivr,5,1' },         // Back to Training
-            { digit: '1', dest: 'ext-local,9002,1' }, // Neo (repeat)
-            { digit: '2', dest: 'ext-local,9003,1' }  // Tank (repeat)
-        ]);
-
-        // IVR 13: Training Line B
-        await createIVR(pool, 13, 'Train Line B', 'Training team line B', [
-            { digit: '0', dest: 'ivr,5,1' },         // Back to Training
-            { digit: '1', dest: 'ext-local,9004,1' }, // Dozer (repeat)
-            { digit: '2', dest: 'ext-local,9005,1' }  // Apoc (repeat)
-        ]);
-
-        progressCallback({ step: 'ivr', status: 'success', message: 'Multi-level IVR maze provisioned (13 IVRs)' });
-        return { success: true, ivrsCreated: 13 };
-    } catch (error) {
-        progressCallback({ step: 'ivr', status: 'error', message: error.message });
-        return { success: false, error: error.message };
-    }
-}
+// Removed multi-level IVR system.
 
 /**
  * Provision SIP Trunk
@@ -454,11 +294,12 @@ async function provisionTrunks(config, pool, progressCallback = () => { }) {
         // 4. Create Registration (None for IP peering)
         // (Skipped)
 
-        // 5. Create Inbound Route (ANY -> IVR)
-        // "dest" format: ivr,<ivr_id>,<return_to_ivr_id> typically 'ivr,1,1' for IVR id 1
+        // 5. Create Inbound Route (ANY -> Extension)
+        // Dest format for extension: ext-local,<EXT>,1
+        const ext = (config.devices && config.devices.length > 0) ? config.devices[0].extension : '9001';
         await executeMySQLQuery(
             pool,
-            "INSERT INTO incoming (cidnum, extension, destination, description, pmmaxretries, pmminlength) VALUES ('', '', 'ivr,1,1', 'To_Maze', '', '')"
+            `INSERT INTO incoming (cidnum, extension, destination, description, pmmaxretries, pmminlength) VALUES ('', '', 'ext-local,${ext},1', 'To_Device', '', '')`
         );
 
         progressCallback({ step: 'trunk', status: 'success', message: 'Trunk and Inbound Route provisioned' });
@@ -487,21 +328,14 @@ export async function verifyProvisioning(config, pool, options = {}, progressCal
     };
 
     try {
-        // Check extensions (check users table for clearer count)
+        // Check extensions count (at least 1)
         const extResult = await executeMySQLQuery(
             pool,
-            'SELECT COUNT(*) as count FROM users WHERE extension >= 9000 AND extension <= 9008'
+            'SELECT COUNT(*) as count FROM users'
         );
-        checks.extensions = extResult.success && extResult.rows[0].count >= 9;
+        checks.extensions = extResult.success && extResult.rows[0].count >= 1;
 
-        // Check IVR (Main IVR ID is 1)
-        const ivrResult = await executeMySQLQuery(
-            pool,
-            'SELECT COUNT(*) as count FROM ivr_details WHERE id = 1'
-        );
-        checks.ivr = ivrResult.success && ivrResult.rows[0].count > 0;
-
-        // Check trunk
+        // Trunk checking
         if (options.skipTrunks) {
             checks.trunk = true; // Skip check
         } else {
@@ -513,7 +347,7 @@ export async function verifyProvisioning(config, pool, options = {}, progressCal
             checks.trunk = trunkResult.success && trunkResult.rows[0].count > 0;
         }
 
-        const allSuccess = checks.extensions && checks.ivr && checks.trunk;
+        const allSuccess = checks.extensions && checks.trunk;
 
         progressCallback({
             step: 'verify',
@@ -525,7 +359,7 @@ export async function verifyProvisioning(config, pool, options = {}, progressCal
         if (!allSuccess) {
             return {
                 success: false,
-                error: `Verification failed: Extensions=${checks.extensions}, IVR=${checks.ivr}, Trunk=${checks.trunk}`,
+                error: `Verification failed: Extensions=${checks.extensions}, Trunk=${checks.trunk}`,
                 checks
             };
         }
@@ -581,27 +415,7 @@ export async function provisionFreePBX(config, options = {}, progressCallback = 
             results.extensions = await provisionExtensions(config, pool, progressCallback);
         }
 
-        // Step 4: Provision IVR
-        if (!options.skipIVR) {
-            results.ivr = await provisionIVR(config, pool, progressCallback);
-
-            // Wait, provisionIVR inside usually handles just IVR. 
-            // We need to call ensureInboundRoute explicitly or inside provisionIVR?
-            // Let's check where ensureInboundRoute is defined. 
-            // It seems it is NOT defined in this file based on previous view_file.
-            // I need to ADD it or find where it lived.
-            // Actually, based on previous logs, I likely removed it?
-            // Let's assume I need to implement it here or call a helper.
-
-            // For now, I will just add the SQL implementation directly here to match the robust style.
-            await executeMySQLQuery(pool,
-                "INSERT INTO incoming (cidnum, extension, destination, description, pmmaxretries, pmminlength) VALUES ('', '', 'ivr,1,1', 'To_Maze', '', '')"
-            );
-            // And maybe a log?
-            // Step 4.5 Ensure Inbound Route
-            // This is now handled in provisionTrunks or here as fallback?
-            // Let's leave IVR provisioning as pure IVR creation.
-        }
+        // Step 4: Removed IVR step.
 
         // Step 5: Provision Trunk (Optional)
         if (!options.skipTrunks) {

@@ -10,11 +10,8 @@ INSTALL_DIR="$HOME/gemini-bot"
 REPO_URL="https://github.com/jayis1/2fast2dumb2fun.git"
 
 # --- Parse Arguments ---
-FLEET_MODE=false
-
 while [[ "$#" -gt 0 ]]; do
     case $1 in
-        --fleet) FLEET_MODE=true ;;
         --ext) EXTENSION="$2"; shift ;;
         --name) INSTANCE_NAME="$2"; shift ;;
         --pass) PASSWORD="$2"; shift ;;
@@ -28,34 +25,25 @@ while [[ "$#" -gt 0 ]]; do
     shift
 done
 
-echo "🤖 Gemini Bot Installer Initializing..."
+echo "🤖 Gemini Phone Installer Initializing..."
 
 # --- Interactive Mode ---
 if [ -z "$REGISTRAR" ]; then
     echo ""
-    echo "👋 Welcome to the Gemini Phone Bot Installer!"
-    echo "   I'll help you set up your AI Bot Fleet."
+    echo "👋 Welcome to the Gemini Phone Installer!"
+    echo "   I'll help you set up your AI Phone."
     echo ""
     
     # Prompt for Registrar
-    read -p "🔹 Enter PBX/Registrar IP (Server B): " REGISTRAR
+    read -p "🔹 Enter PBX/Registrar IP: " REGISTRAR
     if [ -z "$REGISTRAR" ]; then echo "❌ Registrar IP is required."; exit 1; fi
 
-    # Prompt for Mode
-    echo ""
-    echo "   Choose Deployment Mode:"
-    echo "   1) Fleet Mode (Deploy all 9 Bots: Morpheus, Trinity, Neo...)"
-    echo "   2) Single Bot Mode (Deploy one specific extension)"
-    read -p "🔹 Select [1/2] (Default 1): " MODE_SELECTION
-    MODE_SELECTION=${MODE_SELECTION:-1}
-
-    if [ "$MODE_SELECTION" -eq 1 ]; then
-        FLEET_MODE=true
-    else
-        read -p "🔹 Enter Extension (e.g. 9000): " EXTENSION
-        read -p "🔹 Enter Name (e.g. Morpheus): " INSTANCE_NAME
-        read -p "🔹 Enter Password (Default: changeme): " PASSWORD
-    fi
+    read -p "🔹 Enter Extension (Default 9001): " EXTENSION
+    EXTENSION=${EXTENSION:-9001}
+    read -p "🔹 Enter Name (Default gemini-phone): " INSTANCE_NAME
+    INSTANCE_NAME=${INSTANCE_NAME:-"gemini-phone"}
+    read -p "🔹 Enter Password (Default GeminiPhone123!): " PASSWORD
+    PASSWORD=${PASSWORD:-"GeminiPhone123!"}
 
     echo ""
     read -p "🔹 Enter OpenAI API Key (Optional): " OPENAI_API_KEY
@@ -64,10 +52,10 @@ if [ -z "$REGISTRAR" ]; then
     echo "✅ Configuration Received!"
 fi
 
-PASSWORD=${PASSWORD:-"changeme"}
+PASSWORD=${PASSWORD:-"GeminiPhone123!"}
 
-if [ -z "$EXTENSION" ] && [ "$FLEET_MODE" != "true" ]; then
-    echo "❌ Error: Must specify Extension for Single Bot Mode."
+if [ -z "$EXTENSION" ]; then
+    echo "❌ Error: Must specify Extension."
     exit 1
 fi
 
@@ -129,33 +117,12 @@ FREESWITCH_SECRET=JambonzR0ck$
 AUDIO_DIR=/tmp/voice-audio
 EOF
 
-# --- 4. Fleet Configuration ---
-if [ "$FLEET_MODE" = "true" ]; then
-    echo "🚀 Configuring Full Bot Fleet (Extensions 9000-9008)..."
-    mkdir -p voice-app/config
-    cat > voice-app/config/devices.json <<JSON
-{
-  "9000": { "name": "Morpheus", "extension": "9000", "authId": "9000", "password": "GeminiPhone123!", "voiceId": "JAgnJveGGUh4qy4kh6dF", "prompt": "You are Morpheus from The Matrix. Use under 40 words." },
-  "9001": { "name": "Trinity", "extension": "9001", "authId": "9001", "password": "GeminiPhone123!", "voiceId": "EXAVOICEID_TRINITY", "prompt": "You are Trinity." },
-  "9002": { "name": "Neo", "extension": "9002", "authId": "9002", "password": "GeminiPhone123!", "voiceId": "EXAVOICEID_NEO", "prompt": "You are Neo." },
-  "9003": { "name": "Tank", "extension": "9003", "authId": "9003", "password": "GeminiPhone123!", "voiceId": "EXAVOICEID_TANK", "prompt": "You are Tank." },
-  "9004": { "name": "Dozer", "extension": "9004", "authId": "9004", "password": "GeminiPhone123!", "voiceId": "EXAVOICEID_DOZER", "prompt": "You are Dozer." },
-  "9005": { "name": "Apoc", "extension": "9005", "authId": "9005", "password": "GeminiPhone123!", "voiceId": "EXAVOICEID_APOC", "prompt": "You are Apoc." },
-  "9006": { "name": "Switch", "extension": "9006", "authId": "9006", "password": "GeminiPhone123!", "voiceId": "EXAVOICEID_SWITCH", "prompt": "You are Switch." },
-  "9007": { "name": "Mouse", "extension": "9007", "authId": "9007", "password": "GeminiPhone123!", "voiceId": "EXAVOICEID_MOUSE", "prompt": "You are Mouse." },
-  "9008": { "name": "Cypher", "extension": "9008", "authId": "9008", "password": "GeminiPhone123!", "voiceId": "EXAVOICEID_CYPHER", "prompt": "You are Cypher." }
-}
-JSON
-    echo "✅ Fleet Config Written to voice-app/config/devices.json"
-
-else
-    # Single Bot Mode
-    echo "SIP_EXTENSION=$EXTENSION" >> .env
-    echo "SIP_AUTH_ID=$EXTENSION" >> .env
-    echo "SIP_PASSWORD=${PASSWORD:-changeme}" >> .env
-    echo "INSTANCE_NAME=\"${INSTANCE_NAME:-Bot}\"" >> .env
-    echo "ℹ️  Single Bot Configured (Extension $EXTENSION)"
-fi
+# --- 4. Single Bot Configuration ---
+echo "SIP_EXTENSION=$EXTENSION" >> .env
+echo "SIP_AUTH_ID=$EXTENSION" >> .env
+echo "SIP_PASSWORD=${PASSWORD:-GeminiPhone123!}" >> .env
+echo "INSTANCE_NAME=\"${INSTANCE_NAME:-gemini-phone}\"" >> .env
+echo "ℹ️  Single Bot Configured (Extension $EXTENSION)"
 
 # --- 5. Launch ---
 echo "🔥 Launching Containers..."
@@ -165,11 +132,7 @@ $CMD up -d --build --remove-orphans
 
 echo ""
 echo "🎉 Deployment Complete!"
-if [ "$FLEET_MODE" = "true" ]; then
-    echo "   Fleet:  9 Instances (9000-9008)"
-else
-    echo "   Bot:    $INSTANCE_NAME ($EXTENSION)"
-fi
+echo "   Bot:    $INSTANCE_NAME ($EXTENSION)"
 echo "   Host:   $EXTERNAL_IP"
 echo "   PBX:    $REGISTRAR"
 echo ""

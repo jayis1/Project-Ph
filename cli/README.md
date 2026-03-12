@@ -107,13 +107,7 @@ gemini-phone api-server         # Start API server standalone (default port 3333
 gemini-phone api-server -p 4000 # Start on custom port
 ```
 
-### Device Management
 
-```bash
-gemini-phone device add         # Add a new device/extension
-gemini-phone device list        # List configured devices
-gemini-phone device remove <name>   # Remove a device by name
-```
 
 ### Logs
 

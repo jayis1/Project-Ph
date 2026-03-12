@@ -25,19 +25,9 @@ export async function stopCommand() {
   const spinner = ora('Stopping services...').start();
 
   try {
-    // Route to type-specific stop function
-    switch (installationType) {
-      case 'api-server':
-        await stopContainers(['gemini-api-server']);
-        break;
-      case 'voice-server':
-        await stopContainers(['drachtio', 'freeswitch', 'voice-app']);
-        break;
-      case 'both':
-      default:
-        await stopContainers(); // Stops all
-        break;
-    }
+    // Stop all Docker containers
+    await stopContainers();
+
     spinner.succeed('Services stopped successfully');
     console.log(chalk.bold.green('\n✓ Gemini Phone stopped\n'));
 

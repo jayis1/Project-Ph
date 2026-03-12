@@ -19,14 +19,14 @@ const logger = require('./logger');
 
 const CONFIG_PATH = path.join(__dirname, '../config/devices.json');
 
-// Default device (Morpheus) - used when config file missing or no match found
-const MORPHEUS_DEFAULT = {
-  name: 'Morpheus',
-  extension: '9000',
-  authId: 'Au0XZPTpJY',
-  password: 'DGHwMW6v25',
-  voiceId: 'JAgnJveGGUh4qy4kh6dF',
-  prompt: 'You are Morpheus, Chuck\'s principal AI assistant. You are meticulous, systematic, and excellence-driven. Keep voice responses under 40 words.'
+// Default device (Trinity) - used when config file missing or no match found
+const TRINITY_DEFAULT = {
+  name: 'gemini-phone',
+  extension: '9001',
+  authId: '9001',
+  password: 'GeminiPhone123!',
+  voiceId: 'EXAVITQu4vr4xnSDxMaL',
+  prompt: 'You are Trinity, a skilled hacker and warrior. Be direct and confident. Keep responses under 40 words.'
 };
 
 class DeviceRegistry {
@@ -46,14 +46,14 @@ class DeviceRegistry {
   load() {
     try {
       if (!fs.existsSync(CONFIG_PATH)) {
-        logger.warn('Device config not found, using Morpheus default only', {
+        logger.warn('Device config not found, using Trinity default only', {
           path: CONFIG_PATH
         });
         this.devices = {
-          [MORPHEUS_DEFAULT.extension]: MORPHEUS_DEFAULT
+          [TRINITY_DEFAULT.extension]: TRINITY_DEFAULT
         };
         this.devicesByName = {
-          [MORPHEUS_DEFAULT.name.toLowerCase()]: MORPHEUS_DEFAULT
+          [TRINITY_DEFAULT.name.toLowerCase()]: TRINITY_DEFAULT
         };
         this.loaded = true;
         return;
@@ -79,11 +79,11 @@ class DeviceRegistry {
         this._loadLegacyConfig(config);
       }
 
-      // Only use Morpheus default if NO devices are configured
+      // Only use Trinity default if NO devices are configured
       if (Object.keys(this.devices).length === 0) {
-        logger.warn('No devices configured, using Morpheus default');
-        this.devices[MORPHEUS_DEFAULT.extension] = MORPHEUS_DEFAULT;
-        this.devicesByName[MORPHEUS_DEFAULT.name.toLowerCase()] = MORPHEUS_DEFAULT;
+        logger.warn('No devices configured, using Trinity default');
+        this.devices[TRINITY_DEFAULT.extension] = TRINITY_DEFAULT;
+        this.devicesByName[TRINITY_DEFAULT.name.toLowerCase()] = TRINITY_DEFAULT;
       }
 
       this.loaded = true;
@@ -94,8 +94,8 @@ class DeviceRegistry {
 
     } catch (error) {
       logger.error('Failed to load device config', { error: error.message });
-      this.devices = { [MORPHEUS_DEFAULT.extension]: MORPHEUS_DEFAULT };
-      this.devicesByName = { [MORPHEUS_DEFAULT.name.toLowerCase()]: MORPHEUS_DEFAULT };
+      this.devices = { [TRINITY_DEFAULT.extension]: TRINITY_DEFAULT };
+      this.devicesByName = { [TRINITY_DEFAULT.name.toLowerCase()]: TRINITY_DEFAULT };
       this.loaded = true;
     }
   }
@@ -173,7 +173,7 @@ class DeviceRegistry {
   }
 
   getDefault() {
-    return { ...MORPHEUS_DEFAULT };
+    return { ...TRINITY_DEFAULT };
   }
 
   isLoaded() {

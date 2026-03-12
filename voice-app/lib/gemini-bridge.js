@@ -1,112 +1,85 @@
 /**
- * Gemini HTTP API Bridge
- * HTTP client for Gemini API server with session management
+ * Ollama LLM Bridge
+ * HTTP client for local Ollama AI — no cloud dependencies
  */
 
 const axios = require('axios');
 
-const GEMINI_API_URL = process.env.GEMINI_API_URL || 'http://localhost:3333';
+const OLLAMA_API_URL = process.env.OLLAMA_API_URL || 'http://host.docker.internal:11434';
+const OLLAMA_MODEL = process.env.OLLAMA_MODEL || 'llama3';
 
 /**
- * Query Gemini via HTTP API with session support
- * @param {string} prompt - The prompt/question to send to Gemini
- * @param {Object} options - Options including callId for session management
- * @param {string} options.callId - Call UUID for maintaining conversation context
- * @param {string} options.devicePrompt - Device-specific personality prompt
- * @param {number} options.timeout - Timeout in seconds (default: 30, AC27)
- * @returns {Promise<string>} Gemini's response
+ * Query Ollama with session-like context via message history
+ * @param {string} prompt - The user prompt
+ * @param {Object} options - Options
+ * @param {string} options.callId - Call UUID (for logging)
+ * @param {string} options.devicePrompt - Device-specific system prompt
+ * @param {number} options.timeout - Timeout in seconds (default: 30)
+ * @returns {Promise<string>} AI response text
  */
 async function query(prompt, options = {}) {
-  const { callId, devicePrompt, timeout = 30 } = options; // AC27: Default 30s timeout
+  const { callId, devicePrompt, timeout = 30 } = options;
   const timestamp = new Date().toISOString();
 
-  try {
-    console.log(`[${timestamp}] GEMINI Sending query to ${GEMINI_API_URL}...`);
-    if (callId) {
-      console.log(`[${timestamp}] GEMINI Session: ${callId}`);
-    }
-    if (devicePrompt) {
-      console.log(`[${timestamp}] GEMINI Device prompt: ${devicePrompt.substring(0, 50)}...`);
-    }
+  console.log(`[${timestamp}] OLLAMA Querying ${OLLAMA_API_URL} model=${OLLAMA_MODEL} call=${callId}`);
 
+  const payload = {
+    model: OLLAMA_MODEL,
+    messages: [
+      { role: 'system', content: devicePrompt || 'You are a helpful AI assistant. Be concise and direct. Keep responses under 40 words.' },
+      { role: 'user', content: prompt }
+    ],
+    stream: false
+  };
+
+  try {
     const response = await axios.post(
-      `${GEMINI_API_URL}/ask`,
-      { prompt, callId, devicePrompt },
+      `${OLLAMA_API_URL}/api/chat`,
+      payload,
       {
         timeout: timeout * 1000,
         headers: { 'Content-Type': 'application/json' }
       }
     );
 
-    if (!response.data.success) {
-      throw new Error(response.data.error || 'Gemini API returned failure');
-    }
-
-    console.log(`[${timestamp}] GEMINI Response received (${response.data.duration_ms}ms)`);
-    if (response.data.sessionId) {
-      console.log(`[${timestamp}] GEMINI Session ID: ${response.data.sessionId}`);
-    }
-    return response.data.response;
+    const text = response.data.message?.content || '';
+    console.log(`[${timestamp}] OLLAMA Response received (${text.length} chars)`);
+    return text;
 
   } catch (error) {
-    // AC26: API server unreachable during call - don't crash, return helpful message
-    if (error.code === 'ECONNREFUSED' || error.code === 'EHOSTUNREACH' || error.code === 'ENETUNREACH') {
-      console.warn(`[${timestamp}] GEMINI API server unreachable (${error.code})`);
-      return "I'm having trouble connecting to my brain right now. The API server may be offline or unreachable. Please try again later.";
+    if (error.code === 'ECONNREFUSED' || error.code === 'EHOSTUNREACH') {
+      console.warn(`[${timestamp}] OLLAMA Unreachable (${error.code}) — is Ollama running?`);
+      return "I can't reach my Ollama AI backend right now. Please check that Ollama is running and accessible.";
     }
-
-    // AC27: Timeout with helpful error message
     if (error.code === 'ETIMEDOUT' || error.code === 'ECONNABORTED') {
-      console.error(`[${timestamp}] GEMINI Timeout after ${timeout} seconds`);
-      return "I'm sorry, that request took too long. This might mean the API server is slow or there's a network issue. Try asking something simpler, or check that gemini-phone api-server is running.";
+      console.error(`[${timestamp}] OLLAMA Timeout after ${timeout}s`);
+      return "That request took too long. Please try a simpler question.";
     }
-
-    console.error(`[${timestamp}] GEMINI Error:`, error.message);
-    // AC26: Don't crash on unknown errors, return friendly message
-    return "I encountered an unexpected error. Please check that the API server is running gemini-phone api-server and is on the same network.";
+    console.error(`[${timestamp}] OLLAMA Error:`, error.message);
+    return "I encountered an error talking to my AI backend. Please try again.";
   }
 }
 
 /**
- * End a Gemini session when a call ends
- * @param {string} callId - The call UUID to end the session for
+ * No-op: Ollama is stateless per request, no session to end
  */
 async function endSession(callId) {
-  if (!callId) return;
-
-  const timestamp = new Date().toISOString();
-
-  try {
-    await axios.post(
-      `${GEMINI_API_URL}/end-session`,
-      { callId },
-      {
-        timeout: 5000,
-        headers: { 'Content-Type': 'application/json' }
-      }
-    );
-    console.log(`[${timestamp}] GEMINI Session ended: ${callId}`);
-  } catch (error) {
-    // Non-critical, just log
-    console.warn(`[${timestamp}] GEMINI Failed to end session: ${error.message}`);
+  if (callId) {
+    console.log(`[${new Date().toISOString()}] OLLAMA Session ended (no-op): ${callId}`);
   }
 }
 
 /**
- * Check if Gemini API is available
- * @returns {Promise<boolean>} True if API is reachable
+ * Check if Ollama is reachable
+ * @returns {Promise<boolean>}
  */
 async function isAvailable() {
   try {
-    await axios.get(`${GEMINI_API_URL}/health`, { timeout: 5000 });
+    await axios.get(`${OLLAMA_API_URL}/api/tags`, { timeout: 5000 });
     return true;
   } catch {
     return false;
   }
 }
 
-module.exports = {
-  query,
-  endSession,
-  isAvailable
-};
+module.exports = { query, endSession, isAvailable };

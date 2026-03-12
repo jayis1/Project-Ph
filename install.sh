@@ -70,6 +70,44 @@ install_nodejs() {
       ;;
   esac
   echo "✓ Node.js installed: $(node -v)"
+  echo "⬆️  Updating npm to latest..."
+  npm install -g npm@latest
+}
+
+# Function to install ROCm for AMD GPU support
+install_rocm() {
+  echo ""
+  echo "🔴 Installing AMD ROCm (GPU drivers for Ollama)..."
+  case "$PKG_MANAGER" in
+    apt)
+      # Add AMD ROCm repository
+      curl -fsSL https://repo.radeon.com/rocm/rocm.gpg.key | $SUDO gpg --dearmor -o /etc/apt/keyrings/rocm.gpg
+      echo "deb [arch=amd64 signed-by=/etc/apt/keyrings/rocm.gpg] https://repo.radeon.com/rocm/apt/latest noble main" | $SUDO tee /etc/apt/sources.list.d/rocm.list
+      echo -e 'Package: *\nPin: release o=repo.radeon.com\nPin-Priority: 600' | $SUDO tee /etc/apt/preferences.d/rocm-pin-600
+      $SUDO apt-get update
+      $SUDO apt-get install -y rocm
+      # Add user to render/video groups for GPU access
+      $SUDO usermod -aG render,video $USER
+      echo "✓ ROCm installed — you may need to log out/in for group changes to take effect"
+      ;;
+    dnf)
+      $SUDO dnf install -y rocm-dev rocm-hip rocm-opencl
+      $SUDO usermod -aG render,video $USER
+      echo "✓ ROCm installed"
+      ;;
+    *)
+      echo "⚠️  Cannot auto-install ROCm on this system"
+      echo "   Install manually: https://rocm.docs.amd.com/projects/install-on-linux/en/latest/"
+      ;;
+  esac
+}
+
+# Function to install Ollama
+install_ollama() {
+  echo ""
+  echo "🦙 Installing Ollama..."
+  curl -fsSL https://ollama.com/install.sh | sh
+  echo "✓ Ollama installed"
 }
 
 # Function to install Docker
@@ -209,15 +247,6 @@ if [ "$OS" = "Linux" ]; then
   fi
 fi
 
-# Install Gemini CLI (required for API server)
-if ! command -v gemini &> /dev/null; then
-  echo ""
-  echo "📦 Installing Gemini CLI..."
-  npm install -g @google/gemini-cli
-  echo "✓ Gemini CLI installed: $(gemini --version)"
-else
-  echo "✓ Gemini CLI already installed: $(gemini --version)"
-fi
 
 # Clone or update repository
 echo ""
@@ -233,9 +262,16 @@ fi
 
 # Install CLI dependencies
 echo ""
-echo "Installing dependencies..."
+echo "Installing CLI dependencies..."
 cd "$INSTALL_DIR/cli"
 npm install --silent --production
+
+# Install Voice App dependencies
+echo ""
+echo "Installing Voice App dependencies..."
+cd "$INSTALL_DIR/voice-app"
+npm install --silent --production
+
 
 # Create symlink
 echo ""
@@ -267,7 +303,62 @@ echo "════════════════════════�
 echo "✓ Installation complete!"
 echo "════════════════════════════════════════════"
 echo ""
+
+# Detect AMD GPU
+AMD_GPU=""
+if command -v lspci &> /dev/null; then
+  AMD_GPU=$(lspci 2>/dev/null | grep -iE "VGA|Display|3D" | grep -i "AMD\|Radeon\|Advanced Micro" | head -1)
+fi
+
+if [ -n "$AMD_GPU" ]; then
+  echo "🔴 AMD GPU detected: $AMD_GPU"
+
+  if ! command -v rocminfo &> /dev/null && [ ! -d "/opt/rocm" ]; then
+    echo "   ROCm not found — Ollama will run on CPU only"
+    read -p "   Install AMD ROCm for GPU acceleration? (Y/n) " -n 1 -r
+    echo
+    if [[ ! $REPLY =~ ^[Nn]$ ]]; then
+      install_rocm
+    else
+      echo "   Skipping ROCm — install later from: https://rocm.docs.amd.com/"
+    fi
+  else
+    ROCM_VERSION=$(cat /opt/rocm/.info/version 2>/dev/null || rocminfo 2>/dev/null | grep "ROCm" | head -1 | awk '{print $NF}' || echo "installed")
+    echo "✓ ROCm detected ($ROCM_VERSION) — Ollama will use AMD GPU automatically"
+  fi
+  echo ""
+fi
+
+echo "Checking for Ollama (required for local AI)..."
+if ! command -v ollama &> /dev/null; then
+  echo "✗ Ollama not found"
+  read -p "  Install Ollama automatically? (Y/n) " -n 1 -r
+  echo
+  if [[ ! $REPLY =~ ^[Nn]$ ]]; then
+    install_ollama
+    echo ""
+    if [ -n "$AMD_GPU" ] && (command -v rocminfo &> /dev/null || [ -d "/opt/rocm" ]); then
+      echo "🔴 Ollama will use your AMD GPU via ROCm"
+    fi
+    echo "🦙 Pull a model to get started:"
+    echo "  ollama pull llama3"
+  else
+    echo "  Install manually from: https://ollama.com"
+  fi
+else
+  echo "✓ Ollama installed: $(ollama --version 2>/dev/null || echo 'ok')"
+  # List available models
+  MODELS=$(ollama list 2>/dev/null | tail -n +2 | awk '{print $1}' | head -3)
+  if [ -z "$MODELS" ]; then
+    echo "💡 No Ollama models found. Pull one before starting:"
+    echo "  ollama pull llama3"
+  else
+    echo "✓ Available models: $MODELS"
+  fi
+fi
+
+echo ""
 echo "Next steps:"
-echo "  gemini-phone setup    # Configure your installation"
-echo "  gemini-phone start    # Launch services"
+echo "  gemini-phone setup    # Configure API endpoints + SIP credentials"
+echo "  gemini-phone start    # Launch Docker containers"
 echo ""

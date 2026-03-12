@@ -1,239 +1,101 @@
 # Gemini Phone
 
-Voice interface for Gemini CLI via SIP - Call your AI, and your AI can call you.
+Voice interface via SIP — call your local AI, and your AI can call you. **100% private. No cloud APIs required.**
 
 ## What is this?
 
-Gemini Phone gives your Gemini CLI installation a phone number. You can:
+Gemini Phone gives your local AI a phone number through FreePBX:
 
-- **Inbound**: Call an extension and talk to Gemini - run commands, check status, ask questions  
-- **Outbound**: Your server can call YOU with alerts, then have a conversation about what to do
+- **Inbound**: Call an extension and talk to your local AI
+- **Outbound**: Your server calls YOU with alerts, then has a conversation
+
+## How it works
+
+```
+Phone Call → FreePBX → voice-app (Docker)
+                            │
+                ┌───────────┼───────────┐
+                ▼           ▼           ▼
+           Ollama LLM   Local STT   Local TTS
+           (any model) (Whisper.cpp) (Coqui/Piper)
+```
 
 ## Prerequisites
 
-- [FreePBX](https://www.freepbx.org/) or any SIP provider  
-- [ElevenLabs](https://elevenlabs.io/) - Text-to-speech  
-- [OpenAI](https://platform.openai.com/) - Whisper speech-to-text  
-- [Gemini CLI](https://github.com/google-gemini/gemini-cli) - AI backend
+| Component | Software |
+|-----------|----------|
+| PBX | [FreePBX](https://www.freepbx.org/) or any SIP provider |
+| LLM | [Ollama](https://ollama.com/) with any chat model (e.g. `llama3`) |
+| STT | Local Whisper server (e.g. [whisper.cpp](https://github.com/ggerganov/whisper.cpp) server mode) |
+| TTS | Local TTS server (e.g. [Coqui TTS](https://github.com/coqui-ai/TTS), [Piper](https://github.com/rhasspy/piper), or any OpenAI-compatible `/audio/speech` endpoint) |
+| Runtime | Docker + Node.js 18+ |
 
-## Quick Start: Choose Your Agent
+> **No API keys needed.** No data ever leaves your machine.
 
-| **Morpheus (Server A)** | **Trinity (Server B)** |
-|-------------------------|------------------------|
-| Standard Installation   | Manual / Distributed   |
-| Uses Public Images      | Requires Manual Build  |
-
-### Option A: Morpheus (Standard)
-
-The classic all-in-one setup for standard users.
-
-1. **Install**
+## Quick Start
 
 ```bash
-curl -sSL https://raw.githubusercontent.com/jayis1/2fast2dumb2fun/main/install.sh | bash
-```
+# 1. Install
+curl -sSL https://raw.githubusercontent.com/jayis1/claude-phone-but-for-Gemini-and-freepbx/2.1.6/install.sh | bash
 
-1. **Setup & Start**
+# 2. Configure
+gemini-phone setup   # Enter SIP credentials + local AI endpoints
 
-```bash
-gemini-phone setup  # Select "Both"
+# 3. Run
 gemini-phone start
 ```
 
-### Option B: Trinity (Advanced / Distributed)
+## Setup Wizard prompts
 
-For distributed setups (e.g. LXC container 172.16.1.128) where you need a local brain but cannot pull the private image.
-
-**1. Prepare Trinity Node**
-SSH into your Trinity node and install standard tools:
-
-```bash
-apt update && apt install -y docker.io git nodejs npm
-```
-
-**2. Deploy Source Code**
-From your workstation (where you have the code):
-
-```bash
-# Copy API Server source to Trinity
-scp -r gemini-api-server root@<TRINITY_IP>:/root/gemini-phone/
-```
-
-**3. Build & Run on Trinity**
-SSH into Trinity and run:
-
-```bash
-# Build the Brain locally
-cd /root/gemini-phone/gemini-api-server
-docker build -t gemini-phone-cli-api-server .
-
-# Configure Environment (Brain + Body)
-mkdir -p /root/gemini-bot
-echo "GEMINI_API_URL=http://localhost:3333" > /root/gemini-bot/.env
-# Add your API keys from another working node or manual entry
-# echo "OPENAI_API_KEY=sk-..." >> /root/gemini-bot/.env
-
-# Run the Brain
-docker run -d --name gemini-api-server --restart unless-stopped --network host --env-file /root/gemini-bot/.env gemini-phone-cli-api-server
-
-# Run the Body (Voice App)
-# (Assuming voice-app is already deployed via standard means or similar manual run)
-docker restart voice-app
-```
-
-## Deployment Modes
-
-### All-in-One (Single Machine)
-
-**Best for:** Mac or Linux server that's always on and has Gemini CLI installed.
-
-```
-┌─────────────────────────────────────────────────────────────┐
-│  Your Phone                                                  │
-│      │                                                       │
-│      ↓ Call extension 9000                                  │
-│  ┌─────────────┐                                            │
-│  │   FreePBX   │  ← Your PBX                                │
-│  └──────┬──────┘                                            │
-│         │                                                    │
-│         ↓                                                    │
-│  ┌─────────────────────────────────────────────┐           │
-│  │          Single Server (Mac/Linux)           │           │
-│  │  ┌───────────┐    ┌───────────────────┐    │           │
-│  │  │ voice-app │ ←→ │ gemini-api-server │    │           │
-│  │  │ (Docker)  │    │  (Gemini CLI)     │    │           │
-│  │  └───────────┘    └───────────────────┘    │           │
-│  └─────────────────────────────────────────────┘           │
-└─────────────────────────────────────────────────────────────┘
-```
-
-**Setup:**
-
-```bash
-gemini-phone setup  # Select "Both"
-gemini-phone start  # Launches Docker + API server
-```
-
-### Split Mode (Pi + API Server)
-
-**Best for:** Dedicated Pi for voice services, Gemini running on your main machine.
-
-```
-┌─────────────────────────────────────────────────────────────┐
-│  Your Phone                                                  │
-│      │                                                       │
-│      ↓ Call extension 9000                                  │
-│  ┌─────────────┐                                            │
-│  │   FreePBX   │  ← Your PBX                                │
-│  └──────┬──────┘                                            │
-│         │                                                    │
-│         ↓                                                    │
-│  ┌─────────────┐      ┌─────────────────────┐             │
-│  │ Raspberry Pi│ ←──→ │ Mac/Linux with      │             │
-│  │ (voice-app) │ HTTP │ Gemini CLI          │             │
-│  └─────────────┘      │ (gemini-api-server) │             │
-│                        └─────────────────────┘             │
-└─────────────────────────────────────────────────────────────┘
-```
-
-**On your Pi (Voice Server):**
-
-```bash
-gemini-phone setup  # Select "Voice Server", enter API server IP
-gemini-phone start  # Launches Docker containers
-```
-
-**On your Mac/Linux (API Server):**
-
-```bash
-gemini-phone api-server  # Starts Gemini API wrapper on port 3333
-```
+| Prompt | Example |
+|--------|---------|
+| SIP Domain | `172.16.1.33` |
+| Extension | `9001` |
+| SIP Password | `mysecret` |
+| External IP | `192.168.1.100` |
+| Ollama API URL | `http://host.docker.internal:11434` |
+| Ollama Model | `llama3` |
+| Local Whisper URL | `http://host.docker.internal:8080/v1` |
+| Local TTS URL | `http://host.docker.internal:5002/api/tts` |
+| Bot Name | `Trinity` |
+| System Prompt | `You are Trinity...` |
 
 ## CLI Commands
 
 ```bash
-gemini-phone setup        # Interactive configuration wizard
-gemini-phone start        # Start all services
-gemini-phone stop         # Stop all services
-gemini-phone status       # Check service status
-gemini-phone doctor       # Run health checks
-gemini-phone api-server   # Start API server only (standalone)
-gemini-phone config show  # Show current config
+gemini-phone setup    # Interactive configuration
+gemini-phone start    # Launch Docker containers
+gemini-phone stop     # Stop services
+gemini-phone status   # Check status
+gemini-phone doctor   # Health checks
+gemini-phone logs     # Tail logs
 ```
 
-## API Endpoints
+## Local AI Setup Tips
 
-### Voice App (port 3000)
-
-- `POST /api/outbound-call` - Initiate outbound call
-- `GET /api/call/:callId` - Get call status
-- `GET /api/calls` - List active calls
-- `POST /api/query` - Query Gemini programmatically
-- `GET /api/devices` - List configured extensions
-
-### Gemini API Server (port 3333)
-
-- `POST /ask` - Send prompt to Gemini
-- `POST /ask-structured` - Send prompt, return JSON
-- `POST /end-session` - Clean up session
-- `GET /health` - Health check
-
-## Troubleshooting
-
-### Quick Diagnostics
-
+### Ollama
 ```bash
-gemini-phone doctor  # Runs all checks
-gemini-phone status  # Service status
+ollama pull llama3
+ollama serve   # Already runs on :11434 by default
 ```
 
-### Common Issues
-
-**Voice app won't start:**
-
-- Check Docker is running: `docker ps`
-- Check ports 3000, 3001 available
-- View logs: `docker logs voice-app`
-
-**Bot won't register:**
-
-- Check SIP credentials in config
-- Verify PBX IP/hostname reachable
-- Check firewall allows UDP 5060
-
-**No audio in calls:**
-
-- Verify EXTERNAL_IP set correctly
-- Check RTP ports (30000-30100) open
-- Confirm ElevenLabs/OpenAI keys valid
-
-## Configuration
-
-Config stored in: `~/.config/gemini-phone/config.json`
-
-View with: `gemini-phone config show`
-
-## Development
-
+### Whisper.cpp (STT)
 ```bash
-git clone https://github.com/jayis1/2fast2dumb2fun.git
-cd 2fast2dumb2fun
-npm install
-npm run dev
+./server -m models/ggml-base.bin --port 8080
 ```
+The voice app will POST audio to `/audio/transcriptions` (OpenAI-compatible format).
+
+### Coqui TTS
+```bash
+tts-server --model_name tts_models/en/ljspeech/vits --port 5002
+```
+The voice app will POST `{"text": "..."}` to the URL you configured.
+
+Or use any OpenAI-compatible TTS endpoint by setting the URL to end with `/audio/speech`.
 
 ## Documentation
 
-- [CLI README](cli/README.md) - Command reference
-- [Voice App Deployment](voice-app/DEPLOYMENT.md) - Production guide
-- [Outbound Calling API](voice-app/README-OUTBOUND.md) - API docs
-
-## License
-
-MIT
-
-## About
-
-Gemini Phone is inspired by [NetworkChuck's claude-phone](https://github.com/theNetworkChuck/claude-phone).
-
-Talk to your AI. Have your AI call you. It's that simple.
+- [cli/README.md](cli/README.md) - CLI reference
+- [docs/TROUBLESHOOTING.md](docs/TROUBLESHOOTING.md) - Common issues
+- [voice-app/DEPLOYMENT.md](voice-app/DEPLOYMENT.md) - Production deployment
+- [voice-app/README-OUTBOUND.md](voice-app/README-OUTBOUND.md) - Outbound call API

@@ -6,13 +6,7 @@ import { stopCommand } from '../lib/commands/stop.js';
 import { statusCommand } from '../lib/commands/status.js';
 import { doctorCommand } from '../lib/commands/doctor.js';
 import { provisionCommand } from '../lib/commands/provision.js';
-import { provisionExtension } from '../lib/commands/provision-extension.js';
-import { autoProvisionCommand } from '../lib/commands/auto-provision-freepbx.js';
-import { provisionStatusCommand } from '../lib/commands/provision-status.js';
-import { apiServerCommand } from '../lib/commands/api-server.js';
-import { deviceAddCommand } from '../lib/commands/device/add.js';
-import { deviceListCommand } from '../lib/commands/device/list.js';
-import { deviceRemoveCommand } from '../lib/commands/device/remove.js';
+
 import { logsCommand } from '../lib/commands/logs.js';
 import { setConfig } from '../lib/commands/config/set.js';
 import { configShowCommand } from '../lib/commands/config/show.js';
@@ -104,58 +98,7 @@ program
     }
   });
 
-program
-  .command('auto-provision')
-  .description('Automatically provision complete FreePBX setup (extensions, IVR, trunk)')
-  .option('--non-interactive', 'Run without prompts (use config file)')
-  .option('--trunk-number <number>', 'SIP trunk number')
-  .option('--trunk-password <password>', 'SIP trunk password')
-  .option('--trunk-server <server>', 'SIP trunk server (default: voice.redspot.dk)')
-  .action(async (options) => {
-    try {
-      await autoProvisionCommand(options);
-    } catch (error) {
-      console.error(chalk.red(`\n✗ Auto-provisioning failed: ${error.message}\n`));
-      process.exit(1);
-    }
-  });
 
-program
-  .command('provision-status')
-  .description('Show FreePBX provisioning status (extensions, IVR, trunk, routes)')
-  .action(async () => {
-    try {
-      await provisionStatusCommand();
-    } catch (error) {
-      console.error(chalk.red(`\n✗ Status check failed: ${error.message}\n`));
-      process.exit(1);
-    }
-  });
-
-program
-  .command('provision-ivr')
-  .description('Provision enhanced IVR features (queues, time conditions, announcements)')
-  .action(async () => {
-    try {
-      const { provisionEnhancedIVR } = await import('../mysql-provisioner/provision-enhanced-ivr.js');
-      await provisionEnhancedIVR();
-    } catch (error) {
-      console.error(chalk.red(`\n✗ IVR provisioning failed: ${error.message}\n`));
-      process.exit(1);
-    }
-  });
-
-program
-  .command('provision-extension')
-  .description('Self-provision this bot\'s extension on FreePBX (run on each bot LXC)')
-  .action(async () => {
-    try {
-      await provisionExtension();
-    } catch (error) {
-      console.error(chalk.red(`\n✗ Extension provisioning failed: ${error.message}\n`));
-      process.exit(1);
-    }
-  });
 
 program
   .command('api-server')
@@ -175,46 +118,7 @@ program
     }
   });
 
-// Device management subcommands
-const device = program
-  .command('device')
-  .description('Manage SIP devices');
 
-device
-  .command('add')
-  .description('Add a new device')
-  .action(async () => {
-    try {
-      await deviceAddCommand();
-    } catch (error) {
-      console.error(chalk.red(`\n✗ Device add failed: ${error.message}\n`));
-      process.exit(1);
-    }
-  });
-
-device
-  .command('list')
-  .description('List all configured devices')
-  .action(async () => {
-    try {
-      await deviceListCommand();
-    } catch (error) {
-      console.error(chalk.red(`\n✗ Device list failed: ${error.message}\n`));
-      process.exit(1);
-    }
-  });
-
-device
-  .command('remove <name>')
-  .description('Remove a device by name')
-  .action(async (name) => {
-    try {
-      await deviceRemoveCommand(name);
-    } catch (error) {
-      console.error(chalk.red(`\n✗ Device remove failed: ${error.message}\n`));
-      process.exit(1);
-    }
-  });
 
 program
   .command('logs [service]')

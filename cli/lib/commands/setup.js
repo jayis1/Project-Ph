@@ -28,145 +28,112 @@ export async function setupCommand() {
     }
   }
 
-  // Ask what to install
-  const { installMode } = await inquirer.prompt([
+  // Always act as voice server now
+  const installMode = 'voice';
+  const config = { installMode };
+
+  // Detect if running on FreePBX server
+  const { onFreePbxServer } = await inquirer.prompt([
     {
-      type: 'list',
-      name: 'installMode',
-      message: 'What would you like to install?',
-      choices: [
-        { name: 'Both (Voice Server + API Server on same machine)', value: 'both' },
-        { name: 'Voice Server Only (connects to remote API server)', value: 'voice' },
-        { name: 'API Server Only (Gemini CLI wrapper)', value: 'api' }
-      ],
-      default: existingConfig.installMode || 'both'
+      type: 'confirm',
+      name: 'onFreePbxServer',
+      message: 'Is this being installed ON the FreePBX server itself?',
+      default: existingConfig.onFreePbxServer !== undefined ? existingConfig.onFreePbxServer : true
+    }
+  ]);
+  config.onFreePbxServer = onFreePbxServer;
+
+  // When co-hosted: drachtio must use port 5070 (5060 is taken by FreePBX)
+  // When co-hosted: local AI services are on 127.0.0.1 (host networking — host.docker.internal not available on Linux)
+  const drachtioPort = onFreePbxServer ? 5070 : 5060;
+  const localAiHost = onFreePbxServer ? '127.0.0.1' : 'host.docker.internal';
+
+  if (onFreePbxServer) {
+    console.log(chalk.yellow('\n⚠️  Co-hosted mode: drachtio will use port 5070 (to avoid conflict with FreePBX on 5060)'));
+    console.log(chalk.yellow('   Make sure FreePBX routes calls to SIP trunk/extension pointing at port 5070.\n'));
+  }
+
+  console.log(chalk.cyan('\n📞 Voice Server Configuration\n'));
+
+  const voiceConfig = await inquirer.prompt([
+    {
+      type: 'input',
+      name: 'sipDomain',
+      message: 'SIP Domain/Server IP:',
+      default: existingConfig.sipDomain || (onFreePbxServer ? '127.0.0.1' : '192.168.1.100'),
+      validate: (input) => input.trim() !== '' || 'SIP domain is required'
+    },
+    {
+      type: 'input',
+      name: 'sipExtension',
+      message: 'Extension number:',
+      default: existingConfig.sipExtension || '9001',
+      validate: (input) => /^\d+$/.test(input) || 'Must be a number'
+    },
+    {
+      type: 'password',
+      name: 'sipPassword',
+      message: 'SIP Password:',
+      default: existingConfig.sipPassword || '',
+      validate: (input) => input.trim() !== '' || 'Password is required'
+    },
+    {
+      type: 'input',
+      name: 'externalIp',
+      message: 'External IP (for RTP):',
+      default: existingConfig.externalIp || '',
+      validate: (input) => /^\d+\.\d+\.\d+\.\d+$/.test(input) || 'Must be valid IP address'
+    }
+  ]);
+  Object.assign(config, voiceConfig);
+  const localConfig = await inquirer.prompt([
+    {
+      type: 'input',
+      name: 'ollamaApiUrl',
+      message: 'Ollama API URL:',
+      default: existingConfig.ollamaApiUrl || `http://${localAiHost}:11434`,
+    },
+    {
+      type: 'input',
+      name: 'ollamaModel',
+      message: 'Ollama Model:',
+      default: existingConfig.ollamaModel || 'llama3',
+    },
+    {
+      type: 'input',
+      name: 'localSttUrl',
+      message: 'Local Whisper API URL:',
+      default: existingConfig.localSttUrl || `http://${localAiHost}:8080/v1`,
+    },
+    {
+      type: 'input',
+      name: 'localTtsUrl',
+      message: 'Local TTS API URL:',
+      default: existingConfig.localTtsUrl || `http://${localAiHost}:5002/api/tts`,
+    }
+  ]);
+  Object.assign(config, localConfig);
+
+  // AI Personality
+  console.log(chalk.cyan('\n🎭 AI Personality\n'));
+
+  const { botName, botPrompt } = await inquirer.prompt([
+    {
+      type: 'input',
+      name: 'botName',
+      message: 'Bot name:',
+      default: existingConfig.botName || 'Gemini',
+    },
+    {
+      type: 'input',
+      name: 'botPrompt',
+      message: 'System prompt:',
+      default: existingConfig.botPrompt || 'You are a helpful AI assistant. Be concise and direct. Keep responses under 40 words.',
     }
   ]);
 
-  const config = { installMode };
-
-  // Voice server configuration
-  if (installMode === 'both' || installMode === 'voice') {
-    console.log(chalk.cyan('\n📞 Voice Server Configuration\n'));
-
-    const voiceConfig = await inquirer.prompt([
-      {
-        type: 'input',
-        name: 'sipDomain',
-        message: 'SIP Domain/Server IP:',
-        default: existingConfig.sipDomain || '172.16.1.33',
-        validate: (input) => input.trim() !== '' || 'SIP domain is required'
-      },
-      {
-        type: 'input',
-        name: 'sipExtension',
-        message: 'Extension number:',
-        default: existingConfig.sipExtension || '9000',
-        validate: (input) => /^\d+$/.test(input) || 'Must be a number'
-      },
-      {
-        type: 'password',
-        name: 'sipPassword',
-        message: 'SIP Password:',
-        default: existingConfig.sipPassword || '',
-        validate: (input) => input.trim() !== '' || 'Password is required'
-      },
-      {
-        type: 'input',
-        name: 'externalIp',
-        message: 'External IP (for RTP):',
-        default: existingConfig.externalIp || '',
-        validate: (input) => /^\d+\.\d+\.\d+\.\d+$/.test(input) || 'Must be valid IP address'
-      },
-      {
-        type: 'password',
-        name: 'elevenlabsKey',
-        message: 'ElevenLabs API Key:',
-        default: existingConfig.elevenlabsKey || '',
-        validate: (input) => input.trim() !== '' || 'API key is required'
-      },
-      {
-        type: 'password',
-        name: 'openaiKey',
-        message: 'OpenAI API Key:',
-        default: existingConfig.openaiKey || '',
-        validate: (input) => input.trim() !== '' || 'API key is required'
-      },
-      {
-        type: 'password',
-        name: 'geminiKey',
-        message: 'Google Gemini API Key:',
-        default: existingConfig.geminiKey || '',
-        validate: (input) => input.trim() !== '' || 'API key is required'
-      }
-    ]);
-
-    Object.assign(config, voiceConfig);
-  }
-
-  // API server configuration
-  if (installMode === 'both' || installMode === 'api') {
-    console.log(chalk.cyan('\n🤖 API Server Configuration\n'));
-
-    // Ask for Gemini API URL or default to localhost
-    const apiConfig = await inquirer.prompt([
-      {
-        type: 'input',
-        name: 'geminiApiUrl',
-        message: 'Gemini API URL:',
-        default: existingConfig.geminiApiUrl || 'http://localhost:3333',
-        when: installMode === 'voice'
-      }
-    ]);
-
-    if (installMode === 'both') {
-      config.geminiApiUrl = 'http://localhost:3333';
-    } else if (apiConfig.geminiApiUrl) {
-      config.geminiApiUrl = apiConfig.geminiApiUrl;
-    }
-
-    // Ask for N8N Webhook URL
-    const { n8nWebhookUrl } = await inquirer.prompt([
-      {
-        type: 'input',
-        name: 'n8nWebhookUrl',
-        message: 'N8N Webhook URL (optional):',
-        default: existingConfig.n8nWebhookUrl || '',
-      }
-    ]);
-
-    config.n8nWebhookUrl = n8nWebhookUrl;
-  }
-
-  // Voice profile
-  if (installMode === 'both' || installMode === 'voice') {
-    console.log(chalk.cyan('\n🎭 AI Personality\n'));
-
-    const { botName, botPrompt, voiceId } = await inquirer.prompt([
-      {
-        type: 'input',
-        name: 'botName',
-        message: 'Bot name:',
-        default: existingConfig.botName || 'Gemini',
-      },
-      {
-        type: 'input',
-        name: 'botPrompt',
-        message: 'System prompt:',
-        default: existingConfig.botPrompt || 'You are a helpful AI assistant. Be concise and friendly.',
-      },
-      {
-        type: 'input',
-        name: 'voiceId',
-        message: 'ElevenLabs Voice ID:',
-        default: existingConfig.voiceId || 'EXAVITQu4vr4xnSDxMaL',
-      }
-    ]);
-
-    config.botName = botName;
-    config.botPrompt = botPrompt;
-    config.voiceId = voiceId;
-  }
+  config.botName = botName;
+  config.botPrompt = botPrompt;
 
   // Save configuration
   try {
@@ -174,9 +141,7 @@ export async function setupCommand() {
     console.log(chalk.green(`\n✅ Configuration saved to: ${CONFIG_FILE}\n`));
 
     // Create devices.json
-    if (installMode === 'both' || installMode === 'voice') {
-      createDevicesFile(config);
-    }
+    createDevicesFile(config);
 
     // Generate Docker configuration (docker-compose.yml and .env)
     // We need to map the flat config to the structure expected by writeDockerConfig
@@ -197,26 +162,27 @@ export async function setupCommand() {
         registrar: config.sipDomain,
       },
       api: {
-        gemini: { apiKey: config.geminiKey },
-        elevenlabs: { apiKey: config.elevenlabsKey },
-        openai: { apiKey: config.openaiKey },
-        n8n: { webhookUrl: config.n8nWebhookUrl },
+        provider: 'local',
+        ollama: {
+          apiUrl: config.ollamaApiUrl || '',
+          model: config.ollamaModel || ''
+        },
+        localSttUrl: config.localSttUrl || '',
+        localTtsUrl: config.localTtsUrl || '',
       },
       devices: [{
         extension: config.sipExtension,
         authId: config.sipExtension,
         password: config.sipPassword,
-        voiceId: config.voiceId,
       }],
       deployment: {
-        mode: installMode
+        mode: installMode,
+        pi: { drachtioPort }
       }
     };
 
-    if (installMode === 'both' || installMode === 'voice' || installMode === 'api') {
-      await writeDockerConfig(mappedConfig);
-      console.log(chalk.green(`✅ Generated docker-compose.yml and .env`));
-    }
+    await writeDockerConfig(mappedConfig);
+    console.log(chalk.green(`✅ Generated docker-compose.yml and .env`));
 
     console.log(chalk.cyan('Next steps:'));
     console.log(chalk.white(`  gemini-phone start    ${chalk.gray('# Launch services')}`));
@@ -239,8 +205,7 @@ function createDevicesFile(config) {
       authId: config.sipExtension,
       password: config.sipPassword,
       name: config.botName,
-      prompt: config.botPrompt,
-      voiceId: config.voiceId
+      prompt: config.botPrompt
     }
   };
 
