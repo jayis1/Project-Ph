@@ -36,7 +36,7 @@ Phone Call → FreePBX → voice-app (Docker)
 
 ```bash
 # 1. Install
-curl -sSL https://raw.githubusercontent.com/jayis1/claude-phone-but-for-Gemini-and-freepbx/2.1.6/install.sh | bash
+curl -sSL https://raw.githubusercontent.com/jayis1/Project-Ph/main/install.sh | bash
 
 # 2. Configure
 gemini-phone setup   # Enter SIP credentials + local AI endpoints
