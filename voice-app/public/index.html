@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -17,7 +18,7 @@
             --error: #ef4444;
             --border: rgba(255, 255, 255, 0.1);
         }
-        
+
         * {
             box-sizing: border-box;
             margin: 0;
@@ -29,7 +30,7 @@
             background: var(--bg-base);
             color: var(--text-primary);
             min-height: 100vh;
-            background-image: 
+            background-image:
                 radial-gradient(circle at 15% 50%, rgba(59, 130, 246, 0.15) 0%, transparent 50%),
                 radial-gradient(circle at 85% 30%, rgba(139, 92, 246, 0.15) 0%, transparent 50%);
         }
@@ -78,7 +79,7 @@
 
         .card:hover {
             transform: translateY(-5px);
-            box-shadow: 0 10px 30px -10px rgba(0,0,0,0.5);
+            box-shadow: 0 10px 30px -10px rgba(0, 0, 0, 0.5);
             border-color: rgba(255, 255, 255, 0.2);
         }
 
@@ -97,8 +98,16 @@
             border-radius: 50%;
             display: inline-block;
         }
-        .status-indicator.connected { background: var(--success); box-shadow: 0 0 10px var(--success); }
-        .status-indicator.disconnected { background: var(--error); box-shadow: 0 0 10px var(--error); }
+
+        .status-indicator.connected {
+            background: var(--success);
+            box-shadow: 0 0 10px var(--success);
+        }
+
+        .status-indicator.disconnected {
+            background: var(--error);
+            box-shadow: 0 0 10px var(--error);
+        }
 
         .stat-row {
             display: flex;
@@ -106,6 +115,7 @@
             padding: 0.75rem 0;
             border-bottom: 1px solid var(--border);
         }
+
         .stat-row:last-child {
             border-bottom: none;
         }
@@ -118,7 +128,9 @@
             font-size: 0.85rem;
         }
 
-        input, select, textarea {
+        input,
+        select,
+        textarea {
             width: 100%;
             padding: 0.75rem 1rem;
             margin-bottom: 1rem;
@@ -130,7 +142,9 @@
             transition: all 0.2s;
         }
 
-        input:focus, select:focus, textarea:focus {
+        input:focus,
+        select:focus,
+        textarea:focus {
             outline: none;
             border-color: var(--accent);
             box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.2);
@@ -154,7 +168,7 @@
         }
 
         .badge {
-            background: rgba(255,255,255,0.1);
+            background: rgba(255, 255, 255, 0.1);
             padding: 1rem;
             border-radius: 8px;
             margin-bottom: 0.5rem;
@@ -172,11 +186,21 @@
             border-radius: 8px;
             display: none;
         }
-        .result-success { background: rgba(16, 185, 129, 0.2); color: #6ee7b7; border: 1px solid var(--success); }
-        .result-error { background: rgba(239, 68, 68, 0.2); color: #fca5a5; border: 1px solid var(--error); }
 
+        .result-success {
+            background: rgba(16, 185, 129, 0.2);
+            color: #6ee7b7;
+            border: 1px solid var(--success);
+        }
+
+        .result-error {
+            background: rgba(239, 68, 68, 0.2);
+            color: #fca5a5;
+            border: 1px solid var(--error);
+        }
     </style>
 </head>
+
 <body>
     <div class="container">
         <header>
@@ -213,16 +237,18 @@
                     <select id="deviceSelect" required>
                         <option value="">Loading Devices...</option>
                     </select>
-                    <textarea id="callContext" rows="3" placeholder="Context for AI (e.g. 'Tell them their server is down')" required></textarea>
+                    <textarea id="callContext" rows="3"
+                        placeholder="Context for AI (e.g. 'Tell them their server is down')" required></textarea>
                     <button type="submit" id="callBtn">Initiate Call</button>
                     <div id="outboundResult"></div>
                 </form>
             </div>
-            
+
             <!-- Devices List Card -->
             <div class="card" style="grid-column: 1 / -1;">
                 <div class="card-header">Active Devices / Extensions</div>
-                <div id="devicesList" class="grid" style="grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 1rem;">
+                <div id="devicesList" class="grid"
+                    style="grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 1rem;">
                     <!-- Devices injected here -->
                     <div class="text-secondary">Loading...</div>
                 </div>
@@ -236,13 +262,13 @@
             try {
                 const res = await fetch('/api/sip-status');
                 const data = await res.json();
-                
-                document.getElementById('overallStatus').className = 
+
+                document.getElementById('overallStatus').className =
                     'status-indicator ' + (data.isReady ? 'connected' : 'disconnected');
-                
+
                 document.getElementById('drachtioStatus').textContent = data.drachtioConnected ? 'Connected' : 'Disconnected';
                 document.getElementById('drachtioStatus').style.color = data.drachtioConnected ? '#93c5fd' : '#fca5a5';
-                
+
                 document.getElementById('freeswitchStatus').textContent = data.freeswitchConnected ? 'Connected' : 'Disconnected';
                 document.getElementById('freeswitchStatus').style.color = data.freeswitchConnected ? '#93c5fd' : '#fca5a5';
 
@@ -256,10 +282,10 @@
             try {
                 const res = await fetch('/api/devices');
                 const data = await res.json();
-                
+
                 const select = document.getElementById('deviceSelect');
                 const list = document.getElementById('devicesList');
-                
+
                 select.innerHTML = '';
                 list.innerHTML = '';
 
@@ -294,7 +320,7 @@
             e.preventDefault();
             const btn = document.getElementById('callBtn');
             const resultDiv = document.getElementById('outboundResult');
-            
+
             btn.classList.add('loading');
             btn.textContent = 'Initiating...';
             resultDiv.style.display = 'none';
@@ -306,13 +332,14 @@
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
                         to: document.getElementById('targetNumber').value,
-                        extension: document.getElementById('deviceSelect').value,
-                        context: document.getElementById('callContext').value
+                        message: document.getElementById('callContext').value,
+                        device: document.getElementById('deviceSelect').value,
+                        mode: 'conversation'
                     })
                 });
 
                 const data = await res.json();
-                
+
                 resultDiv.style.display = 'block';
                 if (res.ok && data.success) {
                     resultDiv.textContent = 'Success: Call initiated to ' + data.to + ' as ' + data.callerId;
@@ -339,4 +366,5 @@
         setInterval(fetchStatus, 5000);
     </script>
 </body>
+
 </html>
