@@ -12,37 +12,48 @@ function startMissionControl(port = 3030, apiPort = 3000) {
         res.sendFile(path.join(__dirname, '..', 'public', 'index.html'));
     });
 
-    // Simple proxy for /api requests to bypass CORS
+    // Proxy /api requests to the main voice-app API server
     app.use('/api', (req, res) => {
-        const options = {
-            hostname: '127.0.0.1',
-            port: apiPort,
-            path: '/api' + req.url,
-            method: req.method,
-            headers: req.headers
-        };
+        // Buffer the incoming body first
+        const chunks = [];
+        req.on('data', (chunk) => chunks.push(chunk));
+        req.on('end', () => {
+            const body = Buffer.concat(chunks);
 
-        // Remove host header to avoid resolution issues
-        delete options.headers.host;
+            const options = {
+                hostname: '127.0.0.1',
+                port: apiPort,
+                path: '/api' + req.url,
+                method: req.method,
+                headers: {
+                    'content-type': req.headers['content-type'] || 'application/json',
+                    'content-length': body.length
+                }
+            };
 
-        const proxyReq = http.request(options, (proxyRes) => {
-            res.writeHead(proxyRes.statusCode, proxyRes.headers);
-            proxyRes.pipe(res, { end: true });
+            const proxyReq = http.request(options, (proxyRes) => {
+                res.writeHead(proxyRes.statusCode, proxyRes.headers);
+                proxyRes.pipe(res, { end: true });
+            });
+
+            proxyReq.on('error', (err) => {
+                console.error('[MISSION CONTROL] Proxy error:', err.message);
+                if (!res.headersSent) {
+                    res.status(502).json({ error: 'Proxy error', details: err.message });
+                }
+            });
+
+            proxyReq.write(body);
+            proxyReq.end();
         });
-
-        proxyReq.on('error', (err) => {
-            console.error('[MISSION CONTROL] Proxy error:', err.message);
-            res.status(500).json({ error: 'Proxy error', details: err.message });
-        });
-
-        req.pipe(proxyReq, { end: true });
     });
 
     const server = app.listen(port, () => {
-        console.log(`[${new Date().toISOString()}] MISSION CONTROL Server started on port ${port}`);
+        console.log(`[${new Date().toISOString()}] MISSION CONTROL Dashboard: http://localhost:${port}`);
     });
 
     return { app, server, close: () => server.close() };
 }
 
 module.exports = { startMissionControl };
+
