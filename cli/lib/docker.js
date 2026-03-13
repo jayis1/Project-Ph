@@ -141,7 +141,9 @@ services:
       - EXTERNAL_IP=${externalIp}
 
   voice-app:
-    build: ${config.paths.voiceApp}
+    build: 
+      context: ${config.paths.voiceApp}
+      network: host
     container_name: voice-app
     restart: unless-stopped
     network_mode: host
