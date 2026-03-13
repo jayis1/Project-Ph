@@ -78,7 +78,7 @@ async function transcribe(audioBuffer, options = {}) {
         response = await axios.post(
           lintoUrl,
           form2,
-          { headers: fallbackHeaders, timeout: 60000, maxContentLength: Infinity, maxBodyLength: Infinity }
+          { headers: fallbackHeaders, timeout: 120000, maxContentLength: Infinity, maxBodyLength: Infinity }
         );
       } else {
         throw apiError;
