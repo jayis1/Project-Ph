@@ -7,8 +7,8 @@ echo "Setting up AI Phone Routing in FreePBX..."
 mysql -u root asterisk << 'SQL'
 DELETE FROM users WHERE extension = '9001';
 DELETE FROM devices WHERE id = '9001';
-DELETE FROM pjsip WHERE id = '9001' OR id = 'to_ai_phone';
-DELETE FROM trunks WHERE trunkid = 9001 OR channelid = 'to_ai_phone';
+DELETE FROM pjsip WHERE id = '9001' OR id = 'ai_phone_trunk';
+DELETE FROM trunks WHERE trunkid = 9001 OR channelid = 'ai_phone_trunk';
 DELETE FROM incoming WHERE destination LIKE '%9001%';
 FLUSH PRIVILEGES;
 SQL
@@ -36,23 +36,23 @@ SQL
 mysql -u root asterisk << 'SQL'
 INSERT IGNORE INTO trunks (trunkid, name, tech, outcid, keepcid, maxchans, failscript, dialoutprefix, channelid, usercontext, provider, disabled, `continue`)
 VALUES
-(9001, 'ai_phone_trunk', 'pjsip', '', 'off', '', '', '', 'to_ai_phone', '', '', 'off', 'off');
+(9001, 'ai_phone_trunk', 'pjsip', '', 'off', '', '', '', 'ai_phone_trunk', '', '', 'off', 'off');
 
-INSERT IGNORE INTO pjsip (id, keyword, data, flags) VALUES ('to_ai_phone', 'endpoint', 'to_ai_phone', 24);
+INSERT IGNORE INTO pjsip (id, keyword, data, flags) VALUES ('ai_phone_trunk', 'endpoint', 'ai_phone_trunk', 24);
 INSERT IGNORE INTO pjsip (id, keyword, data, flags) VALUES 
-('to_ai_phone', 'context', 'from-internal', 0),
-('to_ai_phone', 'disallow', 'all', 0),
-('to_ai_phone', 'allow', 'ulaw,alaw', 0),
-('to_ai_phone', 'aors', 'to_ai_phone', 0),
-('to_ai_phone', 'sipdriver', 'chan_pjsip', 0),
-('to_ai_phone', 'direct_media', 'no', 0),
-('to_ai_phone', 'force_rport', 'yes', 0),
-('to_ai_phone', 'rewrite_contact', 'yes', 0),
-('to_ai_phone', 'rtp_symmetric', 'yes', 0),
-('to_ai_phone', 'trunk_name', 'ai_phone_trunk', 0);
+('ai_phone_trunk', 'context', 'from-internal', 0),
+('ai_phone_trunk', 'disallow', 'all', 0),
+('ai_phone_trunk', 'allow', 'ulaw,alaw', 0),
+('ai_phone_trunk', 'aors', 'ai_phone_trunk', 0),
+('ai_phone_trunk', 'sipdriver', 'chan_pjsip', 0),
+('ai_phone_trunk', 'direct_media', 'no', 0),
+('ai_phone_trunk', 'force_rport', 'yes', 0),
+('ai_phone_trunk', 'rewrite_contact', 'yes', 0),
+('ai_phone_trunk', 'rtp_symmetric', 'yes', 0),
+('ai_phone_trunk', 'trunk_name', 'ai_phone_trunk', 0);
 
-INSERT IGNORE INTO pjsip (id, keyword, data, flags) VALUES ('to_ai_phone', 'aor', 'to_ai_phone', 24);
-INSERT IGNORE INTO pjsip (id, keyword, data, flags) VALUES ('to_ai_phone', 'contact', 'sip:127.0.0.1:5070', 0);
+INSERT IGNORE INTO pjsip (id, keyword, data, flags) VALUES ('ai_phone_trunk', 'aor', 'ai_phone_trunk', 24);
+INSERT IGNORE INTO pjsip (id, keyword, data, flags) VALUES ('ai_phone_trunk', 'contact', 'sip:127.0.0.1:5070', 0);
 SQL
 
 # 3. Create the Inbound Route back to AI (Catch-all for the Trunk or Dialplan)
@@ -85,7 +85,7 @@ SQL
 cat << 'DIALPLAN' >> /etc/asterisk/extensions_custom.conf
 
 [from-internal-custom]
-exten => 9001,1,Dial(PJSIP/9001@to_ai_phone,30,r)
+exten => 9001,1,Dial(PJSIP/9001@ai_phone_trunk,30,r)
 exten => 9001,n,Hangup()
 DIALPLAN
 
