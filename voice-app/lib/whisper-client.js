@@ -50,9 +50,11 @@ async function transcribe(audioBuffer, options = {}) {
     const createForm = () => {
       const f = new FormData();
       f.append('file', fs.createReadStream(tempFile), { filename: 'audio.wav', contentType: 'audio/wav' });
-      f.append('model', 'whisper-base');
-      f.append('language', language);
-      f.append('response_format', 'text');
+      f.append('model', process.env.WHISPER_MODEL || 'whisper-1');
+      if (language) {
+        f.append('language', language);
+      }
+      f.append('response_format', 'json');
       return f;
     };
 
