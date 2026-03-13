@@ -459,7 +459,7 @@ async function runConversationLoop(endpoint, dialog, callUuid, options) {
     try {
       if (session) session.setCaptureEnabled(false);
       if (callActive) {
-        const errUrl = await ttsService.generateSpeech("Sorry, something went wrong.", voiceId);
+        const errUrl = await ttsService.generateSpeech("System error. I can't process this fast enough.", voiceId);
         await endpoint.play(errUrl);
       }
     } catch (e) {
