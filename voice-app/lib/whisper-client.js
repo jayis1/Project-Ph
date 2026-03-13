@@ -66,22 +66,36 @@ async function transcribe(audioBuffer, options = {}) {
         // Fallback to Linto STT engine format
         const lintoUrl = LOCAL_STT_URL.replace(/\/v1\/?$/, '') + '/transcribe';
         console.log(`[${timestamp}] WHISPER Retry with Linto API: ${lintoUrl}`);
+
+        const fallbackHeaders = form.getHeaders();
+        fallbackHeaders['Accept'] = 'application/json';
+
         response = await axios.post(
           lintoUrl,
           form,
-          { headers: form.getHeaders(), timeout: 30000, maxContentLength: Infinity, maxBodyLength: Infinity }
+          { headers: fallbackHeaders, timeout: 60000, maxContentLength: Infinity, maxBodyLength: Infinity }
         );
       } else {
         throw apiError;
       }
     }
 
-    const text = typeof response.data === 'string' ? response.data.trim() : (response.data.text || '').trim();
+    let text = '';
+    if (typeof response.data === 'string') {
+      text = response.data.trim();
+    } else if (response.data.text) {
+      text = response.data.text.trim();
+    } else if (response.data.transcripts && response.data.transcripts.length > 0) {
+      // Linto STT response format
+      text = response.data.transcripts[0].text.trim();
+    }
+
     console.log(`[${timestamp}] WHISPER Transcribed: "${text.substring(0, 80)}${text.length > 80 ? '...' : ''}"`);
     return text;
 
   } catch (error) {
     console.error(`[${timestamp}] WHISPER Error: ${error.message}`);
+    if (error.response) console.error(`[${timestamp}] WHISPER API Error: ${JSON.stringify(error.response.data)}`);
     throw error;
   } finally {
     if (fs.existsSync(tempFile)) {
