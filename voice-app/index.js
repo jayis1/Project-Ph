@@ -257,6 +257,14 @@ function initializeServers() {
   });
   console.log("[" + new Date().toISOString() + "] SIP STATUS API enabled (/api/sip-status)");
 
+  // Start Mission Control
+  try {
+    const { startMissionControl } = require("./lib/mission-control");
+    startMissionControl(3030);
+  } catch (err) {
+    console.error("Failed to start mission control:", err.message);
+  }
+
   // Finalize HTTP server
   httpServer.finalize();
 

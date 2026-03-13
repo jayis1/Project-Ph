@@ -30,7 +30,7 @@ class AudioForkSession extends EventEmitter {
     callUuid,
     sampleRate = 16000,
     endSilenceMs = 1500,
-    minSpeechMs = 350,
+    minSpeechMs = 150,
     maxUtteranceMs = 60000
   }) {
     super();
@@ -215,7 +215,7 @@ class AudioForkSession extends EventEmitter {
     const now = Date.now();
     if (this._binaryCount % 50 === 1 || now - this._lastLogTime > 5000) {
       const stats = pcmStats(data, this._pcmEndian || 'LE');
-      console.log('[AUDIO-DEBUG] Binary chunk #' + this._binaryCount + ': ' + data.length + ' bytes, RMS=' + Math.round(stats.rms) + ', max=' + stats.maxAbs + ', nearZero=' + (stats.nearZeroRatio*100).toFixed(1) + '%, captureEnabled=' + this.captureEnabled);
+      console.log('[AUDIO-DEBUG] Binary chunk #' + this._binaryCount + ': ' + data.length + ' bytes, RMS=' + Math.round(stats.rms) + ', max=' + stats.maxAbs + ', nearZero=' + (stats.nearZeroRatio * 100).toFixed(1) + '%, captureEnabled=' + this.captureEnabled);
       this._lastLogTime = now;
     }
 

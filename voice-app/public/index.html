@@ -1,0 +1,342 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Phone Mission Control</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-base: #0f172a;
+            --bg-surface: rgba(30, 41, 59, 0.7);
+            --text-primary: #f8fafc;
+            --text-secondary: #94a3b8;
+            --accent: #3b82f6;
+            --accent-hover: #60a5fa;
+            --success: #10b981;
+            --error: #ef4444;
+            --border: rgba(255, 255, 255, 0.1);
+        }
+        
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background: var(--bg-base);
+            color: var(--text-primary);
+            min-height: 100vh;
+            background-image: 
+                radial-gradient(circle at 15% 50%, rgba(59, 130, 246, 0.15) 0%, transparent 50%),
+                radial-gradient(circle at 85% 30%, rgba(139, 92, 246, 0.15) 0%, transparent 50%);
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 2rem;
+        }
+
+        header {
+            margin-bottom: 3rem;
+            text-align: left;
+            border-bottom: 1px solid var(--border);
+            padding-bottom: 1.5rem;
+        }
+
+        h1 {
+            font-size: 2.5rem;
+            font-weight: 700;
+            background: linear-gradient(135deg, #60a5fa, #a78bfa);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 0.5rem;
+        }
+
+        header p {
+            color: var(--text-secondary);
+        }
+
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+            gap: 2rem;
+        }
+
+        .card {
+            background: var(--bg-surface);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            padding: 1.5rem;
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+
+        .card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 30px -10px rgba(0,0,0,0.5);
+            border-color: rgba(255, 255, 255, 0.2);
+        }
+
+        .card-header {
+            font-size: 1.25rem;
+            font-weight: 600;
+            margin-bottom: 1.5rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .status-indicator {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            display: inline-block;
+        }
+        .status-indicator.connected { background: var(--success); box-shadow: 0 0 10px var(--success); }
+        .status-indicator.disconnected { background: var(--error); box-shadow: 0 0 10px var(--error); }
+
+        .stat-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 0.75rem 0;
+            border-bottom: 1px solid var(--border);
+        }
+        .stat-row:last-child {
+            border-bottom: none;
+        }
+
+        .tag {
+            background: rgba(59, 130, 246, 0.2);
+            color: #93c5fd;
+            padding: 0.25rem 0.5rem;
+            border-radius: 4px;
+            font-size: 0.85rem;
+        }
+
+        input, select, textarea {
+            width: 100%;
+            padding: 0.75rem 1rem;
+            margin-bottom: 1rem;
+            background: rgba(0, 0, 0, 0.2);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            color: white;
+            font-family: 'Inter', sans-serif;
+            transition: all 0.2s;
+        }
+
+        input:focus, select:focus, textarea:focus {
+            outline: none;
+            border-color: var(--accent);
+            box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.2);
+        }
+
+        button {
+            width: 100%;
+            padding: 0.875rem;
+            background: var(--accent);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        button:hover {
+            background: var(--accent-hover);
+            transform: translateY(-2px);
+        }
+
+        .badge {
+            background: rgba(255,255,255,0.1);
+            padding: 1rem;
+            border-radius: 8px;
+            margin-bottom: 0.5rem;
+        }
+
+        .loading {
+            opacity: 0.5;
+            pointer-events: none;
+        }
+
+        #outboundResult {
+            margin-top: 1rem;
+            font-size: 0.9rem;
+            padding: 0.75rem;
+            border-radius: 8px;
+            display: none;
+        }
+        .result-success { background: rgba(16, 185, 129, 0.2); color: #6ee7b7; border: 1px solid var(--success); }
+        .result-error { background: rgba(239, 68, 68, 0.2); color: #fca5a5; border: 1px solid var(--error); }
+
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>AI Phone Mission Control</h1>
+            <p>Monitor your SIP connections, active devices, and initiate outbound calls.</p>
+        </header>
+
+        <div class="grid">
+            <!-- Systems Status Card -->
+            <div class="card" id="statusCard">
+                <div class="card-header">
+                    <span class="status-indicator disconnected" id="overallStatus"></span>
+                    System Status
+                </div>
+                <div class="stat-row">
+                    <span class="text-secondary">Drachtio (SIP)</span>
+                    <span id="drachtioStatus" class="tag">Checking</span>
+                </div>
+                <div class="stat-row">
+                    <span class="text-secondary">FreeSWITCH (Media)</span>
+                    <span id="freeswitchStatus" class="tag">Checking</span>
+                </div>
+                <div class="stat-row">
+                    <span class="text-secondary">Total Registrations</span>
+                    <span id="regCount" class="text-primary">0</span>
+                </div>
+            </div>
+
+            <!-- Outbound Call Card -->
+            <div class="card">
+                <div class="card-header">Initiate Outbound Call</div>
+                <form id="callForm">
+                    <input type="text" id="targetNumber" placeholder="Target Number (e.g. +1234567890)" required>
+                    <select id="deviceSelect" required>
+                        <option value="">Loading Devices...</option>
+                    </select>
+                    <textarea id="callContext" rows="3" placeholder="Context for AI (e.g. 'Tell them their server is down')" required></textarea>
+                    <button type="submit" id="callBtn">Initiate Call</button>
+                    <div id="outboundResult"></div>
+                </form>
+            </div>
+            
+            <!-- Devices List Card -->
+            <div class="card" style="grid-column: 1 / -1;">
+                <div class="card-header">Active Devices / Extensions</div>
+                <div id="devicesList" class="grid" style="grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 1rem;">
+                    <!-- Devices injected here -->
+                    <div class="text-secondary">Loading...</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Poll status every 5 seconds
+        async function fetchStatus() {
+            try {
+                const res = await fetch('/api/sip-status');
+                const data = await res.json();
+                
+                document.getElementById('overallStatus').className = 
+                    'status-indicator ' + (data.isReady ? 'connected' : 'disconnected');
+                
+                document.getElementById('drachtioStatus').textContent = data.drachtioConnected ? 'Connected' : 'Disconnected';
+                document.getElementById('drachtioStatus').style.color = data.drachtioConnected ? '#93c5fd' : '#fca5a5';
+                
+                document.getElementById('freeswitchStatus').textContent = data.freeswitchConnected ? 'Connected' : 'Disconnected';
+                document.getElementById('freeswitchStatus').style.color = data.freeswitchConnected ? '#93c5fd' : '#fca5a5';
+
+                document.getElementById('regCount').textContent = data.registrations ? data.registrations.length : 0;
+            } catch (err) {
+                console.error(err);
+            }
+        }
+
+        async function fetchDevices() {
+            try {
+                const res = await fetch('/api/devices');
+                const data = await res.json();
+                
+                const select = document.getElementById('deviceSelect');
+                const list = document.getElementById('devicesList');
+                
+                select.innerHTML = '';
+                list.innerHTML = '';
+
+                if (data.devices && data.devices.length > 0) {
+                    data.devices.forEach(device => {
+                        // Populate Select
+                        const option = document.createElement('option');
+                        option.value = device.extension;
+                        option.textContent = `${device.name} (Ext ${device.extension})`;
+                        select.appendChild(option);
+
+                        // Populate List
+                        const badge = document.createElement('div');
+                        badge.className = 'badge';
+                        badge.innerHTML = `
+                            <div style="font-weight: 600; margin-bottom: 0.25rem;">${device.name}</div>
+                            <div class="text-secondary" style="font-size: 0.85rem;">Extension: ${device.extension}</div>
+                            ${device.voiceId ? '<div class="text-secondary" style="font-size: 0.85rem;">Voice: ' + device.voiceId + '</div>' : ''}
+                        `;
+                        list.appendChild(badge);
+                    });
+                } else {
+                    select.innerHTML = '<option value="">No devices found</option>';
+                    list.innerHTML = '<div class="text-secondary">No devices configured.</div>';
+                }
+            } catch (err) {
+                console.error(err);
+            }
+        }
+
+        document.getElementById('callForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const btn = document.getElementById('callBtn');
+            const resultDiv = document.getElementById('outboundResult');
+            
+            btn.classList.add('loading');
+            btn.textContent = 'Initiating...';
+            resultDiv.style.display = 'none';
+            resultDiv.className = '';
+
+            try {
+                const res = await fetch('/api/outbound-call', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        to: document.getElementById('targetNumber').value,
+                        extension: document.getElementById('deviceSelect').value,
+                        context: document.getElementById('callContext').value
+                    })
+                });
+
+                const data = await res.json();
+                
+                resultDiv.style.display = 'block';
+                if (res.ok && data.success) {
+                    resultDiv.textContent = 'Success: Call initiated to ' + data.to + ' as ' + data.callerId;
+                    resultDiv.className = 'result-success';
+                    document.getElementById('targetNumber').value = '';
+                    document.getElementById('callContext').value = '';
+                } else {
+                    resultDiv.textContent = 'Error: ' + (data.error || 'Failed to initiate call');
+                    resultDiv.className = 'result-error';
+                }
+            } catch (err) {
+                resultDiv.style.display = 'block';
+                resultDiv.textContent = 'Network Error: ' + err.message;
+                resultDiv.className = 'result-error';
+            } finally {
+                btn.classList.remove('loading');
+                btn.textContent = 'Initiate Call';
+            }
+        });
+
+        // Init
+        fetchStatus();
+        fetchDevices();
+        setInterval(fetchStatus, 5000);
+    </script>
+</body>
+</html>
