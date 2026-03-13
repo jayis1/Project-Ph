@@ -48,7 +48,8 @@ INSERT IGNORE INTO pjsip (id, keyword, data, flags) VALUES
 ('to_ai_phone', 'direct_media', 'no', 0),
 ('to_ai_phone', 'force_rport', 'yes', 0),
 ('to_ai_phone', 'rewrite_contact', 'yes', 0),
-('to_ai_phone', 'rtp_symmetric', 'yes', 0);
+('to_ai_phone', 'rtp_symmetric', 'yes', 0),
+('to_ai_phone', 'trunk_name', 'ai_phone_trunk', 0);
 
 INSERT IGNORE INTO pjsip (id, keyword, data, flags) VALUES ('to_ai_phone', 'aor', 'to_ai_phone', 24);
 INSERT IGNORE INTO pjsip (id, keyword, data, flags) VALUES ('to_ai_phone', 'contact', 'sip:127.0.0.1:5070', 0);
