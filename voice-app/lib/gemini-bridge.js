@@ -8,6 +8,9 @@ const axios = require('axios');
 const OLLAMA_API_URL = process.env.OLLAMA_API_URL || 'http://host.docker.internal:11434';
 const OLLAMA_MODEL = process.env.OLLAMA_MODEL || 'llama3';
 
+// In-memory conversation history store
+const callHistory = new Map();
+
 /**
  * Query Ollama with session-like context via message history
  * @param {string} prompt - The user prompt
@@ -21,14 +24,22 @@ async function query(prompt, options = {}) {
   const { callId, devicePrompt, timeout = 30 } = options;
   const timestamp = new Date().toISOString();
 
-  console.log(`[${timestamp}] OLLAMA Querying ${OLLAMA_API_URL} model=${OLLAMA_MODEL} call=${callId}`);
+  // Initialize conversation history for this call if it doesn't exist
+  if (!callHistory.has(callId)) {
+    callHistory.set(callId, [
+      { role: 'system', content: devicePrompt || 'You are a helpful AI assistant. Be concise and direct. Keep responses under 40 words.' }
+    ]);
+  }
+
+  // Get history and append new user message
+  const messages = callHistory.get(callId);
+  messages.push({ role: 'user', content: prompt });
+
+  console.log(`[${timestamp}] OLLAMA Querying ${OLLAMA_API_URL} model=${OLLAMA_MODEL} call=${callId} (history length: ${messages.length})`);
 
   const payload = {
     model: OLLAMA_MODEL,
-    messages: [
-      { role: 'system', content: devicePrompt || 'You are a helpful AI assistant. Be concise and direct. Keep responses under 40 words.' },
-      { role: 'user', content: prompt }
-    ],
+    messages: messages,
     stream: false
   };
 
@@ -43,8 +54,16 @@ async function query(prompt, options = {}) {
     );
 
     const text = response.data.message?.content || '';
+
+    // Save AI response to history
+    if (text) {
+      messages.push({ role: 'assistant', content: text });
+      callHistory.set(callId, messages);
+    }
+
     console.log(`[${timestamp}] OLLAMA Response received (${text.length} chars)`);
     return text;
+
 
   } catch (error) {
     if (error.code === 'ECONNREFUSED' || error.code === 'EHOSTUNREACH') {
@@ -61,11 +80,16 @@ async function query(prompt, options = {}) {
 }
 
 /**
- * No-op: Ollama is stateless per request, no session to end
+ * Clean up memory when a call session ends
  */
 async function endSession(callId) {
   if (callId) {
-    console.log(`[${new Date().toISOString()}] OLLAMA Session ended (no-op): ${callId}`);
+    if (callHistory.has(callId)) {
+      callHistory.delete(callId);
+      console.log(`[${new Date().toISOString()}] OLLAMA Session ended & memory cleared: ${callId}`);
+    } else {
+      console.log(`[${new Date().toISOString()}] OLLAMA Session ended (no history): ${callId}`);
+    }
   }
 }
 
