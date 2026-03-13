@@ -85,14 +85,19 @@ async function transcribe(audioBuffer, options = {}) {
       }
     }
 
+    let data = response.data;
+    if (typeof data === 'string') {
+      try { data = JSON.parse(data); } catch (e) { /* keep as string */ }
+    }
+
     let text = '';
-    if (typeof response.data === 'string') {
-      text = response.data.trim();
-    } else if (response.data.text) {
-      text = response.data.text.trim();
-    } else if (response.data.transcripts && response.data.transcripts.length > 0) {
+    if (typeof data === 'string') {
+      text = data.trim();
+    } else if (data && data.text) {
+      text = data.text.trim();
+    } else if (data && data.transcripts && data.transcripts.length > 0) {
       // Linto STT response format
-      text = response.data.transcripts[0].text.trim();
+      text = data.transcripts[0].text.trim();
     }
 
     console.log(`[${timestamp}] WHISPER Transcribed: "${text.substring(0, 80)}${text.length > 80 ? '...' : ''}"`);
