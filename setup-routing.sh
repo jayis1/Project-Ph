@@ -60,6 +60,24 @@ mysql -u root asterisk -e "
 INSERT IGNORE INTO incoming (cidnum, extension, destination, description, pmmaxretries, pmminlength) VALUES ('', '9001', 'from-did-direct,9001,1', 'To_AI_Phone', '', '');
 "
 
+# 4. Create the Outbound Route (AI calling out)
+mysql -u root asterisk -e "
+INSERT IGNORE INTO outbound_routes (route_id, name, outboundcid, emergency_route, intramcompany, mohclass, time_group_id) 
+VALUES (1, 'From_AI_Phone', '', '', '', 'default', 0)
+ON DUPLICATE KEY UPDATE name='From_AI_Phone';
+
+INSERT IGNORE INTO outbound_route_patterns (route_id, match_pattern_pass, match_pattern_prefix, match_pattern_pass_replace) 
+VALUES (1, 'X.', '', '');
+
+INSERT IGNORE INTO outbound_route_trunks (route_id, trunk_id, seq) 
+VALUES (1, 9001, 0);
+"
+
+# 5. Fix the GUI Apply Config State
+mysql -u root asterisk -e "
+UPDATE admin SET value = 'true' WHERE variable = 'need_reload';
+"
+
 # 4. Dialplan fix to explicitly route 9001 to the Trunk
 # Since we forced Extension 9001 in users/devices but it's not a real phone (it's a trunk on 5070),
 # We create a custom dialplan context
