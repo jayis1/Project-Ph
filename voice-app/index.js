@@ -3,7 +3,6 @@
  * Main entry point - v9 with Multi-Extension + Query API Support
  */
 
-require("dotenv").config();
 var Srf = require("drachtio-srf");
 var Mrf = require("drachtio-fsmrf");
 
