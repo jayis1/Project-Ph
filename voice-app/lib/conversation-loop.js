@@ -180,10 +180,11 @@ async function runConversationLoop(endpoint, dialog, callUuid, options) {
 
     // Play greeting (skip for outbound where initial message already played)
     if (!skipGreeting && callActive) {
-      const greetingUrl = await ttsService.generateSpeech(
-        "Hello! I'm your server. How can I help you today?",
-        voiceId
-      );
+      const defaultGreeting = deviceConfig?.name === 'AI' || !deviceConfig?.name
+        ? "Connection established. What do you need?"
+        : `This is ${deviceConfig.name}. What do you need?`;
+
+      const greetingUrl = await ttsService.generateSpeech(defaultGreeting, voiceId);
       await endpoint.play(greetingUrl);
     }
 
