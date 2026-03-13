@@ -53,10 +53,8 @@ async function initiateOutboundCall(srf, mediaServer, options) {
     const localSdp = endpoint.local.sdp;
 
     // Format SIP URI for FreePBX
-    // Remove '+' from E.164 format for SIP URI
-    // Internal extensions: dial as-is. External (E.164 with +): add 9 prefix for PSTN
-    const isExternal = to.startsWith('+');
-    const phoneNumber = isExternal ? '9' + to.replace(/^\+1?/, '') : to;
+    // Internal extensions: dial as-is. External (E.164 with +): strip the + and dial digits
+    const phoneNumber = to.replace(/^\+/, '');
     const sipTrunkHost = process.env.SIP_TRUNK_HOST || process.env.SIP_REGISTRAR || '127.0.0.1';
     const externalIp = process.env.EXTERNAL_IP || '10.70.7.81';
     const defaultCallerId = callerId || process.env.DEFAULT_CALLER_ID || '+15551234567';
