@@ -80,7 +80,10 @@ async function initiateOutboundCall(srf, mediaServer, options) {
     });
 
     // STEP 2: Create UAC (outbound call) with Early Offer
-    const fromExtension = isExternal
+    // Always use device extension for From header so FreePBX can identify the caller
+    // Only use trunk username if SIP_TRUNK_HOST is explicitly configured (direct trunk mode)
+    const directTrunkMode = isExternal && process.env.SIP_TRUNK_HOST;
+    const fromExtension = directTrunkMode
       ? (trunkUsername || defaultCallerId.replace('+', ''))
       : (deviceConfig ? deviceConfig.extension : defaultCallerId.replace('+', ''));
     const displayName = deviceConfig ? deviceConfig.name : null;
