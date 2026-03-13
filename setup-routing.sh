@@ -11,18 +11,31 @@ DELETE FROM pjsip WHERE id = '9001' OR id = 'ai_phone_trunk' OR id = '2' OR id =
 DELETE FROM trunks WHERE trunkid = 2 OR channelid = 'ai_phone_trunk';
 DELETE FROM incoming;
 INSERT IGNORE INTO incoming (cidnum, extension, destination, description)
-VALUES ('', '', 'from-did-direct,9001,1', 'Catch-All to Trinity');
+VALUES ('', '', 'ai-phone-custom,s,1', 'Catch-All to Trinity');
 
 INSERT IGNORE INTO users (extension, name, outboundcid, sipname, noanswer_cid, busy_cid, chanunavail_cid, noanswer_dest, busy_dest, chanunavail_dest) 
 VALUES ('9001', 'Trinity (AI)', 'Trinity <9001>', '9001', '', '', '', '', '', '');
 INSERT IGNORE INTO devices (id, tech, dial, devicetype, user, description) 
-VALUES ('9001', 'custom', 'PJSIP/ai_phone_trunk', 'fixed', '9001', 'Trinity (AI)');
+VALUES ('9001', 'custom', 'local/s@ai-phone-custom', 'fixed', '9001', 'Trinity (AI)');
 
 FLUSH PRIVILEGES;
 SQL
 
 # 1.5 Clean out any leftover broken test dialplans from earlier iterations
 sed -i '/exten => 9001/d' /etc/asterisk/extensions_custom.conf || true
+sed -i '/\[ai-phone-custom\]/d' /etc/asterisk/extensions_custom.conf || true
+sed -i '/exten => s,.*ai_phone_trunk/d' /etc/asterisk/extensions_custom.conf || true
+
+cat << 'DIALPLAN' >> /etc/asterisk/extensions_custom.conf
+
+[ai-phone-custom]
+exten => s,1,NoOp(Bypassing FreePBX to dial AI Phone Trunk directly)
+exten => s,n,Dial(PJSIP/ai_phone_trunk/sip:127.0.0.1:5070,30,r)
+exten => s,n,Hangup()
+
+[from-internal-custom]
+exten => 9001,1,Goto(ai-phone-custom,s,1)
+DIALPLAN
 
 # 2. Add the AI Phone custom PJSIP Endpoint configuration
 cat > /etc/asterisk/pjsip.endpoint_custom.conf <<'EOF'
