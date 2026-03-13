@@ -49,7 +49,7 @@ async function transcribe(audioBuffer, options = {}) {
 
     const form = new FormData();
     form.append('file', fs.createReadStream(tempFile), { filename: 'audio.wav', contentType: 'audio/wav' });
-    form.append('model', 'whisper-1');
+    form.append('model', 'whisper-base');
     form.append('language', language);
     form.append('response_format', 'text');
 
