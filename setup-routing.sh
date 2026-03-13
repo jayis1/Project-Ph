@@ -62,7 +62,7 @@ SQL
 
 # 4. Create the Outbound Route (AI calling out)
 mysql -u root asterisk << 'SQL'
-INSERT IGNORE INTO outbound_routes (route_id, name, emergency_route, intramcompany, mohclass, time_group_id) 
+INSERT IGNORE INTO outbound_routes (route_id, name, emergency_route, intracompany, mohclass, time_group_id) 
 VALUES (1, 'From_AI_Phone', '', '', 'default', 0)
 ON DUPLICATE KEY UPDATE name='From_AI_Phone';
 
