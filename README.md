@@ -8,7 +8,7 @@ AI Phone gives your local AI a phone number through FreePBX:
 
 - **Inbound**: Call an extension and talk to your local AI
 - **Outbound**: Your server calls YOU with alerts, then has a conversation
-- **Mission Control**: Web dashboard at `localhost:3030` to monitor status and initiate calls
+- **Mission Control**: Web dashboard at `http://<your-server-ip>:3030` to monitor status and initiate calls
 
 ## How it works
 
@@ -18,7 +18,7 @@ Phone Call → FreePBX → voice-app (Docker)
                 ┌───────────┼───────────┐
                 ▼           ▼           ▼
            Ollama LLM   Local STT   Local TTS
-        (deepseek-r1)  (Whisper)  (OpenedAI Speech)
+        (qwen2.5:14b)  (Whisper)  (OpenedAI Speech)
 ```
 
 ## Prerequisites
@@ -26,7 +26,7 @@ Phone Call → FreePBX → voice-app (Docker)
 | Component | Software |
 |-----------|----------|
 | PBX | [FreePBX](https://www.freepbx.org/) or any SIP provider |
-| LLM | [Ollama](https://ollama.com/) with a chat model (default: `deepseek-r1:8b`) |
+| LLM | [Ollama](https://ollama.com/) with a chat model (recommended: `qwen2.5:14b`) |
 | STT | Local Whisper server (e.g. [faster-whisper](https://github.com/SYSTRAN/faster-whisper) or [whisper.cpp](https://github.com/ggerganov/whisper.cpp)) |
 | TTS | Local TTS server (e.g. [OpenedAI Speech](https://github.com/matatonic/openedai-speech) or any OpenAI-compatible `/v1/audio/speech` endpoint) |
 | Runtime | Docker + Node.js 18+ |
@@ -53,12 +53,13 @@ ai-phone start
 
 | Prompt | Example |
 |--------|---------|
-| SIP Domain | `172.16.1.33` |
+| SIP Domain | `172.16.1.163` |
+| SIP Registrar | `172.16.1.163` |
 | Extension | `9001` |
 | SIP Password | `mysecret` |
-| External IP | `192.168.1.100` |
+| External IP | `172.16.1.163` |
 | Ollama API URL | `http://host.docker.internal:11434` |
-| Ollama Model | `deepseek-r1:8b` |
+| Ollama Model | `qwen2.5:14b` |
 | Local Whisper URL | `http://host.docker.internal:8080/v1` |
 | Local TTS URL | `http://host.docker.internal:5002/api/tts` |
 | Bot Name | `Trinity` |
@@ -81,13 +82,53 @@ A web dashboard is served at **port 3030** when the voice-app is running. It pro
 
 - **System Status** — live view of Drachtio (SIP) and FreeSWITCH (media) connectivity
 - **Device List** — all registered extensions and their voice configs
-- **Outbound Calls** — initiate outbound calls directly from the browser
+- **Outbound Calls** — initiate outbound calls to any phone number from the browser
+- **Call History** — track completed, failed, and active calls in real-time
+- **Live Logs** — scrolling log view of all voice-app activity
+
+### Initiating an Outbound Call
+
+1. Open Mission Control at `http://<your-server-ip>:3030`
+2. Enter the target phone number (e.g. `+4531426562`)
+3. Select a device/extension from the dropdown
+4. Enter the AI context message (what Trinity should say)
+5. Click **Initiate Call**
+
+The AI will call the target number, speak the context message, then enter conversation mode.
+
+### Outbound Call API
+
+```bash
+curl -X POST http://localhost:3000/api/outbound-call \
+  -H "Content-Type: application/json" \
+  -d '{
+    "to": "+4531426562",
+    "message": "Hey, your server CPU is at 95%. Want me to investigate?",
+    "device": "Trinity",
+    "mode": "conversation"
+  }'
+```
+
+## Recommended AI Models
+
+| Model | Size | RAM | Best for |
+|-------|------|-----|----------|
+| `llama3.1:8b` | 4.7GB | ~6GB | Fast responses, basic conversation |
+| `qwen2.5:14b` | 9GB | ~12GB | **Recommended** — smart + fast enough for calls |
+| `gemma2:27b` | 16GB | ~20GB | Smartest, but slower (5-10s response time) |
+
+```bash
+# Switch models
+ollama pull qwen2.5:14b
+# Update OLLAMA_MODEL in your .env, then:
+docker rm -f voice-app; docker compose up -d --build voice-app
+```
 
 ## Local AI Setup Tips
 
 ### Ollama
 ```bash
-ollama pull deepseek-r1:8b
+ollama pull qwen2.5:14b
 ollama serve   # Already runs on :11434 by default
 ```
 
@@ -104,6 +145,18 @@ docker run -p 8000:8000 ghcr.io/matatonic/openedai-speech
 ```
 The voice app will POST to the configured `LOCAL_TTS_URL` using the OpenAI `/v1/audio/speech` format.
 
+## Network & Port Configuration
+
+| Port | Service | Notes |
+|------|---------|-------|
+| 3000 | Voice App HTTP | Audio files, outbound API |
+| 3030 | Mission Control | Web dashboard |
+| 5060 | FreePBX/Asterisk | SIP signaling (PBX) |
+| 5070 | Drachtio | SIP signaling (voice-app) |
+| 30000-30100 | FreeSWITCH | RTP media (audio) |
+
+> **Important:** Drachtio uses port **5070** to avoid conflict with FreePBX on 5060. All containers run in `host` networking mode.
+
 ## Environment Variables
 
 See [`.env.example`](.env.example) for all configurable variables. Key ones:
@@ -112,11 +165,23 @@ See [`.env.example`](.env.example) for all configurable variables. Key ones:
 |----------|---------|
 | `EXTERNAL_IP` | Server LAN IP for RTP routing |
 | `OLLAMA_API_URL` | URL to Ollama instance |
-| `OLLAMA_MODEL` | Chat model to use (default: `deepseek-r1:8b`) |
+| `OLLAMA_MODEL` | Chat model to use (default: `qwen2.5:14b`) |
 | `LOCAL_TTS_URL` | TTS API endpoint |
 | `LOCAL_STT_URL` | Whisper STT API endpoint |
 | `SIP_DOMAIN` | FreePBX server FQDN or IP |
 | `SIP_REGISTRAR` | SIP registrar address |
+| `DRACHTIO_SIP_PORT` | Drachtio SIP port (default: `5070`) |
+
+## FreePBX Trunk Configuration
+
+For outbound PSTN calls, your SIP trunk needs `from_user` set to your trunk account ID. If FreePBX regenerates the config and removes it:
+
+```bash
+sed -i '/^\[YourTrunk\]$/a from_user=YOUR_ACCOUNT_ID\nfrom_domain=YOUR_PROVIDER_DOMAIN' /etc/asterisk/pjsip.endpoint.conf
+asterisk -rx "module reload res_pjsip.so"
+```
+
+Also ensure the outbound route has a dial pattern of `.` (matches all numbers) with your trunk selected.
 
 ## Documentation
 
