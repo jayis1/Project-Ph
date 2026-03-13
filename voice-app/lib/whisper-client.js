@@ -47,19 +47,23 @@ async function transcribe(audioBuffer, options = {}) {
     fs.writeFileSync(tempFile, wavBuffer);
     console.log(`[${timestamp}] WHISPER Sending ${wavBuffer.length} bytes to ${LOCAL_STT_URL}`);
 
-    const form = new FormData();
-    form.append('file', fs.createReadStream(tempFile), { filename: 'audio.wav', contentType: 'audio/wav' });
-    form.append('model', 'whisper-base');
-    form.append('language', language);
-    form.append('response_format', 'text');
+    const createForm = () => {
+      const f = new FormData();
+      f.append('file', fs.createReadStream(tempFile), { filename: 'audio.wav', contentType: 'audio/wav' });
+      f.append('model', 'whisper-base');
+      f.append('language', language);
+      f.append('response_format', 'text');
+      return f;
+    };
 
     let response;
     try {
       // Try standard OpenAI-compatible whisper.cpp endpoint first
+      const form1 = createForm();
       response = await axios.post(
         `${LOCAL_STT_URL}/audio/transcriptions`,
-        form,
-        { headers: form.getHeaders(), timeout: 30000, maxContentLength: Infinity, maxBodyLength: Infinity }
+        form1,
+        { headers: form1.getHeaders(), timeout: 30000, maxContentLength: Infinity, maxBodyLength: Infinity }
       );
     } catch (apiError) {
       if (apiError.response && apiError.response.status === 404) {
@@ -67,12 +71,13 @@ async function transcribe(audioBuffer, options = {}) {
         const lintoUrl = LOCAL_STT_URL.replace(/\/v1\/?$/, '') + '/transcribe';
         console.log(`[${timestamp}] WHISPER Retry with Linto API: ${lintoUrl}`);
 
-        const fallbackHeaders = form.getHeaders();
+        const form2 = createForm();
+        const fallbackHeaders = form2.getHeaders();
         fallbackHeaders['Accept'] = 'application/json';
 
         response = await axios.post(
           lintoUrl,
-          form,
+          form2,
           { headers: fallbackHeaders, timeout: 60000, maxContentLength: Infinity, maxBodyLength: Infinity }
         );
       } else {
