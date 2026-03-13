@@ -132,7 +132,18 @@ install_rocm() {
 # Function to install Ollama
 install_ollama() {
   echo ""
-  echo "🦙 Installing Ollama..."
+  echo "🦙 Installing Ollama (and zstd dependency)..."
+  case "$PKG_MANAGER" in
+    apt)
+      $SUDO apt-get update -y && $SUDO apt-get install -y zstd
+      ;;
+    dnf)
+      $SUDO dnf install -y zstd
+      ;;
+    pacman)
+      $SUDO pacman -S --noconfirm zstd
+      ;;
+  esac
   curl -fsSL https://ollama.com/install.sh | sh
   echo "✓ Ollama installed"
 }
