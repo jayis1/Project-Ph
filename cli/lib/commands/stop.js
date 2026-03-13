@@ -8,7 +8,7 @@ import { stopContainers } from '../docker.js';
  * @returns {Promise<void>}
  */
 export async function stopCommand() {
-  console.log(chalk.bold.cyan('\n⏹️  Stopping Gemini Phone\n'));
+  console.log(chalk.bold.cyan('\n⏹️  Stopping AI Phone\n'));
 
   // Check if configured
   if (!configExists()) {
@@ -29,7 +29,7 @@ export async function stopCommand() {
     await stopContainers();
 
     spinner.succeed('Services stopped successfully');
-    console.log(chalk.bold.green('\n✓ Gemini Phone stopped\n'));
+    console.log(chalk.bold.green('\n✓ AI Phone stopped\n'));
 
   } catch (error) {
     spinner.fail(`Failed to stop services: ${error.message}`);

@@ -21,7 +21,7 @@ function set(obj, path, value) {
 export async function setConfig(key, value) {
     try {
         if (!key || value === undefined) {
-            console.error(chalk.red('Error: usage is "gemini-phone config set <key> <value>"'));
+            console.error(chalk.red('Error: usage is "ai-phone config set <key> <value>"'));
             process.exit(1);
         }
 

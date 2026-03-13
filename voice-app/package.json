@@ -1,5 +1,5 @@
 {
-  "name": "gemini-phone-voice-app",
+  "name": "ai-phone-voice-app",
   "version": "2.1.4",
   "description": "Voice interface for Gemini Code via SIP/FreePBX",
   "main": "index.js",

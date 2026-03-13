@@ -5,15 +5,15 @@ import { loadEnv, envExists, migrateConfigToEnv, saveEnv } from './env-loader.js
 
 /**
  * Get the config directory path
- * @returns {string} Path to ~/.gemini-phone
+ * @returns {string} Path to ~/.ai-phone
  */
 export function getConfigDir() {
-  return path.join(os.homedir(), '.gemini-phone');
+  return path.join(os.homedir(), '.ai-phone');
 }
 
 /**
  * Get the config file path
- * @returns {string} Path to ~/.gemini-phone/config.json
+ * @returns {string} Path to ~/.ai-phone/config.json
  */
 export function getConfigPath() {
   return path.join(getConfigDir(), 'config.json');
@@ -35,7 +35,7 @@ export async function loadConfig() {
   const configPath = getConfigPath();
 
   if (!fs.existsSync(configPath)) {
-    throw new Error('Configuration not found. Run "gemini-phone setup" first.');
+    throw new Error('Configuration not found. Run "ai-phone setup" first.');
   }
 
   const data = await fs.promises.readFile(configPath, 'utf8');

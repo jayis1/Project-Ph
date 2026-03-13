@@ -1,10 +1,10 @@
 {
-  "name": "gemini-phone-cli",
+  "name": "ai-phone-cli",
   "version": "2.2.0",
-  "description": "Unified CLI installer for Gemini Phone voice interface",
+  "description": "Unified CLI installer for AI Phone voice interface",
   "type": "module",
   "bin": {
-    "gemini-phone": "./bin/gemini-phone.js"
+    "ai-phone": "./bin/ai-phone.js"
   },
   "scripts": {
     "test": "node --test test/**/*.test.js",

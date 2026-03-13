@@ -222,7 +222,7 @@ export class FreePBXClient {
         const destination = `from-did-direct,${targetExtension},1`;
         const input = {
             destination,
-            description: "Gemini Phone: AI Route",
+            description: "AI Phone: AI Route",
             extension: did || null,
             cidnum: cid || null
         };
@@ -447,7 +447,7 @@ mutation($input: addIVRInput!) {
     async applyConfig() {
         const mutation = `
             mutation {
-    doreload(input: { clientMutationId: "gemini-phone" }) {
+    doreload(input: { clientMutationId: "ai-phone" }) {
         status
         message
     }

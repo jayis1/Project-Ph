@@ -203,11 +203,11 @@ async function checkGeminiAPIServer(port) {
  * @returns {Promise<void>}
  */
 export async function doctorCommand() {
-  console.log(chalk.bold.cyan('\n🔍 Gemini Phone Health Check\n'));
+  console.log(chalk.bold.cyan('\n🔍 AI Phone Health Check\n'));
 
   if (!configExists()) {
     console.log(chalk.red('✗ Not configured'));
-    console.log(chalk.gray('  → Run "gemini-phone setup" first\n'));
+    console.log(chalk.gray('  → Run "ai-phone setup" first\n'));
     process.exit(1);
   }
 
@@ -250,7 +250,7 @@ export async function doctorCommand() {
     console.log(chalk.yellow('⚠ Some issues detected. Review the failures above.\n'));
     process.exit(1);
   } else {
-    console.log(chalk.red('✗ Multiple failures detected. Fix the issues above before using Gemini Phone.\n'));
+    console.log(chalk.red('✗ Multiple failures detected. Fix the issues above before using AI Phone.\n'));
     process.exit(1);
   }
 }
@@ -288,7 +288,7 @@ async function runApiServerChecks(config) {
     passedCount++; // Count as partial pass
   } else {
     apiServerSpinner.fail(chalk.red(`Gemini API server not running: ${apiServerResult.error}`));
-    console.log(chalk.gray('  → Run "gemini-phone start" to launch services\n'));
+    console.log(chalk.gray('  → Run "ai-phone start" to launch services\n'));
   }
   checks.push({ name: 'Gemini API server', passed: apiServerResult.running });
 
@@ -326,7 +326,7 @@ async function runVoiceServerChecks(config, isPiSplit) {
       passedCount++;
     } else {
       elevenLabsSpinner.fail(chalk.red(`ElevenLabs API failed: ${elevenLabsResult.error}`));
-      console.log(chalk.gray('  → Check your API key in ~/.gemini-phone/config.json\n'));
+      console.log(chalk.gray('  → Check your API key in ~/.ai-phone/config.json\n'));
     }
     checks.push({ name: 'ElevenLabs API', passed: elevenLabsResult.connected });
   }
@@ -340,7 +340,7 @@ async function runVoiceServerChecks(config, isPiSplit) {
       passedCount++;
     } else {
       openAISpinner.fail(chalk.red(`OpenAI API failed: ${openAIResult.error}`));
-      console.log(chalk.gray('  → Check your API key in ~/.gemini-phone/config.json\n'));
+      console.log(chalk.gray('  → Check your API key in ~/.ai-phone/config.json\n'));
     }
     checks.push({ name: 'OpenAI API', passed: openAIResult.connected });
   }
@@ -360,7 +360,7 @@ async function runVoiceServerChecks(config, isPiSplit) {
         passedCount++;
       } else {
         pbxSpinner.fail(chalk.red(`FreePBX M2M API connection failed: ${pbxResult.error}`));
-        console.log(chalk.gray('  → Check your Client ID, Secret and URL in ~/.gemini-phone/config.json'));
+        console.log(chalk.gray('  → Check your Client ID, Secret and URL in ~/.ai-phone/config.json'));
         console.log(chalk.gray(`  → Current GraphQL URL: ${client.apiUrl}\n`));
       }
       checks.push({ name: 'FreePBX M2M API', passed: pbxResult.valid });
@@ -380,7 +380,7 @@ async function runVoiceServerChecks(config, isPiSplit) {
     passedCount++;
   } else {
     voiceAppSpinner.fail(chalk.red(`Voice-app container not running: ${voiceAppResult.error}`));
-    console.log(chalk.gray('  → Run "gemini-phone start" to launch services\n'));
+    console.log(chalk.gray('  → Run "ai-phone start" to launch services\n'));
   }
   checks.push({ name: 'Voice-app container', passed: voiceAppResult.running });
 
@@ -395,7 +395,7 @@ async function runVoiceServerChecks(config, isPiSplit) {
       passedCount++;
     } else if (sipResult.connected && !sipResult.registered) {
       sipSpinner.fail(chalk.red('SIP not registered with PBX'));
-      console.log(chalk.gray('  → Check extension credentials in ~/.gemini-phone/config.json'));
+      console.log(chalk.gray('  → Check extension credentials in ~/.ai-phone/config.json'));
       console.log(chalk.gray('  → Ensure FreePBX allows registration from this IP\n'));
     } else {
       sipSpinner.warn(chalk.yellow(`SIP status unknown: ${sipResult.error}`));
@@ -431,7 +431,7 @@ async function runVoiceServerChecks(config, isPiSplit) {
       passedCount++;
     } else {
       apiServerSpinner.fail(chalk.red(`Gemini API server not responding`));
-      console.log(chalk.gray(`  → Run "gemini-phone api-server" on your API server\n`));
+      console.log(chalk.gray(`  → Run "ai-phone api-server" on your API server\n`));
     }
     checks.push({ name: 'Gemini API server (remote)', passed: apiHealth.healthy });
 
@@ -465,7 +465,7 @@ async function runVoiceServerChecks(config, isPiSplit) {
       passedCount++;
     } else {
       apiServerSpinner.fail(chalk.red(`API server not responding`));
-      console.log(chalk.gray(`  → Run "gemini-phone api-server" on your API server\n`));
+      console.log(chalk.gray(`  → Run "ai-phone api-server" on your API server\n`));
     }
     checks.push({ name: 'API server (remote)', passed: apiHealth.healthy });
   }

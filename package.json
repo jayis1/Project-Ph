@@ -1,5 +1,5 @@
 {
-  "name": "gemini-phone",
+  "name": "ai-phone",
   "version": "2.2.0",
   "description": "Voice interface for Gemini Code via SIP/FreePBX",
   "private": true,

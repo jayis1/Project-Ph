@@ -10,10 +10,10 @@ import { stopServer, isServerRunning } from '../process-manager.js';
 
 /**
  * Get the CLI install directory path
- * @returns {string} Path to ~/.gemini-phone-cli
+ * @returns {string} Path to ~/.ai-phone-cli
  */
 function getCliInstallDir() {
-  return path.join(os.homedir(), '.gemini-phone-cli');
+  return path.join(os.homedir(), '.ai-phone-cli');
 }
 
 /**
@@ -22,8 +22,8 @@ function getCliInstallDir() {
  */
 async function findSymlink() {
   const possiblePaths = [
-    '/usr/local/bin/gemini-phone',
-    path.join(os.homedir(), '.local/bin/gemini-phone')
+    '/usr/local/bin/ai-phone',
+    path.join(os.homedir(), '.local/bin/ai-phone')
   ];
 
   for (const symlinkPath of possiblePaths) {
@@ -52,11 +52,11 @@ async function removeDirectory(dirPath) {
 }
 
 /**
- * Uninstall command - Complete removal of Gemini Phone
+ * Uninstall command - Complete removal of AI Phone
  * @returns {Promise<void>}
  */
 export async function uninstallCommand() {
-  console.log(chalk.bold.red('\n🗑️  Uninstall Gemini Phone\n'));
+  console.log(chalk.bold.red('\n🗑️  Uninstall AI Phone\n'));
 
   const configDir = getConfigDir();
   const cliDir = getCliInstallDir();
@@ -85,14 +85,14 @@ export async function uninstallCommand() {
   console.log(chalk.yellow('\n  • Docker containers:'));
   console.log(chalk.gray('    voice-app, drachtio, freeswitch'));
 
-  // First confirmation: Remove Gemini Phone?
+  // First confirmation: Remove AI Phone?
   console.log(chalk.bold.red('\n⚠️  WARNING: This action cannot be undone!\n'));
 
   const { confirmUninstall } = await inquirer.prompt([
     {
       type: 'confirm',
       name: 'confirmUninstall',
-      message: 'Remove Gemini Phone?',
+      message: 'Remove AI Phone?',
       default: false
     }
   ]);
@@ -119,7 +119,7 @@ export async function uninstallCommand() {
     }
   }
 
-  console.log(chalk.bold.cyan('\n🧹 Removing Gemini Phone...\n'));
+  console.log(chalk.bold.cyan('\n🧹 Removing AI Phone...\n'));
 
   // Step 1: Stop services
   let spinner = ora('Stopping Gemini API server...').start();
@@ -175,8 +175,8 @@ export async function uninstallCommand() {
     }
   }
 
-  console.log(chalk.bold.green('\n✓ Gemini Phone uninstalled\n'));
-  console.log(chalk.gray('Thank you for using Gemini Phone! 👋\n'));
+  console.log(chalk.bold.green('\n✓ AI Phone uninstalled\n'));
+  console.log(chalk.gray('Thank you for using AI Phone! 👋\n'));
   console.log(chalk.gray('Note: Docker images were not removed. To clean them up, run:'));
   console.log(chalk.gray('  docker image rm drachtio/drachtio-server:latest'));
   console.log(chalk.gray('  docker image rm drachtio/drachtio-freeswitch-mrf:latest\n'));

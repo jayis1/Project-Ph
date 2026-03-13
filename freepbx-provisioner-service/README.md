@@ -24,11 +24,11 @@ curl -sSL https://raw.githubusercontent.com/jayis1/2fast2dumb2fun/main/install.s
 ### Manual Installation
 
 ```bash
-cd ~/.gemini-phone-cli/freepbx-provisioner-service
+cd ~/.ai-phone-cli/freepbx-provisioner-service
 npm install
 
 # Create .env file
-cat > ~/.gemini-phone/.env << 'EOF'
+cat > ~/.ai-phone/.env << 'EOF'
 MYSQL_HOST=localhost
 MYSQL_PORT=3306
 MYSQL_USER=freepbxuser
@@ -184,7 +184,7 @@ Get IVR configuration
 
 ## Bot Node Integration
 
-Bot nodes use this service during `gemini-phone setup`:
+Bot nodes use this service during `ai-phone setup`:
 
 1. Connect to provisioner service
 2. List available extensions

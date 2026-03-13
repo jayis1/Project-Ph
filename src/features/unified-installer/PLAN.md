@@ -21,12 +21,12 @@ Build a **Node.js CLI tool** distributed via a bash install script. The CLI wrap
 │  ┌─────────────────────────────────────────────────────────┐   │
 │  │  install.sh                                              │   │
 │  │  - Detect OS (mac/linux)                                 │   │
-│  │  - Download gemini-phone CLI                             │   │
+│  │  - Download ai-phone CLI                             │   │
 │  │  - Add to PATH (~/.local/bin or /usr/local/bin)          │   │
 │  │  - Verify prerequisites (Docker, Claude CLI)             │   │
 │  └─────────────────────────────────────────────────────────┘   │
 │                                                                 │
-│  User runs: gemini-phone setup                                  │
+│  User runs: ai-phone setup                                  │
 │      │                                                          │
 │      ↓                                                          │
 │  ┌─────────────────────────────────────────────────────────┐   │
@@ -35,10 +35,10 @@ Build a **Node.js CLI tool** distributed via a bash install script. The CLI wrap
 │  │  - Validate each key with test API call                  │   │
 │  │  - Collect 3CX credentials                               │   │
 │  │  - Create first device                                   │   │
-│  │  - Write ~/.gemini-phone/config.json                     │   │
+│  │  - Write ~/.ai-phone/config.json                     │   │
 │  └─────────────────────────────────────────────────────────┘   │
 │                                                                 │
-│  User runs: gemini-phone start                                  │
+│  User runs: ai-phone start                                  │
 │      │                                                          │
 │      ↓                                                          │
 │  ┌─────────────────────────────────────────────────────────┐   │
@@ -67,12 +67,12 @@ Build a **Node.js CLI tool** distributed via a bash install script. The CLI wrap
 ## Project Structure
 
 ```
-gemini-phone/
+ai-phone/
 ├── install.sh                    # Curl-able install script
 ├── cli/                          # NEW: CLI tool source
 │   ├── package.json
 │   ├── bin/
-│   │   └── gemini-phone.js       # Entry point (#!/usr/bin/env node)
+│   │   └── ai-phone.js       # Entry point (#!/usr/bin/env node)
 │   ├── lib/
 │   │   ├── commands/
 │   │   │   ├── setup.js          # Setup wizard
@@ -128,7 +128,7 @@ gemini-phone/
 
 ## Data Model
 
-### Config File (~/.gemini-phone/config.json)
+### Config File (~/.ai-phone/config.json)
 
 ```javascript
 {
@@ -170,7 +170,7 @@ gemini-phone/
 }
 ```
 
-### Runtime Files (~/.gemini-phone/)
+### Runtime Files (~/.ai-phone/)
 
 | File | Purpose |
 |------|---------|
@@ -187,7 +187,7 @@ gemini-phone/
 ### Command Tree
 
 ```
-gemini-phone
+ai-phone
 ├── setup              # Interactive setup wizard
 ├── start              # Start all services
 ├── stop               # Stop all services
@@ -211,7 +211,7 @@ gemini-phone
 ```javascript
 // Main entry point
 program
-  .name('gemini-phone')
+  .name('ai-phone')
   .description('Voice interface for Gemini Code')
   .version(version);
 
@@ -225,7 +225,7 @@ program
 // Start command
 program
   .command('start')
-  .description('Start Gemini Phone services')
+  .description('Start AI Phone services')
   .option('--foreground', 'Run API server in foreground')
   .action(startCommand);
 
@@ -247,13 +247,13 @@ device.command('remove <name>').description('Remove device').action(deviceRemove
 1. Detect OS (uname -s)
 2. Check prerequisites:
    - docker --version || exit "Install Docker first"
-   - gemini-phone --version || warn "Gemini Phone CLI not found, needed for API server"
+   - ai-phone --version || warn "AI Phone CLI not found, needed for API server"
    - node --version >= 18 || exit "Node.js 18+ required"
 3. Create temp directory
 4. Download latest release tarball from GitHub
-5. Extract to ~/.gemini-phone/cli/
-6. Symlink bin/gemini-phone to ~/.local/bin/ or /usr/local/bin/
-7. Verify: gemini-phone --version
+5. Extract to ~/.ai-phone/cli/
+6. Symlink bin/ai-phone to ~/.local/bin/ or /usr/local/bin/
+7. Verify: ai-phone --version
 8. Print success + next steps
 ```
 
@@ -287,7 +287,7 @@ device.command('remove <name>').description('Remove device').action(deviceRemove
 8. Write config.json
 9. Generate .env and docker-compose.yml
 10. Run doctor to verify
-11. Print success + "Run 'gemini-phone start' to begin"
+11. Print success + "Run 'ai-phone start' to begin"
 ```
 
 ### Start Flow
@@ -298,14 +298,14 @@ device.command('remove <name>').description('Remove device').action(deviceRemove
 2. Verify not already running (check PID file, docker ps)
 3. Generate fresh .env from config
 4. Start voice-app:
-   - docker compose -f ~/.gemini-phone/docker-compose.yml up -d
+   - docker compose -f ~/.ai-phone/docker-compose.yml up -d
    - Wait for healthy
 5. Start gemini-api-server:
    - spawn('node', ['server.js'], { detached: true, stdio: 'ignore' })
    - Write PID to server.pid
    - Wait for healthy (GET /health)
 6. Print status table
-7. Print "Gemini Phone is running. Call extension XXXX to connect."
+7. Print "AI Phone is running. Call extension XXXX to connect."
 ```
 
 ### Doctor Flow
@@ -314,7 +314,7 @@ device.command('remove <name>').description('Remove device').action(deviceRemove
 // lib/commands/doctor.js pseudocode
 checks = [
   { name: 'Docker running', fn: checkDocker },
-  { name: 'Gemini Phone CLI installed', fn: checkGeminiPhoneCli },
+  { name: 'AI Phone CLI installed', fn: checkGeminiPhoneCli },
   { name: 'ElevenLabs API', fn: checkElevenLabs },
   { name: 'OpenAI API', fn: checkOpenAI },
   { name: 'Voice-app container', fn: checkVoiceAppContainer },

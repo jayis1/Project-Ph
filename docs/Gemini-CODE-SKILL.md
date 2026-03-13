@@ -4,7 +4,7 @@ A Gemini Code skill that enables voice calling from your AI assistant. Say "call
 
 ## Overview
 
-This skill wraps the Gemini Phone outbound API, allowing natural language commands like:
+This skill wraps the AI Phone outbound API, allowing natural language commands like:
 
 - "Call me when the backup finishes"
 - "Have Cephanie call me about disk usage"
@@ -39,14 +39,14 @@ This skill wraps the Gemini Phone outbound API, allowing natural language comman
    chmod +x ~/.gemini/skills/Call/bin/call
    ```
 
-4. Update the `API_BASE_URL` in `lib/api.py` to point to your Gemini Phone server
+4. Update the `API_BASE_URL` in `lib/api.py` to point to your AI Phone server
 
 ## Configuration
 
 Edit `lib/api.py` to configure:
 
 ```python
-# Your Gemini Phone server
+# Your AI Phone server
 API_BASE_URL = "http://YOUR_SERVER:3000"
 
 # Contact directory - map names to numbers

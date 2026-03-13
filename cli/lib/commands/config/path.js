@@ -14,7 +14,7 @@ export async function configPathCommand() {
   if (!configExists()) {
     console.log(chalk.red('✗ Configuration not found'));
     console.log(chalk.gray(`  Expected location: ${configPath}\n`));
-    console.log(chalk.gray('  Run "gemini-phone setup" to create configuration\n'));
+    console.log(chalk.gray('  Run "ai-phone setup" to create configuration\n'));
     return;
   }
 

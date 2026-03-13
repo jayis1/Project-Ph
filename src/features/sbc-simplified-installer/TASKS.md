@@ -98,9 +98,9 @@
 
 ## Manual Testing
 
-- [ ] Run `gemini-phone setup` on Pi
+- [ ] Run `ai-phone setup` on Pi
 - [ ] Verify new TUI flow (SBC → API → Device → Mac)
-- [ ] Run `gemini-phone start` on Pi
+- [ ] Run `ai-phone start` on Pi
 - [ ] Make test call to extension
 - [ ] Verify call connects and AI responds
 

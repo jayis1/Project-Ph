@@ -14,11 +14,11 @@ import { join } from 'path';
 
 async function main() {
     // Load config
-    const configPath = join(homedir(), '.gemini-phone', 'config.json');
+    const configPath = join(homedir(), '.ai-phone', 'config.json');
     const config = JSON.parse(readFileSync(configPath, 'utf8'));
 
     if (!config.freepbx || !config.freepbx.clientId) {
-        console.error('❌ FreePBX API not configured. Run: gemini-phone setup');
+        console.error('❌ FreePBX API not configured. Run: ai-phone setup');
         process.exit(1);
     }
 

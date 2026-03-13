@@ -20,7 +20,7 @@ import { uninstallCommand } from '../lib/commands/uninstall.js';
 const program = new Command();
 
 program
-  .name('gemini-phone')
+  .name('ai-phone')
   .description('Voice interface for Gemini Code via SIP - Call your AI, and your AI can call you')
   .version('1.0.0');
 
@@ -180,7 +180,7 @@ config
 
 program
   .command('update')
-  .description('Update Gemini Phone to latest version')
+  .description('Update AI Phone to latest version')
   .action(async () => {
     try {
       await updateCommand();
@@ -216,7 +216,7 @@ program
 
 program
   .command('uninstall')
-  .description('Uninstall Gemini Phone completely')
+  .description('Uninstall AI Phone completely')
   .action(async () => {
     try {
       await uninstallCommand();

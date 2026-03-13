@@ -168,7 +168,7 @@ Verify before writing any code.
 ### AC17: Mac setup instructions
 
 - [ ] Display Mac-side setup instructions at end of Pi setup
-- [ ] Show: "On your Mac, run: gemini-phone api-server"
+- [ ] Show: "On your Mac, run: ai-phone api-server"
 
 ---
 
@@ -187,7 +187,7 @@ Verify before writing any code.
 - [ ] Implement status message
 - [ ] Write failing test: Server handles graceful shutdown on SIGINT
 - [ ] Implement shutdown handling
-- [ ] Add command to `bin/gemini-phone.js`
+- [ ] Add command to `bin/ai-phone.js`
 - [ ] Refactor while green
 
 ---
@@ -299,7 +299,7 @@ All must pass before review.
 
 Must complete on actual hardware.
 
-- [ ] Run `gemini-phone setup` on Raspberry Pi 4 or 5
+- [ ] Run `ai-phone setup` on Raspberry Pi 4 or 5
 - [ ] Verify Pi detection works correctly
 - [ ] Verify Docker prerequisite check (with and without Docker)
 - [ ] Test 3CX SBC detection (with SBC running)
@@ -307,9 +307,9 @@ Must complete on actual hardware.
 - [ ] Verify port 5070 configured when SBC present
 - [ ] Verify port 5060 configured when no SBC
 - [ ] Test Mac IP validation (reachable and unreachable)
-- [ ] Run `gemini-phone api-server` on Mac
-- [ ] Verify `gemini-phone status` shows Pi ↔ Mac connectivity
-- [ ] Run `gemini-phone doctor` and verify all checks pass
+- [ ] Run `ai-phone api-server` on Mac
+- [ ] Verify `ai-phone status` shows Pi ↔ Mac connectivity
+- [ ] Run `ai-phone doctor` and verify all checks pass
 - [ ] Make test call: phone → Pi → Mac → Claude → response
 - [ ] Test error case: Mac unreachable during call
 

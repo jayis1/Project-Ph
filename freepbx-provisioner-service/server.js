@@ -442,7 +442,7 @@ async function start() {
         console.log(`Health check: http://localhost:${PORT}/health`);
         console.log('\nDevice Emulation: Yealink T46G (FreePBX free tier)');
         console.log('\nReady to provision bot nodes.\n');
-        console.log('NOTE: Extensions must be created via "gemini-phone auto-provision" first!\n');
+        console.log('NOTE: Extensions must be created via "ai-phone auto-provision" first!\n');
     });
 }
 

@@ -1,10 +1,10 @@
 {
-    "name": "Gemini Phone - Slack Alerts",
+    "name": "AI Phone - Slack Alerts",
     "nodes": [
         {
             "parameters": {
                 "httpMethod": "POST",
-                "path": "gemini-phone-alerts",
+                "path": "ai-phone-alerts",
                 "responseMode": "lastNode",
                 "options": {}
             },

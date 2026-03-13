@@ -1,10 +1,10 @@
 # Production Deployment Guide
 
-Guide for deploying Gemini Phone in production environments.
+Guide for deploying AI Phone in production environments.
 
 ## Architecture Overview
 
-Gemini Phone consists of three Docker containers and an optional API server:
+AI Phone consists of three Docker containers and an optional API server:
 
 ```
 ┌─────────────────────────────────────────────────────────────┐
@@ -62,7 +62,7 @@ The `EXTERNAL_IP` setting must be your server's LAN IP that can receive RTP pack
 
 ## Docker Configuration
 
-The CLI generates `~/.gemini-phone/docker-compose.yml` automatically. Key settings:
+The CLI generates `~/.ai-phone/docker-compose.yml` automatically. Key settings:
 
 ### Network Mode
 
@@ -112,8 +112,8 @@ Requirements:
 The voice server runs Docker containers and connects to a remote API server:
 
 ```bash
-gemini-phone setup    # Select "Voice Server"
-gemini-phone start
+ai-phone setup    # Select "Voice Server"
+ai-phone start
 ```
 
 ### API Server (Mac/Linux with Gemini Code)
@@ -125,7 +125,7 @@ Requirements:
 - Network accessible from voice server
 
 ```bash
-gemini-phone api-server --port 3333
+ai-phone api-server --port 3333
 ```
 
 For persistent operation, use a process manager:
@@ -133,7 +133,7 @@ For persistent operation, use a process manager:
 ```bash
 # Using pm2
 npm install -g pm2
-pm2 start "gemini-phone api-server" --name gemini-api
+pm2 start "ai-phone api-server" --name gemini-api
 
 # Using systemd (Linux)
 # Create /etc/systemd/system/gemini-api.service
@@ -145,10 +145,10 @@ pm2 start "gemini-phone api-server" --name gemini-api
 
 ```bash
 # Overall status
-gemini-phone status
+ai-phone status
 
 # Comprehensive diagnostics
-gemini-phone doctor
+ai-phone doctor
 
 # Container health
 docker ps
@@ -159,12 +159,12 @@ docker compose logs -f
 
 ```bash
 # All logs
-gemini-phone logs
+ai-phone logs
 
 # Specific service
-gemini-phone logs voice-app
-gemini-phone logs drachtio
-gemini-phone logs freeswitch
+ai-phone logs voice-app
+ai-phone logs drachtio
+ai-phone logs freeswitch
 ```
 
 ### Key Log Messages
@@ -195,7 +195,7 @@ Error connecting to Gemini API
 ### API Keys
 
 - Config file has restricted permissions (chmod 600)
-- Never commit `~/.gemini-phone/config.json` to version control
+- Never commit `~/.ai-phone/config.json` to version control
 - Use environment variables in CI/CD pipelines
 
 ### Network Security
@@ -237,15 +237,15 @@ Error connecting to Gemini API
 ### Configuration Backup
 
 ```bash
-gemini-phone backup
+ai-phone backup
 ```
 
-Backups are stored in `~/.gemini-phone/backups/` with timestamps.
+Backups are stored in `~/.ai-phone/backups/` with timestamps.
 
 ### Recovery
 
 ```bash
-gemini-phone restore
+ai-phone restore
 ```
 
 Interactive selection of available backups.
@@ -253,13 +253,13 @@ Interactive selection of available backups.
 ### Manual Backup
 
 ```bash
-cp -r ~/.gemini-phone ~/.gemini-phone.backup
+cp -r ~/.ai-phone ~/.ai-phone.backup
 ```
 
 ## Updating
 
 ```bash
-gemini-phone update
+ai-phone update
 ```
 
 This pulls the latest code and restarts services. Configuration is preserved.
@@ -267,7 +267,7 @@ This pulls the latest code and restarts services. Configuration is preserved.
 ## Uninstalling
 
 ```bash
-gemini-phone uninstall
+ai-phone uninstall
 ```
 
 This removes:

@@ -39,7 +39,7 @@ fi
 
 # --- End Hotfix ---
 
-echo "🚀 Gemini Phone - FreePBX IVR Maze Auto-Provisioner"
+echo "🚀 AI Phone - FreePBX IVR Maze Auto-Provisioner"
 echo ""
 
 # Auto-detect MySQL password from FreePBX config

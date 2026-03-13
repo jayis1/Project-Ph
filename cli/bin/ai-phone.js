@@ -1,9 +1,9 @@
 #!/usr/bin/env node
 
 /**
- * Gemini Phone CLI
+ * AI Phone CLI
  * 
- * Simple unified command-line interface for Gemini Phone.
+ * Simple unified command-line interface for AI Phone.
  * Modeled after NetworkChuck's claude-phone for simplicity.
  */
 
@@ -21,7 +21,7 @@ const pkg = JSON.parse(readFileSync(packagePath, 'utf8'));
 const program = new Command();
 
 program
-  .name('gemini-phone')
+  .name('ai-phone')
   .description('Voice interface for Gemini CLI via SIP')
   .version(pkg.version);
 
@@ -37,7 +37,7 @@ program
 // Start command
 program
   .command('start')
-  .description('Start Gemini Phone services')
+  .description('Start AI Phone services')
   .action(async () => {
     const { startCommand } = await import('../lib/commands/start.js');
     await startCommand();
@@ -46,7 +46,7 @@ program
 // Stop command
 program
   .command('stop')
-  .description('Stop Gemini Phone services')
+  .description('Stop AI Phone services')
   .action(async () => {
     const { stopCommand } = await import('../lib/commands/stop.js');
     await stopCommand();

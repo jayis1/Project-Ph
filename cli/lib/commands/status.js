@@ -9,12 +9,12 @@ import { execSync } from 'child_process';
  * @returns {Promise<void>}
  */
 export async function statusCommand() {
-  console.log(chalk.bold.cyan('\n📊 Gemini Phone Status\n'));
+  console.log(chalk.bold.cyan('\n📊 AI Phone Status\n'));
 
   // Check if configured
   if (!configExists()) {
     console.log(chalk.red('✗ Not configured'));
-    console.log(chalk.gray('  Run "gemini-phone setup" first\n'));
+    console.log(chalk.gray('  Run "ai-phone setup" first\n'));
     return;
   }
 
@@ -103,7 +103,7 @@ async function showApiServerStatus(config, isPiSplit) {
     } else {
       console.log(chalk.red(`  ✗ Cannot reach remote API server`));
       console.log(chalk.gray(`    Tried: ${apiUrl}`));
-      console.log(chalk.gray('    Run "gemini-phone api-server" on your admin node'));
+      console.log(chalk.gray('    Run "ai-phone api-server" on your admin node'));
     }
   } else {
     // Standard mode: Check local server container
@@ -123,7 +123,7 @@ async function showApiServerStatus(config, isPiSplit) {
       }
     } else {
       console.log(chalk.red('  ✗ Not running'));
-      console.log(chalk.gray('    Run "gemini-phone start" to launch'));
+      console.log(chalk.gray('    Run "ai-phone start" to launch'));
     }
   }
   console.log();
@@ -143,7 +143,7 @@ async function showVoiceServerStatus(config, isPiSplit, installationType) {
 
   if (containers.length === 0) {
     console.log(chalk.red('  ✗ No containers running'));
-    console.log(chalk.gray('    Run "gemini-phone start" to launch'));
+    console.log(chalk.gray('    Run "ai-phone start" to launch'));
   } else {
     for (const container of containers) {
       const isRunning = container.status.toLowerCase().includes('up') ||
@@ -245,7 +245,7 @@ function showProvisioningStatus(config) {
     console.log(chalk.gray(`    Version: ${config.provisioning.version}`));
   } else {
     console.log(chalk.yellow(`  ⚠ Not completed`));
-    console.log(chalk.gray('    Run "gemini-phone auto-provision" to provision FreePBX'));
+    console.log(chalk.gray('    Run "ai-phone auto-provision" to provision FreePBX'));
   }
   console.log();
 }

@@ -1,10 +1,10 @@
-# GEMINI Gemini Phone
+# GEMINI AI Phone
 
 Voice interface for Gemini Code via SIP/FreePBX. Call your AI, and your AI can call you.
 
 ## Project Overview
 
-Gemini Phone gives your Gemini Code installation a phone number through FreePBX integration:
+AI Phone gives your Gemini Code installation a phone number through FreePBX integration:
 
 - **Inbound**: Call an extension and talk to Gemini - run commands, check status, ask questions
 - **Outbound**: Your server can call YOU with alerts, then have a conversation about what to do
@@ -24,7 +24,7 @@ Gemini Phone gives your Gemini Code installation a phone number through FreePBX 
 
 ## Architecture
 
-![Gemini Phone Architecture](docs/images/gemini-phone-architecture.png)
+![AI Phone Architecture](docs/images/ai-phone-architecture.png)
 
 ```
 ┌─────────────────────────────────────────────────────────────┐
@@ -55,7 +55,7 @@ Gemini Phone gives your Gemini Code installation a phone number through FreePBX 
 ## Directory Structure
 
 ```
-gemini-phone/
+ai-phone/
 ├── GEMINI.md                 # This file
 ├── CONSTITUTION.md           # DevFlow 2.0 development principles
 ├── README.md                 # User-facing documentation
@@ -79,7 +79,7 @@ gemini-phone/
 │   ├── package.json
 │   ├── README.md
 │   ├── bin/
-│   │   ├── gemini-phone.js   # CLI entry point
+│   │   ├── ai-phone.js   # CLI entry point
 │   │   └── cli-main.js       # Command definitions
 │   ├── lib/
 │   │   ├── commands/         # Command implementations
@@ -160,11 +160,11 @@ gemini-phone/
 curl -sSL https://raw.githubusercontent.com/jayis1/claude-phone-but-for-Gemini-and-freepbx/2.1.6/install.sh | bash
 
 # Setup and run
-gemini-phone setup    # Interactive configuration
-gemini-phone start    # Launch services
-gemini-phone stop     # Stop services
-gemini-phone status   # Check status
-gemini-phone doctor   # Health checks
+ai-phone setup    # Interactive configuration
+ai-phone start    # Launch services
+ai-phone stop     # Stop services
+ai-phone status   # Check status
+ai-phone doctor   # Health checks
 ```
 
 ## Development
@@ -224,7 +224,7 @@ npm run lint:fix      # Auto-fix issues
 4. **Separate gemini-api-server** - Runs where Gemini CLI is installed
 5. **Session-per-call** - Each call gets Gemini session for multi-turn context
 6. **RTP ports 30000-30100** - Avoids conflict with SBC (uses 20000-20099)
-7. **Config in ~/.gemini-phone** - User config separate from codebase
+7. **Config in ~/.ai-phone** - User config separate from codebase
 
 ## Environment Variables
 

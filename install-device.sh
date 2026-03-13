@@ -1,12 +1,12 @@
 #!/bin/bash
 
-# Gemini Phone - Device-Only Setup
+# AI Phone - Device-Only Setup
 # For deploying individual crew members in separate LXC containers
 # This script registers to an existing FreePBX extension (no admin access needed)
 
 set -e
 
-echo "🚀 Gemini Phone - Device-Only Setup"
+echo "🚀 AI Phone - Device-Only Setup"
 echo "===================================="
 echo ""
 
@@ -115,7 +115,7 @@ read -p "OpenAI API Key: " OPENAI_KEY
 EXTERNAL_IP=$(hostname -I | awk '{print $1}')
 
 echo ""
-echo "🔧 Installing Gemini Phone..."
+echo "🔧 Installing AI Phone..."
 
 # Run the main installer
 curl -sSL https://raw.githubusercontent.com/jayis1/2fast2dumb2fun/main/install.sh | bash
@@ -124,12 +124,12 @@ curl -sSL https://raw.githubusercontent.com/jayis1/2fast2dumb2fun/main/install.s
 echo ""
 echo "📝 Creating configuration..."
 
-mkdir -p ~/.gemini-phone
+mkdir -p ~/.ai-phone
 
 # Expand HOME for use in JSON
 HOME_DIR="$HOME"
 
-cat > ~/.gemini-phone/config.json <<EOF
+cat > ~/.ai-phone/config.json <<EOF
 {
   "installationType": "both",
   "deployment": {
@@ -151,8 +151,8 @@ cat > ~/.gemini-phone/config.json <<EOF
     "externalIp": "$EXTERNAL_IP"
   },
   "paths": {
-    "voiceApp": "$HOME_DIR/.gemini-phone-cli/voice-app",
-    "geminiApiServer": "$HOME_DIR/.gemini-phone-cli/gemini-api-server"
+    "voiceApp": "$HOME_DIR/.ai-phone-cli/voice-app",
+    "geminiApiServer": "$HOME_DIR/.ai-phone-cli/gemini-api-server"
   },
   "server": {
     "geminiApiPort": 3333,
@@ -176,14 +176,14 @@ cat > ~/.gemini-phone/config.json <<EOF
 EOF
 
 # Fix any literal $HOME that didn't expand
-sed -i "s|\$HOME|$HOME|g" ~/.gemini-phone/config.json
+sed -i "s|\$HOME|$HOME|g" ~/.ai-phone/config.json
 
 echo "✅ Configuration created"
 
 # Start services
 echo ""
 echo "🚀 Starting services..."
-gemini-phone start
+ai-phone start
 
 echo ""
 echo "⏳ Waiting for registration..."
@@ -191,7 +191,7 @@ sleep 10
 
 # Check status
 echo ""
-gemini-phone status
+ai-phone status
 
 echo ""
 echo "════════════════════════════════════════════"

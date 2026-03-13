@@ -8,7 +8,7 @@ The "Outside World" trunk connects your FreePBX to your SIP provider (Redspot) f
 
 ### Method 1: Environment Variables (Recommended)
 
-Add to your `~/.gemini-phone/config.json`:
+Add to your `~/.ai-phone/config.json`:
 
 ```json
 {
@@ -33,7 +33,7 @@ export SIP_TRUNK_PORT=5060
 ## Running the Script
 
 ```bash
-cd ~/.gemini-phone-cli
+cd ~/.ai-phone-cli
 git pull
 cd cli/mysql-provisioner
 node create-outside-world-trunk.js

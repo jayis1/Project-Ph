@@ -1,6 +1,6 @@
 #!/bin/bash
 # ============================================================================
-# Gemini Phone Startup Script
+# AI Phone Startup Script
 # ============================================================================
 # Automatically detects your LAN IP and starts the voice services.
 # Works on both Mac and Linux.
@@ -18,7 +18,7 @@ YELLOW='\033[1;33m'
 NC='\033[0m' # No Color
 
 echo "======================================"
-echo "  Gemini Phone Startup"
+echo "  AI Phone Startup"
 echo "======================================"
 
 # Detect OS
@@ -66,7 +66,7 @@ export EXTERNAL_IP="$IP_TO_USE"
 # Check for required .env file
 if [ ! -f .env ]; then
     echo -e "${RED}ERROR: .env file not found${NC}"
-    echo "Please run 'gemini-phone setup' first or copy .env.example to .env"
+    echo "Please run 'ai-phone setup' first or copy .env.example to .env"
     exit 1
 fi
 
@@ -90,7 +90,7 @@ if [ "$OS" == "mac" ]; then
 fi
 
 # Start the containers
-echo "Starting Gemini Phone services..."
+echo "Starting AI Phone services..."
 echo "EXTERNAL_IP=$EXTERNAL_IP"
 echo ""
 

@@ -56,7 +56,7 @@ nc -zv 172.16.1.143 5060
 
 ```bash
 # On each LXC
-cat ~/.gemini-phone/config.json | jq '{
+cat ~/.ai-phone/config.json | jq '{
   sipDomain,
   sipRegistrar,
   externalIp,
@@ -107,10 +107,10 @@ netstat -tuln | grep -E "5060|5080"
 
 ```bash
 # On Morpheus LXC
-cat ~/gemini-phone/docker-compose.yml | grep -A 5 "EXTERNAL_IP\|SIP_"
+cat ~/ai-phone/docker-compose.yml | grep -A 5 "EXTERNAL_IP\|SIP_"
 
 # On Trinity LXC  
-cat ~/gemini-phone/docker-compose.yml | grep -A 5 "EXTERNAL_IP\|SIP_"
+cat ~/ai-phone/docker-compose.yml | grep -A 5 "EXTERNAL_IP\|SIP_"
 ```
 
 **Must be different**:
@@ -166,10 +166,10 @@ docker compose restart voice-app
 
 ```bash
 # Get password from config
-cat ~/.gemini-phone/config.json | jq -r '.devices[] | select(.name=="Trinity") | .password'
+cat ~/.ai-phone/config.json | jq -r '.devices[] | select(.name=="Trinity") | .password'
 
 # Update FreePBX extension 9001 with this password
-# OR regenerate with: gemini-phone setup
+# OR regenerate with: ai-phone setup
 ```
 
 ### Fix 4: Firewall Blocking SIP
@@ -229,10 +229,10 @@ echo "=== Docker Status ==="
 docker compose ps
 
 echo "=== Network Config ==="
-cat ~/.gemini-phone/config.json | jq '{sipDomain, sipRegistrar, externalIp}'
+cat ~/.ai-phone/config.json | jq '{sipDomain, sipRegistrar, externalIp}'
 
 echo "=== Trinity Device ==="
-cat ~/.gemini-phone/config.json | jq '.devices[] | select(.name=="Trinity")'
+cat ~/.ai-phone/config.json | jq '.devices[] | select(.name=="Trinity")'
 
 echo "=== Registration Logs ==="
 docker compose logs voice-app | grep -i "register\|401\|403" | tail -20

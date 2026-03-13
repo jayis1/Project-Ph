@@ -24,7 +24,7 @@ function getMachineKey() {
     // Derive key using PBKDF2
     return crypto.pbkdf2Sync(
         machineId,
-        'gemini-phone-salt-v1',
+        'ai-phone-salt-v1',
         100000,
         KEY_LENGTH,
         'sha256'

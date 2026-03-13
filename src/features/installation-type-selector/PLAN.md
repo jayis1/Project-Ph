@@ -1,7 +1,7 @@
 # Technical Plan: Installation Type Selector
 
 ## Overview
-Add installation type selection to `<gemini-phone> setup` that customizes the setup flow and service management based on deployment type.
+Add installation type selection to `<ai-phone> setup` that customizes the setup flow and service management based on deployment type.
 
 ## Architecture
 

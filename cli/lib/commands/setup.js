@@ -10,7 +10,7 @@ const CONFIG_DIR = getConfigDir();
 const CONFIG_FILE = getConfigPath();
 
 export async function setupCommand() {
-  console.log(chalk.cyan.bold('\n🎯 Gemini Phone Setup Wizard\n'));
+  console.log(chalk.cyan.bold('\n🎯 AI Phone Setup Wizard\n'));
 
   // Ensure config directory exists
   if (!existsSync(CONFIG_DIR)) {
@@ -146,7 +146,7 @@ export async function setupCommand() {
     // Generate Docker configuration (docker-compose.yml and .env)
     // We need to map the flat config to the structure expected by writeDockerConfig
     // See cli/lib/docker.js generateEnvFile for the expected structure
-    const installDir = join(homedir(), '.gemini-phone-cli');
+    const installDir = join(homedir(), '.ai-phone-cli');
 
     const mappedConfig = {
       paths: {
@@ -185,8 +185,8 @@ export async function setupCommand() {
     console.log(chalk.green(`✅ Generated docker-compose.yml and .env`));
 
     console.log(chalk.cyan('Next steps:'));
-    console.log(chalk.white(`  gemini-phone start    ${chalk.gray('# Launch services')}`));
-    console.log(chalk.white(`  gemini-phone status   ${chalk.gray('# Check status')}`));
+    console.log(chalk.white(`  ai-phone start    ${chalk.gray('# Launch services')}`));
+    console.log(chalk.white(`  ai-phone status   ${chalk.gray('# Check status')}`));
     console.log();
 
   } catch (error) {
@@ -198,7 +198,7 @@ export async function setupCommand() {
 
 
 function createDevicesFile(config) {
-  const devicesPath = join(homedir(), '.gemini-phone-cli', 'voice-app', 'config', 'devices.json');
+  const devicesPath = join(homedir(), '.ai-phone-cli', 'voice-app', 'config', 'devices.json');
   const devices = {
     [config.sipExtension]: {
       extension: config.sipExtension,
@@ -210,7 +210,7 @@ function createDevicesFile(config) {
   };
 
   // Ensure directory exists
-  const dir = join(homedir(), '.gemini-phone-cli', 'voice-app', 'config');
+  const dir = join(homedir(), '.ai-phone-cli', 'voice-app', 'config');
   if (!existsSync(dir)) {
     mkdirSync(dir, { recursive: true });
   }

@@ -21,7 +21,7 @@ const CONFIG_PATH = path.join(__dirname, '../config/devices.json');
 
 // Default device (Trinity) - used when config file missing or no match found
 const TRINITY_DEFAULT = {
-  name: 'gemini-phone',
+  name: 'ai-phone',
   extension: '9001',
   authId: '9001',
   password: 'GeminiPhone123!',

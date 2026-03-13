@@ -4,13 +4,13 @@
 
 ## Overview
 
-Simplify the gemini-phone installer to use a single deployment model: **SBC-everywhere**. Instead of asking users whether they're using cloud or on-prem 3CX, the installer assumes all deployments use the 3CX SBC on the Raspberry Pi. This reduces installer complexity, eliminates confusing questions about "registrar IP", and provides a consistent experience for all users regardless of their 3CX deployment type.
+Simplify the ai-phone installer to use a single deployment model: **SBC-everywhere**. Instead of asking users whether they're using cloud or on-prem 3CX, the installer assumes all deployments use the 3CX SBC on the Raspberry Pi. This reduces installer complexity, eliminates confusing questions about "registrar IP", and provides a consistent experience for all users regardless of their 3CX deployment type.
 
 ## User Stories
 
 ### Primary
 
-- As a user with free-tier 3CX cloud, I want to set up gemini-phone on my Pi so I can answer calls with my AI assistant
+- As a user with free-tier 3CX cloud, I want to set up ai-phone on my Pi so I can answer calls with my AI assistant
 - As a user with self-hosted 3CX, I want the same simple setup experience as cloud users
 
 ### Secondary
@@ -65,7 +65,7 @@ Simplify the gemini-phone installer to use a single deployment model: **SBC-ever
 
 ### Security
 
-- SBC Auth Key stored in ~/.gemini-phone/config.json (chmod 600)
+- SBC Auth Key stored in ~/.ai-phone/config.json (chmod 600)
 - Auth Key displayed masked in `config show` output
 
 ## Out of Scope

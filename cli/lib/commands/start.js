@@ -7,12 +7,12 @@ import { getConfigPath } from '../config.js';
 const CONFIG_FILE = getConfigPath();
 
 export async function startCommand() {
-  console.log(chalk.cyan.bold('\n🚀 Starting Gemini Phone\n'));
+  console.log(chalk.cyan.bold('\n🚀 Starting AI Phone\n'));
 
   // Check if config exists
   if (!existsSync(CONFIG_FILE)) {
     console.log(chalk.red('✗ No configuration found'));
-    console.log(chalk.yellow('  Run: gemini-phone setup\n'));
+    console.log(chalk.yellow('  Run: ai-phone setup\n'));
     process.exit(1);
   }
 
@@ -33,8 +33,8 @@ export async function startCommand() {
 
     console.log(chalk.green('\n✅ Services started!\n'));
     console.log(chalk.cyan('Next steps:'));
-    console.log(chalk.white(`  gemini-phone status   ${chalk.gray('# Check status')}`));
-    console.log(chalk.white(`  gemini-phone stop     ${chalk.gray('# Stop services')}`));
+    console.log(chalk.white(`  ai-phone status   ${chalk.gray('# Check status')}`));
+    console.log(chalk.white(`  ai-phone stop     ${chalk.gray('# Stop services')}`));
     console.log();
 
   } catch (error) {

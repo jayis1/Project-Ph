@@ -1,7 +1,7 @@
 #!/bin/bash
 set -e
 
-# Gemini Phone Bot Installer
+# AI Phone Bot Installer
 # Usage: ./install-bot.sh --fleet --registrar 172.16.1.26
 # Or:    ./install-bot.sh --ext 9000 --registrar 172.16.1.26
 # Or:    ./install-bot.sh (Interactive Mode)
@@ -25,12 +25,12 @@ while [[ "$#" -gt 0 ]]; do
     shift
 done
 
-echo "🤖 Gemini Phone Installer Initializing..."
+echo "🤖 AI Phone Installer Initializing..."
 
 # --- Interactive Mode ---
 if [ -z "$REGISTRAR" ]; then
     echo ""
-    echo "👋 Welcome to the Gemini Phone Installer!"
+    echo "👋 Welcome to the AI Phone Installer!"
     echo "   I'll help you set up your AI Phone."
     echo ""
     
@@ -40,8 +40,8 @@ if [ -z "$REGISTRAR" ]; then
 
     read -p "🔹 Enter Extension (Default 9001): " EXTENSION
     EXTENSION=${EXTENSION:-9001}
-    read -p "🔹 Enter Name (Default gemini-phone): " INSTANCE_NAME
-    INSTANCE_NAME=${INSTANCE_NAME:-"gemini-phone"}
+    read -p "🔹 Enter Name (Default ai-phone): " INSTANCE_NAME
+    INSTANCE_NAME=${INSTANCE_NAME:-"ai-phone"}
     read -p "🔹 Enter Password (Default GeminiPhone123!): " PASSWORD
     PASSWORD=${PASSWORD:-"GeminiPhone123!"}
 
@@ -121,7 +121,7 @@ EOF
 echo "SIP_EXTENSION=$EXTENSION" >> .env
 echo "SIP_AUTH_ID=$EXTENSION" >> .env
 echo "SIP_PASSWORD=${PASSWORD:-GeminiPhone123!}" >> .env
-echo "INSTANCE_NAME=\"${INSTANCE_NAME:-gemini-phone}\"" >> .env
+echo "INSTANCE_NAME=\"${INSTANCE_NAME:-ai-phone}\"" >> .env
 echo "ℹ️  Single Bot Configured (Extension $EXTENSION)"
 
 # --- 5. Launch ---

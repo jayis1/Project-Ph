@@ -1,10 +1,10 @@
 # n8n Integration Guide
 
-Complete guide for integrating Gemini Phone with n8n workflows for automation and monitoring.
+Complete guide for integrating AI Phone with n8n workflows for automation and monitoring.
 
 ## Overview
 
-Gemini Phone sends webhook events for call lifecycle tracking. You can use these events in n8n to:
+AI Phone sends webhook events for call lifecycle tracking. You can use these events in n8n to:
 
 - **Log calls** to databases or spreadsheets
 - **Send notifications** to Slack/Discord/Email when calls complete
@@ -45,7 +45,7 @@ Add to your `.env` or `docker-compose.yml`:
 
 ```bash
 # For inbound call webhooks
-N8N_WEBHOOK_URL=https://your-n8n.com/webhook/gemini-phone-inbound
+N8N_WEBHOOK_URL=https://your-n8n.com/webhook/ai-phone-inbound
 
 # Example with n8n cloud
 N8N_WEBHOOK_URL=https://app.n8n.cloud/webhook/abc123def456
@@ -82,7 +82,7 @@ curl -X POST http://localhost:3000/api/outbound-call \
 **Webhook Configuration**:
 
 - Method: POST
-- Path: `gemini-phone-inbound`
+- Path: `ai-phone-inbound`
 - Response: `{ "ok": true }`
 
 **Set Node** (extract fields):
@@ -335,7 +335,7 @@ async function sendWebhookWithRetry(url, payload, maxRetries = 3) {
 
 1. Create webhook node in n8n
 2. Click "Listen for Test Event"
-3. Make a test call to Gemini Phone
+3. Make a test call to AI Phone
 4. Verify payload in n8n
 
 ### 2. Using RequestBin
@@ -363,7 +363,7 @@ docker run -p 5678:5678 n8nio/n8n
 ngrok http 5678
 
 # Use ngrok URL
-export N8N_WEBHOOK_URL=https://abc123.ngrok.io/webhook/gemini-phone
+export N8N_WEBHOOK_URL=https://abc123.ngrok.io/webhook/ai-phone
 ```
 
 ---
@@ -400,7 +400,7 @@ The logs show `Failed to send start: Request failed with status code 404`. This 
 
 ```bash
 # Add to .env
-echo "N8N_WEBHOOK_URL=https://your-n8n.com/webhook/gemini-phone" >> .env
+echo "N8N_WEBHOOK_URL=https://your-n8n.com/webhook/ai-phone" >> .env
 
 # Restart services
 docker compose restart voice-app

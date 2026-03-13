@@ -1,15 +1,15 @@
 # Troubleshooting Guide
 
-Common issues and solutions for Gemini Phone.
+Common issues and solutions for AI Phone.
 
 ## Quick Diagnostics
 
 Start here for most problems:
 
 ```bash
-<gemini-phone doctor   # Automated health checks
-<gemini-phone status   # Service status overview
-<gemini-phone logs     # View recent logs
+<ai-phone doctor   # Automated health checks
+<ai-phone status   # Service status overview
+<ai-phone logs     # View recent logs
 ```
 
 ## Setup Issues
@@ -90,14 +90,14 @@ sudo usermod -aG docker pi
 1. Is the extension registered with the PBX?
 
    ```bash
-   gemini-phone status
+   ai-phone status
    # Look for "SIP Registration: OK"
    ```
 
 2. Is the SIP domain correct?
 
    ```bash
-   gemini-phone config show
+   ai-phone config show
    # Check sip.domain matches your PBX FQDN
    ```
 
@@ -113,7 +113,7 @@ sudo usermod -aG docker pi
 
 ### Extension not registering
 
-**Symptom:** `<gemini-phone status` shows SIP registration failed.
+**Symptom:** `<ai-phone status` shows SIP registration failed.
 
 **Solutions:**
 
@@ -136,7 +136,7 @@ sudo usermod -aG docker pi
 ip addr show | grep "inet " | grep -v 127.0.0.1
 
 # Re-run setup to fix
-<gemini-phone setup
+<ai-phone setup
 # Enter correct IP when prompted for "External IP"
 ```
 
@@ -152,19 +152,19 @@ ip addr show | grep "inet " | grep -v 127.0.0.1
 
 **Cause:** A PBX SBC/Proxy might be using RTP ports 20000-20099. If FreeSWITCH uses the same range, it can't bind.
 
-**Fix:** Gemini Phone uses ports 30000-30100 by default. If you upgraded from an older version:
+**Fix:** AI Phone uses ports 30000-30100 by default. If you upgraded from an older version:
 
 ```bash
 # Check current port config
-grep "rtp-range" ~/.gemini-phone/docker-compose.yml
+grep "rtp-range" ~/.ai-phone/docker-compose.yml
 
 # If it shows 20000, update to 30000:
-sed -i 's/--rtp-range-start 20000/--rtp-range-start 30000/' ~/.gemini-phone/docker-compose.yml
-sed -i 's/--rtp-range-end 20100/--rtp-range-end 30100/' ~/.gemini-phone/docker-compose.yml
+sed -i 's/--rtp-range-start 20000/--rtp-range-start 30000/' ~/.ai-phone/docker-compose.yml
+sed -i 's/--rtp-range-end 20100/--rtp-range-end 30100/' ~/.ai-phone/docker-compose.yml
 
 # Restart services
-<gemini-phone stop
-<gemini-phone start
+<ai-phone stop
+<ai-phone start
 ```
 
 ## Runtime Issues
@@ -178,7 +178,7 @@ sed -i 's/--rtp-range-end 20100/--rtp-range-end 30100/' ~/.gemini-phone/docker-c
 1. **API server unreachable:**
 
    ```bash
-   <gemini-phone status
+   <ai-phone status
    # Check "Gemini API Server" status
 
    # For split deployments, verify connectivity:
@@ -196,7 +196,7 @@ sed -i 's/--rtp-range-end 20100/--rtp-range-end 30100/' ~/.gemini-phone/docker-c
 3. **Session errors:**
 
    ```bash
-   <gemini-phone logs voice-app | grep -i error
+   <ai-phone logs voice-app | grep -i error
    ```
 
 ### Whisper transcription errors
@@ -218,7 +218,7 @@ sed -i 's/--rtp-range-end 20100/--rtp-range-end 30100/' ~/.gemini-phone/docker-c
 **Solutions:**
 
 1. Check ElevenLabs character quota isn't exhausted
-2. Verify voice ID is valid: `<gemini-phone device list`
+2. Verify voice ID is valid: `<ai-phone device list`
 3. Check API key still works
 
 ### Calls disconnect after a few seconds
@@ -233,7 +233,7 @@ sed -i 's/--rtp-range-end 20100/--rtp-range-end 30100/' ~/.gemini-phone/docker-c
 
 ```bash
 # Check FreeSWITCH logs for clues
-<gemini-phone logs freeswitch | tail -100
+<ai-phone logs freeswitch | tail -100
 ```
 
 ## Split Deployment Issues
@@ -249,19 +249,19 @@ sed -i 's/--rtp-range-end 20100/--rtp-range-end 30100/' ~/.gemini-phone/docker-c
 curl http://<api-server-ip>:3333/health
 
 # Check configured API URL:
-<gemini-phone config show | grep geminiApiUrl
+<ai-phone config show | grep geminiApiUrl
 ```
 
 **Solutions:**
 
 1. Verify API server IP is correct in Pi's config
-2. Ensure API server is running: `<gemini-phone api-server`
+2. Ensure API server is running: `<ai-phone api-server`
 3. Check firewall allows port 3333
 4. Verify both machines are on same network (or have routing)
 
 ### API server won't start
 
-**Symptom:** `<gemini-phone api-server` fails immediately.
+**Symptom:** `<ai-phone api-server` fails immediately.
 
 **Solutions:**
 
@@ -274,7 +274,7 @@ curl http://<api-server-ip>:3333/health
 2. Verify Gemini Code CLI works:
 
    ```bash
-   <gemini-phone> --version
+   <ai-phone> --version
    ```
 
 3. Check for Node.js errors in output
@@ -284,7 +284,7 @@ curl http://<api-server-ip>:3333/health
 ### Voice App Logs
 
 ```bash
-<gemini-phone logs voice-app
+<ai-phone logs voice-app
 # or
 docker compose logs -f voice-app
 ```
@@ -292,7 +292,7 @@ docker compose logs -f voice-app
 ### SIP Server Logs
 
 ```bash
-<gemini-phone logs drachtio
+<ai-phone logs drachtio
 # or
 docker compose logs -f drachtio
 ```
@@ -300,7 +300,7 @@ docker compose logs -f drachtio
 ### Media Server Logs
 
 ```bash
-<gemini-phone logs freeswitch
+<ai-phone logs freeswitch
 # or
 docker compose logs -f freeswitch
 ```
@@ -310,19 +310,19 @@ docker compose logs -f freeswitch
 ```bash
 # If running in foreground, check terminal output
 # If running via start command, check:
-cat ~/.gemini-phone/api-server.log
+cat ~/.ai-phone/api-server.log
 ```
 
 ## Still Stuck?
 
 1. **Check the video tutorial:** [youtu.be/cT22fTzotYc](https://youtu.be/cT22fTzotYc) covers common setup issues
-2. **Run full diagnostics:** `<gemini-phone doctor`
-3. **Open an issue:** [github.com/networkchuck/gemini-phone/issues](https://github.com/networkchuck/gemini-phone/issues)
+2. **Run full diagnostics:** `<ai-phone doctor`
+3. **Open an issue:** [github.com/networkchuck/ai-phone/issues](https://github.com/networkchuck/ai-phone/issues)
 
 When opening an issue, include:
 
-- Output of `<gemini-phone doctor`
-- Output of `<gemini-phone status`
+- Output of `<ai-phone doctor`
+- Output of `<ai-phone status`
 - Relevant log snippets (redact any API keys!)
 - Your deployment type (All-in-one or Split)
 - Platform (macOS, Linux, Raspberry Pi)

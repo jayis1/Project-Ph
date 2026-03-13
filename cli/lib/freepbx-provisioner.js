@@ -14,7 +14,7 @@ import { decryptConfig } from './credential-manager.js';
 
 // Default device configuration
 const DEFAULT_DEVICE = [
-    { name: 'gemini-phone', extension: '9001', voiceId: 'EXAVITQu4vr4xnSDxMaL' }
+    { name: 'ai-phone', extension: '9001', voiceId: 'EXAVITQu4vr4xnSDxMaL' }
 ];
 
 /**
@@ -125,7 +125,7 @@ export async function provisionExtensions(config, pool, progressCallback = () =>
     progressCallback({ step: 'extensions', status: 'running', message: 'Provisioning device...' });
 
     // Use devices config if available, otherwise fallback to DEFAULT_DEVICE
-    // In gemini-phone, config.devices is an array, often with one object.
+    // In ai-phone, config.devices is an array, often with one object.
     const devices = (config.devices && config.devices.length > 0) ? config.devices : DEFAULT_DEVICE;
     const results = { created: 0, skipped: 0, failed: 0 };
 

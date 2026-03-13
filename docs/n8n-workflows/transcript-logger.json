@@ -1,10 +1,10 @@
 {
-    "name": "Gemini Phone - Transcript Logger",
+    "name": "AI Phone - Transcript Logger",
     "nodes": [
         {
             "parameters": {
                 "httpMethod": "POST",
-                "path": "gemini-phone-transcripts",
+                "path": "ai-phone-transcripts",
                 "responseMode": "lastNode",
                 "options": {}
             },

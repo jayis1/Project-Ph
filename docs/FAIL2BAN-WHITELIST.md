@@ -1,4 +1,4 @@
-# Fail2ban Whitelisting for Gemini Phone
+# Fail2ban Whitelisting for AI Phone
 
 ## Problem
 
@@ -16,7 +16,7 @@ Run this on your **FreePBX server** for each crew member:
 
 ```bash
 # Copy script to FreePBX
-scp ~/.gemini-phone-cli/scripts/whitelist-fail2ban.sh root@172.16.1.143:/tmp/
+scp ~/.ai-phone-cli/scripts/whitelist-fail2ban.sh root@172.16.1.143:/tmp/
 
 # SSH to FreePBX and run
 ssh root@172.16.1.143
@@ -31,7 +31,7 @@ If all your LXCs are in the same subnet:
 
 ```bash
 ssh root@172.16.1.143
-bash /tmp/whitelist-fail2ban.sh 172.16.1.0/24 "Gemini Phone Crew Subnet"
+bash /tmp/whitelist-fail2ban.sh 172.16.1.0/24 "AI Phone Crew Subnet"
 ```
 
 ## What It Does
@@ -66,7 +66,7 @@ If you prefer to edit manually:
 ```ini
 [DEFAULT]
 ignoreip = 127.0.0.1/8 ::1
-           172.16.1.0/24  # Gemini Phone crew subnet
+           172.16.1.0/24  # AI Phone crew subnet
 ```
 
 1. Restart: `systemctl restart fail2ban`
@@ -103,13 +103,13 @@ ssh root@172.16.1.143 "tail -f /var/log/fail2ban.log"
 You can add this to your deployment workflow:
 
 ```bash
-# 1. Install Gemini Phone on crew member LXC
+# 1. Install AI Phone on crew member LXC
 curl -sSL https://raw.githubusercontent.com/jayis1/2fast2dumb2fun/main/install.sh | bash
 
 # 2. Whitelist the IP on FreePBX
 ssh root@172.16.1.143 "bash /tmp/whitelist-fail2ban.sh $(hostname -I | awk '{print $1}') '$(hostname)'"
 
 # 3. Setup and start
-gemini-phone setup
-gemini-phone start
+ai-phone setup
+ai-phone start
 ```

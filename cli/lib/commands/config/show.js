@@ -27,12 +27,12 @@ function redactValue(value) {
  * @returns {Promise<void>}
  */
 export async function configShowCommand() {
-  console.log(chalk.bold.cyan('\n⚙️  Gemini Phone Configuration\n'));
+  console.log(chalk.bold.cyan('\n⚙️  AI Phone Configuration\n'));
 
   // Check if configured
   if (!configExists()) {
     console.log(chalk.red('✗ Configuration not found'));
-    console.log(chalk.gray('  Run "gemini-phone setup" first\n'));
+    console.log(chalk.gray('  Run "ai-phone setup" first\n'));
     return;
   }
 
@@ -74,5 +74,5 @@ export async function configShowCommand() {
     }
   }
 
-  console.log(chalk.gray(`\n💡 To view the raw config file, run: gemini-phone config path\n`));
+  console.log(chalk.gray(`\n💡 To view the raw config file, run: ai-phone config path\n`));
 }

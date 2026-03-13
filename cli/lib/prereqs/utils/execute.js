@@ -197,7 +197,7 @@ export async function executeScript(url, options = {}) {
  * @returns {string} Path to log file
  */
 function getLogFile() {
-  const configDir = path.join(os.homedir(), '.gemini-phone');
+  const configDir = path.join(os.homedir(), '.ai-phone');
 
   // Ensure config directory exists
   if (!fs.existsSync(configDir)) {

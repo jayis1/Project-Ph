@@ -1,10 +1,10 @@
-# Gemini Phone
+# AI Phone
 
 Voice interface via SIP — call your local AI, and your AI can call you. **100% private. No cloud APIs required.**
 
 ## What is this?
 
-Gemini Phone gives your local AI a phone number through FreePBX:
+AI Phone gives your local AI a phone number through FreePBX:
 
 - **Inbound**: Call an extension and talk to your local AI
 - **Outbound**: Your server calls YOU with alerts, then has a conversation
@@ -39,10 +39,10 @@ Phone Call → FreePBX → voice-app (Docker)
 curl -sSL https://raw.githubusercontent.com/jayis1/Project-Ph/main/install.sh | bash
 
 # 2. Configure
-gemini-phone setup   # Enter SIP credentials + local AI endpoints
+ai-phone setup   # Enter SIP credentials + local AI endpoints
 
 # 3. Run
-gemini-phone start
+ai-phone start
 ```
 
 ## Setup Wizard prompts
@@ -63,12 +63,12 @@ gemini-phone start
 ## CLI Commands
 
 ```bash
-gemini-phone setup    # Interactive configuration
-gemini-phone start    # Launch Docker containers
-gemini-phone stop     # Stop services
-gemini-phone status   # Check status
-gemini-phone doctor   # Health checks
-gemini-phone logs     # Tail logs
+ai-phone setup    # Interactive configuration
+ai-phone start    # Launch Docker containers
+ai-phone stop     # Stop services
+ai-phone status   # Check status
+ai-phone doctor   # Health checks
+ai-phone logs     # Tail logs
 ```
 
 ## Local AI Setup Tips

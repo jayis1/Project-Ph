@@ -1,20 +1,20 @@
-# Gemini Phone CLI
+# AI Phone CLI
 
-Command-line interface for Gemini Phone. Single-command setup and management.
+Command-line interface for AI Phone. Single-command setup and management.
 
 ## Installation
 
 ### One-Line Install
 
 ```bash
-curl -sSL https://raw.githubusercontent.com/theNetworkChuck/gemini-phone/main/install.sh | bash
+curl -sSL https://raw.githubusercontent.com/theNetworkChuck/ai-phone/main/install.sh | bash
 ```
 
 ### Manual Install
 
 ```bash
-git clone https://github.com/theNetworkChuck/gemini-phone.git
-cd gemini-phone/cli
+git clone https://github.com/theNetworkChuck/ai-phone.git
+cd ai-phone/cli
 npm install
 npm link
 ```
@@ -22,7 +22,7 @@ npm link
 ## Setup Wizard
 
 ```bash
-gemini-phone setup
+ai-phone setup
 ```
 
 The wizard guides you through configuration based on your deployment type:
@@ -40,7 +40,7 @@ Select this when setting up a Raspberry Pi or dedicated voice box that connects 
 5. Device configuration (name, extension, auth, voice, prompt)
 6. Server LAN IP (for RTP audio routing)
 
-**What `gemini-phone start` does:**
+**What `ai-phone start` does:**
 
 - Starts Docker containers (drachtio, freeswitch, voice-app)
 - Connects to the remote API server you specified
@@ -53,11 +53,11 @@ Select this when setting up the Gemini API wrapper on a machine with Gemini Code
 
 - API server port (default: 3333)
 
-**What `gemini-phone start` does:**
+**What `ai-phone start` does:**
 
 - Starts gemini-api-server on the configured port
 
-**Note:** You can also just run `gemini-phone api-server` without setup - it defaults to port 3333.
+**Note:** You can also just run `ai-phone api-server` without setup - it defaults to port 3333.
 
 ### Both (All-in-One)
 
@@ -71,7 +71,7 @@ Select this for a single machine running everything.
 4. Device configuration
 5. Server LAN IP, API port, and HTTP port
 
-**What `gemini-phone start` does:**
+**What `ai-phone start` does:**
 
 - Starts Docker containers (drachtio, freeswitch, voice-app)
 - Starts gemini-api-server
@@ -89,22 +89,22 @@ On Raspberry Pi, the setup wizard:
 ### Setup & Configuration
 
 ```bash
-gemini-phone setup              # Interactive configuration wizard
-gemini-phone setup --skip-prereqs   # Skip prerequisite checks
-gemini-phone config show        # Display config (secrets redacted)
-gemini-phone config path        # Show config file location (~/.gemini-phone/config.json)
-gemini-phone config reset       # Reset config (creates backup first)
+ai-phone setup              # Interactive configuration wizard
+ai-phone setup --skip-prereqs   # Skip prerequisite checks
+ai-phone config show        # Display config (secrets redacted)
+ai-phone config path        # Show config file location (~/.ai-phone/config.json)
+ai-phone config reset       # Reset config (creates backup first)
 ```
 
 ### Service Management
 
 ```bash
-gemini-phone start              # Start services based on installation type
-gemini-phone stop               # Stop all services
-gemini-phone status             # Show service status
-gemini-phone doctor             # Health check for dependencies and services
-gemini-phone api-server         # Start API server standalone (default port 3333)
-gemini-phone api-server -p 4000 # Start on custom port
+ai-phone start              # Start services based on installation type
+ai-phone stop               # Stop all services
+ai-phone status             # Show service status
+ai-phone doctor             # Health check for dependencies and services
+ai-phone api-server         # Start API server standalone (default port 3333)
+ai-phone api-server -p 4000 # Start on custom port
 ```
 
 
@@ -112,32 +112,32 @@ gemini-phone api-server -p 4000 # Start on custom port
 ### Logs
 
 ```bash
-gemini-phone logs               # Tail all service logs
-gemini-phone logs voice-app     # Voice app only
-gemini-phone logs drachtio      # SIP server only
-gemini-phone logs freeswitch    # Media server only
+ai-phone logs               # Tail all service logs
+ai-phone logs voice-app     # Voice app only
+ai-phone logs drachtio      # SIP server only
+ai-phone logs freeswitch    # Media server only
 ```
 
 ### Backup & Recovery
 
 ```bash
-gemini-phone backup             # Create timestamped backup
-gemini-phone restore            # Restore from backup (interactive)
+ai-phone backup             # Create timestamped backup
+ai-phone restore            # Restore from backup (interactive)
 ```
 
 ### Maintenance
 
 ```bash
-gemini-phone update             # Update Gemini Phone to latest
-gemini-phone uninstall          # Complete removal
+ai-phone update             # Update AI Phone to latest
+ai-phone uninstall          # Complete removal
 ```
 
 ## Configuration Files
 
-All configuration is stored in `~/.gemini-phone/`:
+All configuration is stored in `~/.ai-phone/`:
 
 ```
-~/.gemini-phone/
+~/.ai-phone/
 ├── config.json           # Main configuration (chmod 600)
 ├── docker-compose.yml    # Generated Docker config
 ├── .env                  # Generated environment file
@@ -185,27 +185,27 @@ All configuration is stored in `~/.gemini-phone/`:
 
 ```bash
 # Install
-curl -sSL https://raw.githubusercontent.com/theNetworkChuck/gemini-phone/main/install.sh | bash
+curl -sSL https://raw.githubusercontent.com/theNetworkChuck/ai-phone/main/install.sh | bash
 
 # Setup - select "Voice Server"
 # Enter your Mac's IP when prompted for API server
-gemini-phone setup
+ai-phone setup
 
 # Start voice services
-gemini-phone start
+ai-phone start
 ```
 
 ### On Mac (API Server)
 
 ```bash
 # Install (if not already)
-curl -sSL https://raw.githubusercontent.com/theNetworkChuck/gemini-phone/main/install.sh | bash
+curl -sSL https://raw.githubusercontent.com/theNetworkChuck/ai-phone/main/install.sh | bash
 
 # Start API server (no setup needed)
-gemini-phone api-server
+ai-phone api-server
 
 # Or on a custom port
-gemini-phone api-server --port 4000
+ai-phone api-server --port 4000
 ```
 
 ## Requirements

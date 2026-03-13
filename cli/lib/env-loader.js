@@ -3,7 +3,7 @@ import path from 'path';
 import { getConfigDir } from './config.js';
 
 /**
- * Load environment variables from ~/.gemini-phone/.env
+ * Load environment variables from ~/.ai-phone/.env
  * @returns {object} Environment variables as key-value pairs
  */
 export function loadEnv() {
@@ -37,7 +37,7 @@ export function loadEnv() {
 }
 
 /**
- * Save environment variables to ~/.gemini-phone/.env
+ * Save environment variables to ~/.ai-phone/.env
  * @param {object} envVars - Environment variables to save
  */
 export function saveEnv(envVars) {
@@ -45,7 +45,7 @@ export function saveEnv(envVars) {
     const lines = [];
 
     // Add header
-    lines.push('# Gemini Phone Dynamic Configuration');
+    lines.push('# AI Phone Dynamic Configuration');
     lines.push('# This file contains values that may change (FreePBX IP, SIP settings)');
     lines.push('# Static values (API keys, device identity) are in config.json');
     lines.push('');

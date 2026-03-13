@@ -11,11 +11,11 @@
 
 ### Architecture Decision
 
-Extend the existing CLI with **platform detection** and **conditional setup flows**. Rather than creating a separate Pi-specific installer, we enhance `<gemini-phone> setup` to detect the platform and branch into the appropriate configuration path.
+Extend the existing CLI with **platform detection** and **conditional setup flows**. Rather than creating a separate Pi-specific installer, we enhance `<ai-phone> setup` to detect the platform and branch into the appropriate configuration path.
 
 ```
 ┌─────────────────────────────────────────────────────────────────┐
-│  <gemini-phone> setup                                              │
+│  <ai-phone> setup                                              │
 │         │                                                        │
 │         ▼                                                        │
 │  ┌─────────────────┐                                            │
@@ -148,13 +148,13 @@ interface PortCheckResult {
 
 ```bash
 # Mac-side: Start gemini-api-server
-<gemini-phone> api-server [--port 3333]
+<ai-phone> api-server [--port 3333]
 
 # Enhanced status (shows Pi ↔ Mac connectivity)
-<gemini-phone> status
+<ai-phone> status
 
 # Enhanced doctor (validates Pi ↔ Mac connectivity)
-<gemini-phone> doctor
+<ai-phone> doctor
 ```
 
 ### New Module: Platform Detection
@@ -267,7 +267,7 @@ New and modified files:
 ```
 cli/
 ├── bin/
-│   └── gemini-phone.js        # Add api-server command
+│   └── ai-phone.js        # Add api-server command
 ├── lib/
 │   ├── platform.js            # NEW: Platform detection
 │   ├── prerequisites.js       # NEW: Docker checks
@@ -319,11 +319,11 @@ Test components working together.
 
 ### Manual Testing Checklist
 
-- [ ] Run `<gemini-phone> setup` on actual Pi 4/5
+- [ ] Run `<ai-phone> setup` on actual Pi 4/5
 - [ ] Verify 3CX SBC detection when SBC is running
 - [ ] Verify drachtio starts on port 5070 with SBC
 - [ ] Verify drachtio starts on port 5060 without SBC
-- [ ] Test `<gemini-phone> api-server` on Mac
+- [ ] Test `<ai-phone> api-server` on Mac
 - [ ] Test full call flow: Pi → Mac → Claude → response
 
 ---
@@ -355,7 +355,7 @@ Test components working together.
 
 For users with existing `standard` deployments who want to switch to `pi-split`:
 
-1. Run `<gemini-phone> setup` on Pi
+1. Run `<ai-phone> setup` on Pi
 2. Detect existing config → offer migration prompt
 3. Extract relevant fields (API keys, devices) to Pi config
 4. Generate Mac-only config for api-server

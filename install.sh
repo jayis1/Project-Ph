@@ -2,10 +2,10 @@
 set -e
 
 # Usage: curl -sSL https://raw.githubusercontent.com/jayis1/Project-Ph/main/install.sh | bash
-INSTALL_DIR="$HOME/.gemini-phone-cli"
+INSTALL_DIR="$HOME/.ai-phone-cli"
 REPO_URL="https://github.com/jayis1/Project-Ph.git"
 
-echo "🎯 Gemini Phone CLI Installer"
+echo "🎯 AI Phone CLI Installer"
 echo ""
 
 # Check if running as root
@@ -255,7 +255,7 @@ if [ -d "$INSTALL_DIR" ]; then
   cd "$INSTALL_DIR"
   git pull origin main
 else
-  echo "Cloning Gemini Phone..."
+  echo "Cloning AI Phone..."
   git clone "$REPO_URL" "$INSTALL_DIR"
   cd "$INSTALL_DIR"
 fi
@@ -275,13 +275,13 @@ npm install --silent --production
 
 # Create symlink
 echo ""
-if [ -L "$BIN_DIR/gemini-phone" ]; then
-  rm "$BIN_DIR/gemini-phone"
+if [ -L "$BIN_DIR/ai-phone" ]; then
+  rm "$BIN_DIR/ai-phone"
 fi
 
 if [ "$OS" = "Linux" ]; then
-  ln -s "$INSTALL_DIR/cli/bin/gemini-phone.js" "$BIN_DIR/gemini-phone"
-  echo "✓ Installed to: $BIN_DIR/gemini-phone"
+  ln -s "$INSTALL_DIR/cli/bin/ai-phone.js" "$BIN_DIR/ai-phone"
+  echo "✓ Installed to: $BIN_DIR/ai-phone"
 
   if [[ ":$PATH:" != *":$HOME/.local/bin:"* ]]; then
     echo ""
@@ -291,11 +291,11 @@ if [ "$OS" = "Linux" ]; then
   fi
 else
   if [ -w "$BIN_DIR" ]; then
-    ln -s "$INSTALL_DIR/cli/bin/gemini-phone.js" "$BIN_DIR/gemini-phone"
+    ln -s "$INSTALL_DIR/cli/bin/ai-phone.js" "$BIN_DIR/ai-phone"
   else
-    $SUDO ln -s "$INSTALL_DIR/cli/bin/gemini-phone.js" "$BIN_DIR/gemini-phone"
+    $SUDO ln -s "$INSTALL_DIR/cli/bin/ai-phone.js" "$BIN_DIR/ai-phone"
   fi
-  echo "✓ Installed to: $BIN_DIR/gemini-phone"
+  echo "✓ Installed to: $BIN_DIR/ai-phone"
 fi
 
 echo ""
@@ -359,6 +359,6 @@ fi
 
 echo ""
 echo "Next steps:"
-echo "  gemini-phone setup    # Configure API endpoints + SIP credentials"
-echo "  gemini-phone start    # Launch Docker containers"
+echo "  ai-phone setup    # Configure API endpoints + SIP credentials"
+echo "  ai-phone start    # Launch Docker containers"
 echo ""

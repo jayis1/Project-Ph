@@ -98,8 +98,8 @@ On **each bot LXC**, create a config file with FreePBX credentials:
 
 ```bash
 # On each bot LXC
-mkdir -p ~/.gemini-phone
-cat > ~/.gemini-phone/.env << 'EOF'
+mkdir -p ~/.ai-phone
+cat > ~/.ai-phone/.env << 'EOF'
 # FreePBX Database Connection
 FREEPBX_HOST=172.16.1.100
 FREEPBX_DB_USER=botprov
@@ -138,7 +138,7 @@ EOF
 | 8 | 9007 | MOUSE | <mouse@example.com> |
 | 9 | 9008 | CYPHER | <cypher@example.com> |
 
-### Step 2: Install/Update Gemini Phone on Each Bot
+### Step 2: Install/Update AI Phone on Each Bot
 
 **Option A: Fresh Install (recommended for new bots)**
 
@@ -151,7 +151,7 @@ curl -sSL https://raw.githubusercontent.com/jayis1/2fast2dumb2fun/main/install.s
 
 ```bash
 # On each bot LXC (if already installed)
-cd ~/Documents/gemini-phoneq
+cd ~/Documents/ai-phoneq
 git pull origin main
 npm install  # Update dependencies if needed
 ```
@@ -160,7 +160,7 @@ npm install  # Update dependencies if needed
 
 ```bash
 # On each bot LXC
-gemini-phone setup
+ai-phone setup
 
 # Follow the prompts to configure:
 # - API keys (ElevenLabs, OpenAI)
@@ -175,7 +175,7 @@ This is the **magic step** - each bot creates its own extension on FreePBX:
 
 ```bash
 # On each bot LXC
-gemini-phone provision-extension
+ai-phone provision-extension
 ```
 
 **What this does:**
@@ -210,7 +210,7 @@ Creating new extension 9000...
 
 ```bash
 # On each bot LXC
-gemini-phone start
+ai-phone start
 ```
 
 The bot will:
@@ -238,7 +238,7 @@ On **one bot (Trinity recommended)**, provision the IVR system, conferences, and
 
 ```bash
 # On Trinity (or any admin bot)
-cd ~/Documents/gemini-phoneq/cli/mysql-provisioner
+cd ~/Documents/ai-phoneq/cli/mysql-provisioner
 
 # Run the complete provisioning
 ./install-all-features.sh
@@ -340,9 +340,9 @@ To add more bots:
 
 ```bash
 # On each bot
-gemini-phone backup
+ai-phone backup
 
-# Saves to ~/.gemini-phone/backups/
+# Saves to ~/.ai-phone/backups/
 ```
 
 ### Restore After FreePBX Reinstall
@@ -352,8 +352,8 @@ gemini-phone backup
 3. On each bot, run:
 
    ```bash
-   gemini-phone provision-extension
-   gemini-phone start
+   ai-phone provision-extension
+   ai-phone start
    ```
 
 4. Bots will re-create their extensions automatically!
@@ -380,9 +380,9 @@ gemini-phone backup
 
 ```bash
 # On each bot LXC
-gemini-phone setup                # Configure bot
-gemini-phone provision-extension  # Create extension on FreePBX
-gemini-phone start                # Start voice app
+ai-phone setup                # Configure bot
+ai-phone provision-extension  # Create extension on FreePBX
+ai-phone start                # Start voice app
 
 # On admin bot (Trinity)
 ./install-all-features.sh         # Provision IVR system

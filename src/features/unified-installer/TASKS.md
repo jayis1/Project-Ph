@@ -27,13 +27,13 @@
 
 - [x] Create `cli/` directory structure per PLAN
 - [x] Initialize `cli/package.json` with dependencies
-- [x] Create `cli/bin/gemini-phone.js` entry point with shebang
+- [x] Create `cli/bin/ai-phone.js` entry point with shebang
 - [x] Set up Commander.js base with version command
-- [x] Verify `node cli/bin/gemini-phone.js --version` works
+- [x] Verify `node cli/bin/ai-phone.js --version` works
 
 ### 1.2 Config Module
 
-- [x] **Test**: config.js reads config from ~/.gemini-phone/config.json
+- [x] **Test**: config.js reads config from ~/.ai-phone/config.json
 - [x] **Implement**: `loadConfig()` function
 - [x] **Test**: config.js writes config with correct permissions (600)
 - [x] **Implement**: `saveConfig()` function

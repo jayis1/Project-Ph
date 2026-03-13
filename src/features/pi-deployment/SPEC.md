@@ -1,23 +1,23 @@
-<gemini-phone> Raspberry Pi Deployment Specification
+<ai-phone> Raspberry Pi Deployment Specification
 
 > Agree on WHAT before HOW. This document defines success criteria before any code is written.
 
 ## Overview
 
-Deploy Gemini Phone's voice-app (drachtio + FreeSWITCH) on a Raspberry Pi while gemini-api-server runs on the user's Mac. This "split architecture" solves Docker Desktop networking issues on Mac (where `network_mode: host` gives the VM's IP instead of the Mac's LAN IP) and enables always-on voice capability. The Pi handles SIP/media, the Mac handles Gemini CLI.
+Deploy AI Phone's voice-app (drachtio + FreeSWITCH) on a Raspberry Pi while gemini-api-server runs on the user's Mac. This "split architecture" solves Docker Desktop networking issues on Mac (where `network_mode: host` gives the VM's IP instead of the Mac's LAN IP) and enables always-on voice capability. The Pi handles SIP/media, the Mac handles Gemini CLI.
 
-**Related Issue:** [#6 - Raspberry Pi deployment with split architecture](https://github.com/theNetworkChuck/gemini-phone/issues/6)
+**Related Issue:** [#6 - Raspberry Pi deployment with split architecture](https://github.com/theNetworkChuck/ai-phone/issues/6)
 
 ## User Stories
 
 ### Primary
 
 - As a **Mac user with Docker Desktop issues**, I want to run voice-app on a Raspberry Pi so I can have working SIP registration without networking hacks
-- As a **homelabber**, I want an always-on voice server so Gemini Phone is available 24/7 without keeping my Mac awake
+- As a **homelabber**, I want an always-on voice server so AI Phone is available 24/7 without keeping my Mac awake
 
 ### Secondary
 
-- As a **user with existing 3CX SBC on Pi**, I want to add Gemini Phone containers alongside my SBC so I don't need additional hardware
+- As a **user with existing 3CX SBC on Pi**, I want to add AI Phone containers alongside my SBC so I don't need additional hardware
 - As a **user with a fresh Pi**, I want a guided setup that installs everything I need from scratch
 
 ## Acceptance Criteria
@@ -26,7 +26,7 @@ Must be specific, testable conditions. Each becomes a test case.
 
 ### Core Functionality
 
-- [ ] **AC1:** `<gemini-phone> setup` detects Raspberry Pi OS (arm64) and enters Pi-specific setup flow
+- [ ] **AC1:** `<ai-phone> setup` detects Raspberry Pi OS (arm64) and enters Pi-specific setup flow
 - [ ] **AC2:** Setup wizard asks for Mac's IP address where gemini-api-server will run
 - [ ] **AC3:** Setup wizard detects if 3CX SBC is already installed (port 5060 in use) and adapts accordingly
 - [ ] **AC4:** If 3CX SBC detected: Configure drachtio on port 5070 automatically
@@ -41,23 +41,23 @@ Must be specific, testable conditions. Each becomes a test case.
 ### Prerequisites & Mac-side
 
 - [ ] **AC12:** Setup checks for Docker and docker-compose; if missing, displays prerequisite message with install link (does NOT auto-install)
-- [ ] **AC13:** On Mac, `<gemini-phone> api-server` command starts gemini-api-server (replaces manual `node server.js`)
-- [ ] **AC14:** `<gemini-phone> api-server` accepts `--port` flag (default 3333)
-- [ ] **AC15:** `<gemini-phone> api-server` shows status: "Listening on port 3333, waiting for Pi connections..."
+- [ ] **AC13:** On Mac, `<ai-phone> api-server` command starts gemini-api-server (replaces manual `node server.js`)
+- [ ] **AC14:** `<ai-phone> api-server` accepts `--port` flag (default 3333)
+- [ ] **AC15:** `<ai-phone> api-server` shows status: "Listening on port 3333, waiting for Pi connections..."
 
 ### Setup Experience
 
-- [ ] **AC16:** `<gemini-phone> setup` on Pi completes in under 5 minutes (excluding Docker image pulls)
-- [ ] **AC17:** Clear instructions displayed for Mac-side setup (run `<gemini-phone> api-server`)
-- [ ] **AC18:** `<gemini-phone> status` shows connection status to remote gemini-api-server
-- [ ] **AC19:** `<gemini-phone> doctor` validates Pi ↔ Mac connectivity before first use
+- [ ] **AC16:** `<ai-phone> setup` on Pi completes in under 5 minutes (excluding Docker image pulls)
+- [ ] **AC17:** Clear instructions displayed for Mac-side setup (run `<ai-phone> api-server`)
+- [ ] **AC18:** `<ai-phone> status` shows connection status to remote gemini-api-server
+- [ ] **AC19:** `<ai-phone> doctor` validates Pi ↔ Mac connectivity before first use
 
 ### Edge Cases
 
 - [ ] **AC20:** Setup handles case where Mac's gemini-api-server is not yet running (warns, doesn't fail)
 - [ ] **AC21:** Setup validates Mac IP is reachable on LAN before saving config
 - [ ] **AC22:** If ARM64 Docker images fail to pull, provide clear error with manual steps
-- [ ] **AC23:** Handle case where user runs `<gemini-phone> setup` on Pi but already has Mac config
+- [ ] **AC23:** Handle case where user runs `<ai-phone> setup` on Pi but already has Mac config
 
 ### Error States
 
@@ -107,9 +107,9 @@ Explicitly state what this feature does NOT do to prevent scope creep.
 All resolved.
 
 - [x] ~~Can 3CX SBC coexist with Docker containers on same Pi?~~ **YES** - Research confirmed script-based install, port 5060 conflict solved by using 5070
-- [x] ~~Should `gemini-phone setup` on Pi also offer to install Docker if not present?~~ **NO** - Flag as prerequisite, provide install link, but don't auto-install (avoid stale installation scripts)
+- [x] ~~Should `ai-phone setup` on Pi also offer to install Docker if not present?~~ **NO** - Flag as prerequisite, provide install link, but don't auto-install (avoid stale installation scripts)
 - [x] ~~Should we support Raspberry Pi 3 (armhf) or only Pi 4/5 (arm64)?~~ **Pi 4/5 only** - arm64 architecture only
-- [x] ~~Should Mac-side have a matching `gemini-phone api-server` command instead of manual `node server.js`?~~ **YES** - Add `gemini-phone api-server` command for Mac
+- [x] ~~Should Mac-side have a matching `ai-phone api-server` command instead of manual `node server.js`?~~ **YES** - Add `ai-phone api-server` command for Mac
 
 ---
 

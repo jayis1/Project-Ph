@@ -11,7 +11,7 @@ const __dirname = path.dirname(__filename);
  * This resolves from the CLI package location, not process.cwd()
  *
  * Directory structure:
- *   gemini-phone/           <- project root (returned)
+ *   ai-phone/           <- project root (returned)
  *   ├── cli/
  *   │   └── lib/
  *   │       └── utils.js    <- this file

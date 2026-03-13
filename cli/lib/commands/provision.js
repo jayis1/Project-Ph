@@ -15,7 +15,7 @@ export async function provisionCommand(options = {}) {
     const config = await loadConfig();
 
     if (!config.api.freepbx || !config.api.freepbx.clientId) {
-        console.log(chalk.red('❌ FreePBX API not configured. Run "gemini-phone setup" first.'));
+        console.log(chalk.red('❌ FreePBX API not configured. Run "ai-phone setup" first.'));
         return;
     }
 
