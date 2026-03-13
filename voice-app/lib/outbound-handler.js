@@ -67,8 +67,10 @@ async function initiateOutboundCall(srf, mediaServer, options) {
     // SIP Authentication: trunk credentials for external, device credentials for internal
     const trunkUsername = process.env.SIP_TRUNK_USERNAME;
     const trunkPassword = process.env.SIP_TRUNK_PASSWORD;
+    // Asterisk SIP port (must be explicit since drachtio default transport is 5070)
+    const sipPort = process.env.SIP_REGISTRAR_PORT || '5060';
 
-    const sipUri = 'sip:' + phoneNumber + '@' + sipTrunkHost;
+    const sipUri = 'sip:' + phoneNumber + '@' + sipTrunkHost + ':' + sipPort;
 
     logger.info('Dialing SIP URI', {
       callId,
