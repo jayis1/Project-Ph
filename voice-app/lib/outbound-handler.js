@@ -70,7 +70,7 @@ async function initiateOutboundCall(srf, mediaServer, options) {
     // Asterisk SIP port (must be explicit since drachtio default transport is 5070)
     const sipPort = process.env.SIP_REGISTRAR_PORT || '5060';
 
-    const sipUri = 'sip:' + phoneNumber + '@' + sipTrunkHost + ':' + sipPort;
+    const sipUri = 'sip:' + phoneNumber + '@' + sipTrunkHost + ':' + sipPort + ';transport=udp';
 
     logger.info('Dialing SIP URI', {
       callId,
