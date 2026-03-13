@@ -33,26 +33,26 @@ INSERT IGNORE INTO pjsip (id, keyword, data, flags) VALUES
 "
 
 # 2. Create the internal SIP Trunk to Drachtio (Port 5070)
-mysql -u root asterisk -e "
-INSERT IGNORE INTO trunks (trunkid, name, tech, outcid, keepcid, maxchans, failscript, dialoutprefix, channelid, usercontext, provider, disabled, \`continue\`)
+mysql -u root asterisk -e '
+INSERT IGNORE INTO trunks (trunkid, name, tech, outcid, keepcid, maxchans, failscript, dialoutprefix, channelid, usercontext, provider, disabled, `continue`)
 VALUES
-(9001, 'ai_phone_trunk', 'pjsip', '', 'off', '', '', '', 'to_ai_phone', '', '', 'off', 'off');
+(9001, "ai_phone_trunk", "pjsip", "", "off", "", "", "", "to_ai_phone", "", "", "off", "off");
 
-INSERT IGNORE INTO pjsip (id, keyword, data, flags) VALUES ('to_ai_phone', 'endpoint', 'to_ai_phone', 24);
+INSERT IGNORE INTO pjsip (id, keyword, data, flags) VALUES ("to_ai_phone", "endpoint", "to_ai_phone", 24);
 INSERT IGNORE INTO pjsip (id, keyword, data, flags) VALUES 
-('to_ai_phone', 'context', 'from-internal', 0),
-('to_ai_phone', 'disallow', 'all', 0),
-('to_ai_phone', 'allow', 'ulaw,alaw', 0),
-('to_ai_phone', 'aors', 'to_ai_phone', 0),
-('to_ai_phone', 'sipdriver', 'chan_pjsip', 0),
-('to_ai_phone', 'direct_media', 'no', 0),
-('to_ai_phone', 'force_rport', 'yes', 0),
-('to_ai_phone', 'rewrite_contact', 'yes', 0),
-('to_ai_phone', 'rtp_symmetric', 'yes', 0);
+("to_ai_phone", "context", "from-internal", 0),
+("to_ai_phone", "disallow", "all", 0),
+("to_ai_phone", "allow", "ulaw,alaw", 0),
+("to_ai_phone", "aors", "to_ai_phone", 0),
+("to_ai_phone", "sipdriver", "chan_pjsip", 0),
+("to_ai_phone", "direct_media", "no", 0),
+("to_ai_phone", "force_rport", "yes", 0),
+("to_ai_phone", "rewrite_contact", "yes", 0),
+("to_ai_phone", "rtp_symmetric", "yes", 0);
 
-INSERT IGNORE INTO pjsip (id, keyword, data, flags) VALUES ('to_ai_phone', 'aor', 'to_ai_phone', 24);
-INSERT IGNORE INTO pjsip (id, keyword, data, flags) VALUES ('to_ai_phone', 'contact', 'sip:127.0.0.1:5070', 0);
-"
+INSERT IGNORE INTO pjsip (id, keyword, data, flags) VALUES ("to_ai_phone", "aor", "to_ai_phone", 24);
+INSERT IGNORE INTO pjsip (id, keyword, data, flags) VALUES ("to_ai_phone", "contact", "sip:127.0.0.1:5070", 0);
+'
 
 # 3. Create the Inbound Route back to AI (Catch-all for the Trunk or Dialplan)
 # This routes all calls coming IN from the PBX to the AI Trunk
