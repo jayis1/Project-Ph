@@ -21,7 +21,7 @@ const callHistory = new Map();
  * @returns {Promise<string>} AI response text
  */
 async function query(prompt, options = {}) {
-  const { callId, devicePrompt, timeout = 30 } = options;
+  const { callId, devicePrompt, timeout = 120 } = options;
   const timestamp = new Date().toISOString();
 
   // Initialize conversation history for this call if it doesn't exist
