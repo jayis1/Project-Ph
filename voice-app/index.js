@@ -257,6 +257,14 @@ function initializeServers() {
   });
   console.log("[" + new Date().toISOString() + "] SIP STATUS API enabled (/api/sip-status)");
 
+  // ========== LOGS API ENDPOINT ==========
+  httpServer.app.get("/api/logs", (req, res) => {
+    const count = parseInt(req.query.count) || 50;
+    const logger = require("./lib/logger");
+    res.json({ logs: logger.getRecentLogs(count) });
+  });
+  console.log("[" + new Date().toISOString() + "] LOGS API enabled (/api/logs)");
+
   // Start Mission Control
   try {
     const { startMissionControl } = require("./lib/mission-control");

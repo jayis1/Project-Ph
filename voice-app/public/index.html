@@ -249,8 +249,24 @@
                 <div class="card-header">Active Devices / Extensions</div>
                 <div id="devicesList" class="grid"
                     style="grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 1rem;">
-                    <!-- Devices injected here -->
                     <div class="text-secondary">Loading...</div>
+                </div>
+            </div>
+
+            <!-- Call History Card -->
+            <div class="card" style="grid-column: 1 / -1;">
+                <div class="card-header">📞 Call History</div>
+                <div id="callHistory">
+                    <div class="text-secondary">No calls yet.</div>
+                </div>
+            </div>
+
+            <!-- Live Logs Card -->
+            <div class="card" style="grid-column: 1 / -1;">
+                <div class="card-header">📋 Live Logs</div>
+                <div id="logPanel"
+                    style="max-height: 400px; overflow-y: auto; font-family: monospace; font-size: 0.8rem; background: rgba(0,0,0,0.3); border-radius: 8px; padding: 1rem;">
+                    <div class="text-secondary">Loading logs...</div>
                 </div>
             </div>
         </div>
@@ -362,10 +378,74 @@
             }
         });
 
+        async function fetchCalls() {
+            try {
+                const res = await fetch('/api/calls');
+                const data = await res.json();
+                const container = document.getElementById('callHistory');
+
+                if (data.calls && data.calls.length > 0) {
+                    container.innerHTML = data.calls.map(call => {
+                        const stateColor = call.state === 'COMPLETED' ? 'var(--success)'
+                            : call.state === 'FAILED' ? 'var(--error)'
+                                : 'var(--accent)';
+                        return `<div class="badge" style="border-left: 3px solid ${stateColor}; margin-bottom: 0.5rem;">
+                            <div style="display: flex; justify-content: space-between; align-items: center;">
+                                <span style="font-weight: 600;">→ ${call.to}</span>
+                                <span class="tag" style="background: ${stateColor}22; color: ${stateColor};">${call.state}</span>
+                            </div>
+                            <div class="text-secondary" style="font-size: 0.8rem; margin-top: 0.25rem;">
+                                ${call.mode} · ${call.createdAt} ${call.duration ? '· ' + call.duration + 's' : ''}
+                            </div>
+                        </div>`;
+                    }).join('');
+                } else {
+                    container.innerHTML = '<div class="text-secondary">No calls yet.</div>';
+                }
+            } catch (err) {
+                console.error(err);
+            }
+        }
+
+        async function fetchLogs() {
+            try {
+                const res = await fetch('/api/logs?count=80');
+                const data = await res.json();
+                const panel = document.getElementById('logPanel');
+
+                if (data.logs && data.logs.length > 0) {
+                    panel.innerHTML = data.logs.map(log => {
+                        const color = log.level === 'error' ? '#fca5a5'
+                            : log.level === 'warn' ? '#fde68a'
+                                : '#94a3b8';
+                        const dataStr = Object.keys(log.data).length > 0
+                            ? ' <span style="color: #64748b;">' + JSON.stringify(log.data) + '</span>'
+                            : '';
+                        return `<div style="color: ${color}; padding: 2px 0; border-bottom: 1px solid rgba(255,255,255,0.03);">
+                            <span style="color: #64748b;">${log.timestamp.slice(11, 19)}</span>
+                            <span style="font-weight: 600;">${log.level.toUpperCase().padEnd(5)}</span>
+                            ${log.message}${dataStr}
+                        </div>`;
+                    }).join('');
+
+                    // Auto-scroll to bottom
+                    panel.scrollTop = panel.scrollHeight;
+                } else {
+                    panel.innerHTML = '<div class="text-secondary">No logs yet.</div>';
+                }
+            } catch (err) {
+                console.error(err);
+            }
+        }
+
         // Init
         fetchStatus();
         fetchDevices();
+        fetchCalls();
+        fetchLogs();
         setInterval(fetchStatus, 5000);
+        setInterval(fetchCalls, 5000);
+        setInterval(fetchLogs, 3000);
     </script>
 </body>
 
