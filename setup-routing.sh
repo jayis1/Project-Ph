@@ -34,7 +34,7 @@ INSERT IGNORE INTO pjsip (id, keyword, data, flags) VALUES
 
 # 2. Create the internal SIP Trunk to Drachtio (Port 5070)
 mysql -u root asterisk -e "
-INSERT IGNORE INTO trunks (trunkid, name, tech, outcid, keepcid, maxchans, failscript, dialoutprefix, channelid, usercontext, provider, disabled, continue)
+INSERT IGNORE INTO trunks (trunkid, name, tech, outcid, keepcid, maxchans, failscript, dialoutprefix, channelid, usercontext, provider, disabled, \`continue\`)
 VALUES
 (9001, 'ai_phone_trunk', 'pjsip', '', 'off', '', '', '', 'to_ai_phone', '', '', 'off', 'off');
 
