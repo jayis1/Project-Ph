@@ -53,16 +53,28 @@ async function transcribe(audioBuffer, options = {}) {
     form.append('language', language);
     form.append('response_format', 'text');
 
-    const response = await axios.post(
-      `${LOCAL_STT_URL}/audio/transcriptions`,
-      form,
-      {
-        headers: form.getHeaders(),
-        timeout: 30000,
-        maxContentLength: Infinity,
-        maxBodyLength: Infinity
+    let response;
+    try {
+      // Try standard OpenAI-compatible whisper.cpp endpoint first
+      response = await axios.post(
+        `${LOCAL_STT_URL}/audio/transcriptions`,
+        form,
+        { headers: form.getHeaders(), timeout: 30000, maxContentLength: Infinity, maxBodyLength: Infinity }
+      );
+    } catch (apiError) {
+      if (apiError.response && apiError.response.status === 404) {
+        // Fallback to Linto STT engine format
+        const lintoUrl = LOCAL_STT_URL.replace(/\/v1\/?$/, '') + '/transcribe';
+        console.log(`[${timestamp}] WHISPER Retry with Linto API: ${lintoUrl}`);
+        response = await axios.post(
+          lintoUrl,
+          form,
+          { headers: form.getHeaders(), timeout: 30000, maxContentLength: Infinity, maxBodyLength: Infinity }
+        );
+      } else {
+        throw apiError;
       }
-    );
+    }
 
     const text = typeof response.data === 'string' ? response.data.trim() : (response.data.text || '').trim();
     console.log(`[${timestamp}] WHISPER Transcribed: "${text.substring(0, 80)}${text.length > 80 ? '...' : ''}"`);
