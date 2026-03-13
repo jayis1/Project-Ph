@@ -148,7 +148,8 @@ services:
     restart: unless-stopped
     network_mode: host
     env_file:
-      - ${getEnvPath()}
+      - path: ${getEnvPath()}
+        required: false
     volumes:
       - ${config.paths.voiceApp}/audio:/app/audio
     depends_on:
