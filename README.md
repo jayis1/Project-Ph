@@ -8,6 +8,7 @@ AI Phone gives your local AI a phone number through FreePBX:
 
 - **Inbound**: Call an extension and talk to your local AI
 - **Outbound**: Your server calls YOU with alerts, then has a conversation
+- **Mission Control**: Web dashboard at `localhost:3030` to monitor status and initiate calls
 
 ## How it works
 
@@ -17,7 +18,7 @@ Phone Call → FreePBX → voice-app (Docker)
                 ┌───────────┼───────────┐
                 ▼           ▼           ▼
            Ollama LLM   Local STT   Local TTS
-           (any model) (Whisper.cpp) (Coqui/Piper)
+        (deepseek-r1)  (Whisper)  (OpenedAI Speech)
 ```
 
 ## Prerequisites
@@ -25,9 +26,9 @@ Phone Call → FreePBX → voice-app (Docker)
 | Component | Software |
 |-----------|----------|
 | PBX | [FreePBX](https://www.freepbx.org/) or any SIP provider |
-| LLM | [Ollama](https://ollama.com/) with any chat model (e.g. `llama3`) |
-| STT | Local Whisper server (e.g. [whisper.cpp](https://github.com/ggerganov/whisper.cpp) server mode) |
-| TTS | Local TTS server (e.g. [Coqui TTS](https://github.com/coqui-ai/TTS), [Piper](https://github.com/rhasspy/piper), or any OpenAI-compatible `/audio/speech` endpoint) |
+| LLM | [Ollama](https://ollama.com/) with a chat model (default: `deepseek-r1:8b`) |
+| STT | Local Whisper server (e.g. [faster-whisper](https://github.com/SYSTRAN/faster-whisper) or [whisper.cpp](https://github.com/ggerganov/whisper.cpp)) |
+| TTS | Local TTS server (e.g. [OpenedAI Speech](https://github.com/matatonic/openedai-speech) or any OpenAI-compatible `/v1/audio/speech` endpoint) |
 | Runtime | Docker + Node.js 18+ |
 
 > **No API keys needed.** No data ever leaves your machine.
@@ -43,6 +44,9 @@ ai-phone setup   # Enter SIP credentials + local AI endpoints
 
 # 3. Run
 ai-phone start
+
+# 4. Open Mission Control
+# Navigate to http://<your-server-ip>:3030
 ```
 
 ## Setup Wizard prompts
@@ -54,7 +58,7 @@ ai-phone start
 | SIP Password | `mysecret` |
 | External IP | `192.168.1.100` |
 | Ollama API URL | `http://host.docker.internal:11434` |
-| Ollama Model | `llama3` |
+| Ollama Model | `deepseek-r1:8b` |
 | Local Whisper URL | `http://host.docker.internal:8080/v1` |
 | Local TTS URL | `http://host.docker.internal:5002/api/tts` |
 | Bot Name | `Trinity` |
@@ -71,27 +75,48 @@ ai-phone doctor   # Health checks
 ai-phone logs     # Tail logs
 ```
 
+## Mission Control
+
+A web dashboard is served at **port 3030** when the voice-app is running. It provides:
+
+- **System Status** — live view of Drachtio (SIP) and FreeSWITCH (media) connectivity
+- **Device List** — all registered extensions and their voice configs
+- **Outbound Calls** — initiate outbound calls directly from the browser
+
 ## Local AI Setup Tips
 
 ### Ollama
 ```bash
-ollama pull llama3
+ollama pull deepseek-r1:8b
 ollama serve   # Already runs on :11434 by default
 ```
 
-### Whisper.cpp (STT)
+### Whisper (STT)
 ```bash
-./server -m models/ggml-base.bin --port 8080
+# faster-whisper server
+docker run -p 8080:8000 fedirz/faster-whisper-server
 ```
-The voice app will POST audio to `/audio/transcriptions` (OpenAI-compatible format).
+The voice app will POST audio to `/v1/audio/transcriptions` (OpenAI-compatible format).
 
-### Coqui TTS
+### OpenedAI Speech (TTS)
 ```bash
-tts-server --model_name tts_models/en/ljspeech/vits --port 5002
+docker run -p 8000:8000 ghcr.io/matatonic/openedai-speech
 ```
-The voice app will POST `{"text": "..."}` to the URL you configured.
+The voice app will POST to the configured `LOCAL_TTS_URL` using the OpenAI `/v1/audio/speech` format.
 
-Or use any OpenAI-compatible TTS endpoint by setting the URL to end with `/audio/speech`.
+## Environment Variables
+
+See [`.env.example`](.env.example) for all configurable variables. Key ones:
+
+| Variable | Purpose |
+|----------|---------|
+| `EXTERNAL_IP` | Server LAN IP for RTP routing |
+| `OLLAMA_API_URL` | URL to Ollama instance |
+| `OLLAMA_MODEL` | Chat model to use (default: `deepseek-r1:8b`) |
+| `LOCAL_TTS_URL` | TTS API endpoint |
+| `LOCAL_STT_URL` | Whisper STT API endpoint |
+| `SIP_DOMAIN` | FreePBX server FQDN or IP |
+| `SIP_REGISTRAR` | SIP registrar address |
 
 ## Documentation
 
