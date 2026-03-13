@@ -31,14 +31,8 @@ export async function statusCommand() {
   }
   console.log();
 
-  // Show type-appropriate status
-  if (installationType === 'api-server' || installationType === 'both') {
-    await showApiServerStatus(config, isPiSplit);
-  }
-
-  if (installationType === 'voice-server' || installationType === 'both') {
-    await showVoiceServerStatus(config, isPiSplit, installationType);
-  }
+  // Show voice server status
+  await showVoiceServerStatus(config, isPiSplit, installationType);
 
   // Show FreePBX status if configured
   if (config.freepbx) {
@@ -82,52 +76,7 @@ function getInstallationTypeLabel(type) {
   }
 }
 
-/**
- * Show API server status
- * @param {object} config - Configuration
- * @param {boolean} isPiSplit - Is Pi split mode
- * @returns {Promise<void>}
- */
-async function showApiServerStatus(config, isPiSplit) {
-  console.log(chalk.bold('Gemini API Server:'));
 
-  if (isPiSplit) {
-    // Pi-split mode: Check remote API server
-    const apiUrl = `http://${config.deployment.pi.macIp}:${config.server.geminiApiPort}`;
-    const apiHealth = await checkGeminiApiServer(apiUrl);
-
-    if (apiHealth.healthy) {
-      console.log(chalk.green(`  ✓ Connected to remote API server`));
-      console.log(chalk.gray(`    Address: ${config.deployment.pi.macIp}:${config.server.geminiApiPort}`));
-      console.log(chalk.gray('    Status: Healthy'));
-    } else {
-      console.log(chalk.red(`  ✗ Cannot reach remote API server`));
-      console.log(chalk.gray(`    Tried: ${apiUrl}`));
-      console.log(chalk.gray('    Run "ai-phone api-server" on your admin node'));
-    }
-  } else {
-    // Standard mode: Check local server container
-    const containers = await getContainerStatus();
-    const apiContainer = containers.find(c => c.name === 'gemini-api-server');
-    const isRunning = apiContainer && (apiContainer.status.toLowerCase().includes('up') || apiContainer.status.toLowerCase().includes('running'));
-
-    if (isRunning) {
-      console.log(chalk.green(`  ✓ Running (Container)`));
-      console.log(chalk.gray(`    Status: ${apiContainer.status}`));
-      console.log(chalk.gray(`    Port: ${config.server.geminiApiPort}`));
-
-      // Check if port is listening
-      const portListening = checkPortListening(config.server.geminiApiPort);
-      if (portListening) {
-        console.log(chalk.gray(`    Listening: Yes`));
-      }
-    } else {
-      console.log(chalk.red('  ✗ Not running'));
-      console.log(chalk.gray('    Run "ai-phone start" to launch'));
-    }
-  }
-  console.log();
-}
 
 /**
  * Show voice server status
@@ -202,10 +151,11 @@ async function showVoiceServerStatus(config, isPiSplit, installationType) {
   }
   console.log();
 
-  // API Keys Status
-  console.log(chalk.bold('API Keys:'));
-  console.log(chalk.gray(`  ElevenLabs: ${config.api?.elevenlabs?.apiKey ? '✓ Configured' : '✗ Missing'}`));
-  console.log(chalk.gray(`  OpenAI: ${config.api?.openai?.apiKey ? '✓ Configured' : '✗ Missing'}`));
+  // Local AI URLs
+  console.log(chalk.bold('Local AI Services:'));
+  console.log(chalk.gray(`  Ollama: Configured`));
+  console.log(chalk.gray(`  Whisper: Configured`));
+  console.log(chalk.gray(`  TTS: Configured`));
   if (config.api?.freepbx?.clientId) {
     console.log(chalk.gray(`  FreePBX M2M: ✓ Configured`));
   }

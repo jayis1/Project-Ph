@@ -4,90 +4,11 @@ import { spawn } from 'child_process';
 import axios from 'axios';
 import { loadConfig, configExists, getInstallationType } from '../config.js';
 import { checkDocker, getContainerStatus } from '../docker.js';
-import { validateElevenLabsKey, validateOpenAIKey } from '../validators.js';
-import { isReachable, checkGeminiApiServer as checkGeminiApiHealth } from '../network.js';
+import { isReachable } from '../network.js';
 import { checkPort } from '../port-check.js';
 import { FreePBXClient } from '../freepbx-api.js';
 
-/**
- * Check if Gemini CLI is installed
- * @returns {Promise<{installed: boolean, version?: string, error?: string}>}
- */
-async function checkGeminiCLI() {
-  return new Promise((resolve) => {
-    const child = spawn('gemini', ['--version'], {
-      stdio: 'pipe'
-    });
 
-    let output = '';
-    child.stdout.on('data', (data) => {
-      output += data.toString();
-    });
-
-    child.stderr.on('data', (data) => {
-      output += data.toString();
-    });
-
-    child.on('close', (code) => {
-      if (code === 0) {
-        // Extract version from output
-        const versionMatch = output.match(/(\d+\.\d+\.\d+)/);
-        resolve({
-          installed: true,
-          version: versionMatch ? versionMatch[1] : 'unknown'
-        });
-      } else {
-        resolve({
-          installed: false,
-          error: 'Gemini CLI not found in PATH'
-        });
-      }
-    });
-
-    child.on('error', () => {
-      resolve({
-        installed: false,
-        error: 'Gemini CLI not found'
-      });
-    });
-  });
-}
-
-/**
- * Check ElevenLabs API connectivity
- * @param {string} apiKey - ElevenLabs API key
- * @returns {Promise<{connected: boolean, error?: string}>}
- */
-async function checkElevenLabsAPI(apiKey) {
-  try {
-    const result = await validateElevenLabsKey(apiKey);
-    if (result.valid) {
-      return { connected: true };
-    } else {
-      return { connected: false, error: result.error };
-    }
-  } catch (error) {
-    return { connected: false, error: error.message };
-  }
-}
-
-/**
- * Check OpenAI API connectivity
- * @param {string} apiKey - OpenAI API key
- * @returns {Promise<{connected: boolean, error?: string}>}
- */
-async function checkOpenAIAPI(apiKey) {
-  try {
-    const result = await validateOpenAIKey(apiKey);
-    if (result.valid) {
-      return { connected: true };
-    } else {
-      return { connected: false, error: result.error };
-    }
-  } catch (error) {
-    return { connected: false, error: error.message };
-  }
-}
 
 /**
  * Check if voice-app container is running
@@ -145,58 +66,7 @@ async function checkSIPRegistration(port) {
   }
 }
 
-/**
- * Check if gemini-api-server is running
- * @param {number} port - Port to check
- * @returns {Promise<{running: boolean, pid?: number, healthy?: boolean, error?: string}>}
- */
-async function checkGeminiAPIServer(port) {
-  const containers = await getContainerStatus();
-  const apiContainer = containers.find(c => c.name === 'gemini-api-server');
 
-  if (!apiContainer) {
-    return {
-      running: false,
-      error: 'Container not found'
-    };
-  }
-
-  const isRunning = apiContainer.status.toLowerCase().includes('up') ||
-    apiContainer.status.toLowerCase().includes('running');
-
-  if (!isRunning) {
-    return {
-      running: false,
-      error: `Container status: ${apiContainer.status}`
-    };
-  }
-
-  // Try HTTP health check
-  try {
-    const response = await axios.get(`http://localhost:${port}/health`, {
-      timeout: 5000
-    });
-
-    if (response.status === 200) {
-      return {
-        running: true,
-        healthy: true
-      };
-    } else {
-      return {
-        running: true,
-        healthy: false,
-        error: `Health check returned status ${response.status}`
-      };
-    }
-  } catch (error) {
-    return {
-      running: true,
-      healthy: false,
-      error: 'Health endpoint not responding'
-    };
-  }
-}
 
 /**
  * Doctor command - Run health checks
@@ -220,25 +90,10 @@ export async function doctorCommand() {
   const checks = [];
   let passedCount = 0;
 
-  // Run type-appropriate checks
-  if (installationType === 'api-server') {
-    const result = await runApiServerChecks(config);
-    checks.push(...result.checks);
-    passedCount += result.passedCount;
-  } else if (installationType === 'voice-server') {
-    const result = await runVoiceServerChecks(config, isPiSplit);
-    checks.push(...result.checks);
-    passedCount += result.passedCount;
-  } else {
-    // Both - run all checks
-    const apiResult = await runApiServerChecks(config);
-    checks.push(...apiResult.checks);
-    passedCount += apiResult.passedCount;
-
-    const voiceResult = await runVoiceServerChecks(config, isPiSplit);
-    checks.push(...voiceResult.checks);
-    passedCount += voiceResult.passedCount;
-  }
+  // Run health checks
+  const voiceResult = await runVoiceServerChecks(config, isPiSplit);
+  checks.push(...voiceResult.checks);
+  passedCount += voiceResult.passedCount;
 
   // Summary
   console.log(chalk.bold(`\n${passedCount}/${checks.length} checks passed\n`));
@@ -255,45 +110,7 @@ export async function doctorCommand() {
   }
 }
 
-/**
- * Run API server health checks
- * @param {object} config - Configuration
- * @returns {Promise<{checks: Array, passedCount: number}>}
- */
-async function runApiServerChecks(config) {
-  const checks = [];
-  let passedCount = 0;
 
-  // Check Gemini CLI
-  const geminiSpinner = ora('Checking Gemini CLI...').start();
-  const geminiResult = await checkGeminiCLI();
-  if (geminiResult.installed) {
-    geminiSpinner.succeed(chalk.green(`Gemini CLI installed (v${geminiResult.version})`));
-    passedCount++;
-  } else {
-    geminiSpinner.fail(chalk.red(`Gemini CLI not found: ${geminiResult.error}`));
-    console.log(chalk.gray('  → Install Gemini CLI: npm install -g @anthropic-ai/gemini\n'));
-  }
-  checks.push({ name: 'Gemini CLI', passed: geminiResult.installed });
-
-  // Check local Gemini API server
-  const apiServerSpinner = ora('Checking Gemini API server...').start();
-  const apiServerResult = await checkGeminiAPIServer(config.server.geminiApiPort);
-  if (apiServerResult.running && apiServerResult.healthy) {
-    apiServerSpinner.succeed(chalk.green(`Gemini API server running`));
-    passedCount++;
-  } else if (apiServerResult.running && !apiServerResult.healthy) {
-    apiServerSpinner.warn(chalk.yellow(`Gemini API server running but unhealthy`));
-    console.log(chalk.gray(`  → ${apiServerResult.error}\n`));
-    passedCount++; // Count as partial pass
-  } else {
-    apiServerSpinner.fail(chalk.red(`Gemini API server not running: ${apiServerResult.error}`));
-    console.log(chalk.gray('  → Run "ai-phone start" to launch services\n'));
-  }
-  checks.push({ name: 'Gemini API server', passed: apiServerResult.running });
-
-  return { checks, passedCount };
-}
 
 /**
  * Run voice server health checks
@@ -317,33 +134,7 @@ async function runVoiceServerChecks(config, isPiSplit) {
   }
   checks.push({ name: 'Docker', passed: dockerResult.installed && dockerResult.running });
 
-  // Check ElevenLabs API (only if configured)
-  if (config.api && config.api.elevenlabs && config.api.elevenlabs.apiKey) {
-    const elevenLabsSpinner = ora('Checking ElevenLabs API...').start();
-    const elevenLabsResult = await checkElevenLabsAPI(config.api.elevenlabs.apiKey);
-    if (elevenLabsResult.connected) {
-      elevenLabsSpinner.succeed(chalk.green('ElevenLabs API connected'));
-      passedCount++;
-    } else {
-      elevenLabsSpinner.fail(chalk.red(`ElevenLabs API failed: ${elevenLabsResult.error}`));
-      console.log(chalk.gray('  → Check your API key in ~/.ai-phone/config.json\n'));
-    }
-    checks.push({ name: 'ElevenLabs API', passed: elevenLabsResult.connected });
-  }
 
-  // Check OpenAI API (only if configured)
-  if (config.api && config.api.openai && config.api.openai.apiKey) {
-    const openAISpinner = ora('Checking OpenAI API...').start();
-    const openAIResult = await checkOpenAIAPI(config.api.openai.apiKey);
-    if (openAIResult.connected) {
-      openAISpinner.succeed(chalk.green('OpenAI API connected'));
-      passedCount++;
-    } else {
-      openAISpinner.fail(chalk.red(`OpenAI API failed: ${openAIResult.error}`));
-      console.log(chalk.gray('  → Check your API key in ~/.ai-phone/config.json\n'));
-    }
-    checks.push({ name: 'OpenAI API', passed: openAIResult.connected });
-  }
 
   // Check FreePBX M2M API (only if configured)
   if (config.api && config.api.freepbx && config.api.freepbx.clientId) {
@@ -405,70 +196,24 @@ async function runVoiceServerChecks(config, isPiSplit) {
     checks.push({ name: 'SIP registration', passed: sipResult.connected && sipResult.registered });
   }
 
-  // Check API server reachability (voice-server mode)
-  if (isPiSplit) {
-    // Pi-split mode: Check API server IP reachability
-    const apiIpSpinner = ora('Checking API server IP reachability...').start();
-    const apiServerIp = config.deployment.pi.macIp;
-    const apiServerReachable = await isReachable(apiServerIp);
+  // Check drachtio port availability
+  const drachtioPort = config.onFreePbxServer ? 5070 : 5060;
+  const drachtioSpinner = ora(`Checking drachtio port ${drachtioPort}...`).start();
+  const drachtioPortCheck = await checkPort(drachtioPort);
 
-    if (apiServerReachable) {
-      apiIpSpinner.succeed(chalk.green(`API server IP reachable (${apiServerIp})`));
+  if (drachtioPortCheck.inUse) {
+    if (drachtioPort === 5070) {
+      drachtioSpinner.succeed(chalk.green(`Port ${drachtioPort} in use (expected - drachtio running)`));
       passedCount++;
     } else {
-      apiIpSpinner.fail(chalk.red(`API server IP not reachable: ${apiServerIp}`));
-      console.log(chalk.gray('  → Check network connection between Pi and API server\n'));
+      drachtioSpinner.warn(chalk.yellow(`Port ${drachtioPort} in use (may conflict)`));
+      passedCount++; // Partial pass
     }
-    checks.push({ name: 'API server IP reachability', passed: apiServerReachable });
-
-    // Check Gemini API server on remote server
-    const apiServerSpinner = ora('Checking Gemini API server...').start();
-    const apiUrl = `http://${apiServerIp}:${config.server.geminiApiPort}`;
-    const apiHealth = await checkGeminiApiHealth(apiUrl);
-
-    if (apiHealth.healthy) {
-      apiServerSpinner.succeed(chalk.green(`Gemini API server healthy at ${apiUrl}`));
-      passedCount++;
-    } else {
-      apiServerSpinner.fail(chalk.red(`Gemini API server not responding`));
-      console.log(chalk.gray(`  → Run "ai-phone api-server" on your API server\n`));
-    }
-    checks.push({ name: 'Gemini API server (remote)', passed: apiHealth.healthy });
-
-    // Check drachtio port availability
-    const drachtioPort = config.deployment.pi.drachtioPort || 5060;
-    const drachtioSpinner = ora(`Checking drachtio port ${drachtioPort}...`).start();
-    const drachtioPortCheck = await checkPort(drachtioPort);
-
-    if (drachtioPortCheck.inUse) {
-      if (drachtioPort === 5070) {
-        drachtioSpinner.succeed(chalk.green(`Port ${drachtioPort} in use (expected - drachtio running)`));
-        passedCount++;
-      } else {
-        drachtioSpinner.warn(chalk.yellow(`Port ${drachtioPort} in use (may conflict)`));
-        passedCount++; // Partial pass
-      }
-    } else {
-      drachtioSpinner.succeed(chalk.green(`Port ${drachtioPort} available`));
-      passedCount++;
-    }
-    checks.push({ name: `Drachtio port ${drachtioPort}`, passed: true });
-  } else if (config.deployment && config.deployment.apiServerIp) {
-    // Voice server mode (non-Pi): Check remote API server
-    const apiServerIp = config.deployment.apiServerIp;
-    const apiServerSpinner = ora('Checking remote API server...').start();
-    const apiUrl = `http://${apiServerIp}:${config.server.geminiApiPort}`;
-    const apiHealth = await checkGeminiApiHealth(apiUrl);
-
-    if (apiHealth.healthy) {
-      apiServerSpinner.succeed(chalk.green(`API server healthy at ${apiUrl}`));
-      passedCount++;
-    } else {
-      apiServerSpinner.fail(chalk.red(`API server not responding`));
-      console.log(chalk.gray(`  → Run "ai-phone api-server" on your API server\n`));
-    }
-    checks.push({ name: 'API server (remote)', passed: apiHealth.healthy });
+  } else {
+    drachtioSpinner.succeed(chalk.green(`Port ${drachtioPort} available`));
+    passedCount++;
   }
+  checks.push({ name: `Drachtio port ${drachtioPort}`, passed: true });
 
   return { checks, passedCount };
 }
