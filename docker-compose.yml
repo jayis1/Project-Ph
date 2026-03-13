@@ -12,9 +12,9 @@ services:
     restart: unless-stopped
     network_mode: host
     command: >
-      drachtio --contact "sip:*:5060;transport=tcp,udp" --external-ip ${EXTERNAL_IP:-127.0.0.1} --secret ${DRACHTIO_SECRET:-cymru} --port 9022 --loglevel info
+      drachtio --contact "sip:*:5070;transport=tcp,udp" --external-ip ${EXTERNAL_IP:-127.0.0.1} --secret ${DRACHTIO_SECRET:-cymru} --port 9022 --loglevel info
     # Ports (for reference - host mode doesn't need port mapping):
-    # - 5060: SIP UDP/TCP
+    # - 5070: SIP UDP/TCP (5070 to avoid conflict with FreePBX on 5060)
     # - 9022: Admin/App Port
 
   freeswitch:
