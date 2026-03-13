@@ -149,7 +149,6 @@ services:
       - ${getEnvPath()}
     volumes:
       - ${config.paths.voiceApp}/audio:/app/audio
-      - ${config.paths.voiceApp}/config:/app/config
     depends_on:
       - drachtio
       - freeswitch
