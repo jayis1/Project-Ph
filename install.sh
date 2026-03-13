@@ -99,11 +99,19 @@ install_rocm() {
         echo "   Mapping Debian ($OS_CODENAME) to Ubuntu jammy ROCm repository"
       fi
 
+      # Remove old/incorrect repo file if it exists to prevent conflicts
+      $SUDO rm -f /etc/apt/sources.list.d/rocm.list
+      
       # Add AMD ROCm repository
       curl -fsSL https://repo.radeon.com/rocm/rocm.gpg.key | $SUDO gpg --dearmor -o /etc/apt/keyrings/rocm.gpg --yes
       echo "deb [arch=amd64 signed-by=/etc/apt/keyrings/rocm.gpg] https://repo.radeon.com/rocm/apt/latest $REPO_CODENAME main" | $SUDO tee /etc/apt/sources.list.d/rocm.list
       echo -e 'Package: *\nPin: release o=repo.radeon.com\nPin-Priority: 600' | $SUDO tee /etc/apt/preferences.d/rocm-pin-600
+      
+      echo "   Updating package lists..."
+      $SUDO apt-get clean
       $SUDO apt-get update
+      # Fix any broken packages from previous failed noble repo attempts
+      $SUDO apt-get --fix-broken install -y
       $SUDO apt-get install -y rocm
       # Add user to render/video groups for GPU access
       $SUDO usermod -aG render,video $USER
