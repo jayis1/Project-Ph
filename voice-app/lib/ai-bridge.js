@@ -6,7 +6,7 @@
 const axios = require('axios');
 
 const OLLAMA_API_URL = process.env.OLLAMA_API_URL || 'http://host.docker.internal:11434';
-const OLLAMA_MODEL = process.env.OLLAMA_MODEL || 'llama3';
+const OLLAMA_MODEL = process.env.OLLAMA_MODEL || 'llama3.2:1b';
 
 // In-memory conversation history store
 const callHistory = new Map();
