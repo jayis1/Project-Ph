@@ -1,3 +1,4 @@
+import { Client } from 'ssh2';
 import { exec } from 'child_process';
 import { promisify } from 'util';
 import mysql from 'mysql2/promise';
@@ -45,28 +46,31 @@ export async function testSSHConnection(config) {
         };
     }
 
-    try {
-        // Test SSH with simple command
-        const cmd = `sshpass -p "${password}" ssh -o StrictHostKeyChecking=no -o ConnectTimeout=5 ${user}@${host} "echo 'SSH_OK'"`;
-        const { stdout } = await execAsync(cmd);
-
-        if (stdout.trim() === 'SSH_OK') {
-            return {
+    return new Promise((resolve) => {
+        const conn = new Client();
+        conn.on('ready', () => {
+            conn.end();
+            resolve({
                 success: true,
                 message: 'SSH connection successful'
-            };
-        } else {
-            return {
+            });
+        }).on('error', (err) => {
+            resolve({
                 success: false,
-                error: 'SSH connection failed: unexpected response'
-            };
-        }
-    } catch (error) {
-        return {
-            success: false,
-            error: `SSH connection failed: ${error.message}`
-        };
-    }
+                error: `SSH connection failed: ${err.message}`
+            });
+        }).on('keyboard-interactive', (name, instructions, instructionsLang, prompts, finish) => {
+            // Some SSH servers require keyboard-interactive auth even if password is provided
+            finish([password]);
+        }).connect({
+            host,
+            port: 22,
+            username: user,
+            password: password,
+            tryKeyboard: true,
+            readyTimeout: 10000
+        });
+    });
 }
 
 /**
@@ -203,28 +207,47 @@ export async function executeSSHCommand(sshConfig, command, options = {}) {
         throw new Error('Missing SSH password configuration');
     }
 
-    try {
-        const escapedCommand = command.replace(/"/g, '\\"');
-        const cmd = `sshpass -p "${password}" ssh -o StrictHostKeyChecking=no -o ConnectTimeout=5 ${user}@${host} "${escapedCommand}"`;
-
-        const { stdout, stderr } = await execAsync(cmd, {
-            timeout,
-            maxBuffer: 1024 * 1024 * 10 // 10MB buffer
+    return new Promise((resolve) => {
+        const conn = new Client();
+        conn.on('ready', () => {
+            conn.exec(command, (err, stream) => {
+                if (err) {
+                    conn.end();
+                    return resolve({ success: false, error: err.message, stdout: '', stderr: '' });
+                }
+                let stdout = '';
+                let stderr = '';
+                stream.on('close', (code, signal) => {
+                    conn.end();
+                    resolve({
+                        success: code === 0,
+                        stdout: stdout.trim(),
+                        stderr: stderr.trim()
+                    });
+                }).on('data', (data) => {
+                    stdout += data;
+                }).stderr.on('data', (data) => {
+                    stderr += data;
+                });
+            });
+        }).on('error', (err) => {
+            resolve({
+                success: false,
+                error: err.message,
+                stdout: '',
+                stderr: ''
+            });
+        }).on('keyboard-interactive', (name, instructions, instructionsLang, prompts, finish) => {
+            finish([password]);
+        }).connect({
+            host,
+            port: 22,
+            username: user,
+            password: password,
+            tryKeyboard: true,
+            readyTimeout: timeout
         });
-
-        return {
-            success: true,
-            stdout: stdout.trim(),
-            stderr: stderr.trim()
-        };
-    } catch (error) {
-        return {
-            success: false,
-            error: error.message,
-            stdout: error.stdout || '',
-            stderr: error.stderr || ''
-        };
-    }
+    });
 }
 
 /**
