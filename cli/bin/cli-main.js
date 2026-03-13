@@ -21,7 +21,7 @@ const program = new Command();
 
 program
   .name('ai-phone')
-  .description('Voice interface for Gemini Code via SIP - Call your AI, and your AI can call you')
+  .description('Voice interface for local AI via SIP - Call your AI, and your AI can call you')
   .version('1.0.0');
 
 program
@@ -39,7 +39,7 @@ program
 
 program
   .command('start')
-  .description('Start all services (Docker containers + gemini-api-server)')
+  .description('Start all services (Docker containers)')
   .action(async () => {
     try {
       await startCommand();
@@ -99,24 +99,6 @@ program
   });
 
 
-
-program
-  .command('api-server')
-  .description('Start Gemini API server for Pi remote connections')
-  .option('-p, --port <port>', 'Port to listen on', '3333')
-  .action(async (options) => {
-    try {
-      const port = parseInt(options.port, 10);
-      if (isNaN(port) || port < 1024 || port > 65535) {
-        console.error(chalk.red('\n✗ Port must be between 1024 and 65535\n'));
-        process.exit(1);
-      }
-      await apiServerCommand({ port });
-    } catch (error) {
-      console.error(chalk.red(`\n✗ API server failed: ${error.message}\n`));
-      process.exit(1);
-    }
-  });
 
 
 

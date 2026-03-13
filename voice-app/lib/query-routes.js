@@ -13,14 +13,11 @@ const router = express.Router();
 const logger = require('./logger');
 const deviceRegistry = require('./device-registry');
 
-// Dependencies injected via setupRoutes()
-let geminiBridge = null;
-
-// Gemini API server URL (same as used by geminiBridge)
-const GEMINI_API_URL = process.env.GEMINI_API_URL || 'http://localhost:3333';
+// AI Bridge instance
+let aiBridge = null;
 
 /**
- * Extract voice-friendly line from Gemini response
+ * Extract voice-friendly line from AI response
  * Copied from conversation-loop.js for consistency
  */
 function extractVoiceLine(response) {
@@ -76,7 +73,7 @@ function extractVoiceLine(response) {
 }
 
 /**
- * Extract JSON from Gemini response
+ * Extract JSON from AI response
  * Handles markdown code fences and inline JSON
  */
 function extractJson(text) {
@@ -106,7 +103,7 @@ function extractJson(text) {
 
 /**
  * Build query context for JSON format
- * Forces Gemini to return structured JSON with specified schema
+ * Forces AI to return structured JSON with specified schema
  */
 function buildJsonQueryContext(schema) {
   if (!schema || !schema.requiredFields) {
@@ -179,10 +176,10 @@ function validateQueryRequest(body) {
 
 /**
  * POST /query
- * Execute a Gemini query with optional device context and structured output
+ * Execute an AI query with optional device context and structured output
  *
  * v2: Each query gets a unique callId for skills access
- *     JSON format uses /ask-structured endpoint for reliable parsing
+ *     JSON format uses schema injection directly into the prompt
  */
 router.post('/query', async (req, res) => {
   const startTime = Date.now();
@@ -214,7 +211,7 @@ router.post('/query', async (req, res) => {
     } = req.body;
 
     // Generate unique callId for this query (enables skills access)
-    // Must be a bare UUID - Gemini CLI rejects prefixes
+    // Must be a bare UUID
     const callId = crypto.randomUUID();
 
     // Resolve device if specified
@@ -254,63 +251,30 @@ router.post('/query', async (req, res) => {
       callId
     });
 
-    let response;
-    let structured = null;
+    if (format === 'json') {
+      const jsonContext = buildJsonQueryContext(schema);
+      fullPrompt = `${jsonContext}\n\n${fullPrompt}`;
+    }
+
+    if (!aiBridge) {
+      logger.error('AI bridge not available');
+
+      return res.status(503).json({
+        success: false,
+        error: 'service_unavailable',
+        message: 'AI backend is not ready'
+      });
+    }
+
+    response = await aiBridge.query(fullPrompt, {
+      callId,
+      devicePrompt,
+      timeout,
+      format
+    });
 
     if (format === 'json') {
-      // Use /ask-structured endpoint for reliable JSON parsing
-      logger.info('Using /ask-structured endpoint for JSON format');
-
-      const structuredResponse = await axios.post(
-        `${GEMINI_API_URL}/ask-structured`,
-        {
-          prompt: fullPrompt,
-          callId,
-          devicePrompt,
-          schema: {
-            queryType: schema?.queryType || 'general',
-            requiredFields: schema?.requiredFields || [],
-            fieldGuidance: schema?.fieldGuidance || {},
-            allowExtraFields: true,
-            example: schema?.example
-          },
-          includeVoiceContext: false,
-          maxRetries: 1
-        },
-        {
-          timeout: timeout * 1000,
-          headers: { 'Content-Type': 'application/json' }
-        }
-      );
-
-      if (structuredResponse.data.success) {
-        response = structuredResponse.data.raw_response;
-        structured = structuredResponse.data.data;
-      } else {
-        // Fallback: return raw response even if parsing failed
-        response = structuredResponse.data.raw_response || '';
-        logger.warn('Structured query returned failure', {
-          error: structuredResponse.data.error
-        });
-      }
-    } else {
-      // Use /ask endpoint for text format (via geminiBridge)
-      // Check if Gemini bridge is available
-      if (!geminiBridge) {
-        logger.error('Gemini bridge not available');
-
-        return res.status(503).json({
-          success: false,
-          error: 'service_unavailable',
-          message: 'Gemini API is not ready'
-        });
-      }
-
-      response = await geminiBridge.query(fullPrompt, {
-        callId,
-        devicePrompt,
-        timeout
-      });
+      structured = extractJson(response);
     }
 
     const duration = Date.now() - startTime;
@@ -350,7 +314,7 @@ router.post('/query', async (req, res) => {
         responseObj.structured = fallbackStructured;
 
         if (!fallbackStructured) {
-          responseObj.warning = 'Failed to parse JSON from Gemini response';
+          responseObj.warning = 'Failed to parse JSON from AI response';
         }
 
         logger.warn('Used client-side JSON extraction', {
@@ -468,13 +432,13 @@ router.get('/device/:identifier', (req, res) => {
  * Setup routes with dependencies
  *
  * @param {Object} deps - Dependencies
- * @param {Object} deps.geminiBridge - Gemini API bridge
+ * @param {Object} deps.aiBridge - AI API bridge
  */
 function setupRoutes(deps) {
-  geminiBridge = deps.geminiBridge;
+  aiBridge = deps.aiBridge;
 
   logger.info('Query routes initialized', {
-    geminiBridge: !!geminiBridge
+    aiBridge: !!aiBridge
   });
 }
 

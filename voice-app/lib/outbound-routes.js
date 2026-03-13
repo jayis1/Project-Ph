@@ -1,7 +1,7 @@
 /**
  * Outbound Call API Routes
  * Express routes for initiating and managing outbound calls
- * v3: Added context parameter for structured data to Gemini
+ * v3: Added context parameter for structured data to AI
  * Supports both announce (one-way) and conversation (two-way) modes
  */
 
@@ -18,7 +18,7 @@ var mediaServer = null;
 var deviceRegistry = null;
 var audioForkServer = null;
 var whisperClient = null;
-var geminiBridge = null;
+var aiBridge = null;
 var ttsService = null;
 var wsPort = 3001;
 
@@ -96,7 +96,7 @@ function validateRequest(body) {
  * Body parameters:
  *   - to: Phone number (required)
  *   - message: Initial message to play (required) - what the device SAYS
- *   - context: Background data for Gemini (optional) - what the device KNOWS
+ *   - context: Background data for AI (optional) - what the device KNOWS
  *   - mode: 'announce' or 'conversation' (default: announce)
  *   - device: Device extension or name for voice/personality (optional)
  *   - callerId: Caller ID (optional)
@@ -124,7 +124,7 @@ router.post('/outbound-call', async function (req, res) {
     // Extract parameters
     var to = req.body.to;
     var message = req.body.message;
-    var context = req.body.context || null;  // NEW: structured context for Gemini
+    var context = req.body.context || null;  // NEW: structured context for AI
     var mode = req.body.mode || 'announce';
     var deviceParam = req.body.device;
     var callerId = req.body.callerId;
@@ -164,11 +164,11 @@ router.post('/outbound-call', async function (req, res) {
 
     // For conversation mode, check additional dependencies
     if (mode === 'conversation') {
-      if (!audioForkServer || !whisperClient || !geminiBridge || !ttsService) {
+      if (!audioForkServer || !whisperClient || !aiBridge || !ttsService) {
         logger.error('Conversation mode dependencies not ready', {
           audioForkServer: !!audioForkServer,
           whisperClient: !!whisperClient,
-          geminiBridge: !!geminiBridge,
+          aiBridge: !!aiBridge,
           ttsService: !!ttsService
         });
 
@@ -250,7 +250,7 @@ router.post('/outbound-call', async function (req, res) {
             await runConversationLoop(endpoint, dialog, callId, {
               audioForkServer: audioForkServer,
               whisperClient: whisperClient,
-              geminiBridge: geminiBridge,
+              aiBridge: aiBridge,
               ttsService: ttsService,
               wsPort: wsPort,
               deviceConfig: deviceConfig,
@@ -395,11 +395,11 @@ function setupRoutes(deps) {
   deviceRegistry = deps.deviceRegistry || null;
   audioForkServer = deps.audioForkServer || null;
   whisperClient = deps.whisperClient || null;
-  geminiBridge = deps.geminiBridge || null;
+  aiBridge = deps.aiBridge || null;
   ttsService = deps.ttsService || null;
   wsPort = deps.wsPort || 3001;
 
-  var conversationReady = !!(audioForkServer && whisperClient && geminiBridge && ttsService);
+  var conversationReady = !!(audioForkServer && whisperClient && aiBridge && ttsService);
 
   logger.info('Outbound routes initialized', {
     srf: !!srf,

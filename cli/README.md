@@ -7,14 +7,14 @@ Command-line interface for AI Phone. Single-command setup and management.
 ### One-Line Install
 
 ```bash
-curl -sSL https://raw.githubusercontent.com/theNetworkChuck/ai-phone/main/install.sh | bash
+curl -sSL https://raw.githubusercontent.com/jayis1/Project-Ph/main/install.sh | bash
 ```
 
 ### Manual Install
 
 ```bash
-git clone https://github.com/theNetworkChuck/ai-phone.git
-cd ai-phone/cli
+git clone https://github.com/jayis1/Project-Ph.git
+cd Project-Ph/cli
 npm install
 npm link
 ```
@@ -25,64 +25,21 @@ npm link
 ai-phone setup
 ```
 
-The wizard guides you through configuration based on your deployment type:
-
-### Voice Server
-
-Select this when setting up a Raspberry Pi or dedicated voice box that connects to a remote API server.
+The wizard guides you through configuration:
 
 **What it asks for:**
 
 1. FreePBX SIP domain and registrar
-2. API server IP and port (where gemini-api-server runs)
-3. ElevenLabs API key and default voice ID
-4. OpenAI API key (for Whisper STT)
+2. Local AI Ollama API URL
+3. Local Whisper STT API URL
+4. Local TTS API URL
 5. Device configuration (name, extension, auth, voice, prompt)
 6. Server LAN IP (for RTP audio routing)
 
 **What `ai-phone start` does:**
 
 - Starts Docker containers (drachtio, freeswitch, voice-app)
-- Connects to the remote API server you specified
-
-### API Server
-
-Select this when setting up the Gemini API wrapper on a machine with Gemini Code CLI.
-
-**What it asks for:**
-
-- API server port (default: 3333)
-
-**What `ai-phone start` does:**
-
-- Starts gemini-api-server on the configured port
-
-**Note:** You can also just run `ai-phone api-server` without setup - it defaults to port 3333.
-
-### Both (All-in-One)
-
-Select this for a single machine running everything.
-
-**What it asks for:**
-
-1. ElevenLabs API key and default voice ID
-2. OpenAI API key
-3. FreePBX SIP domain and registrar
-4. Device configuration
-5. Server LAN IP, API port, and HTTP port
-
-**What `ai-phone start` does:**
-
-- Starts Docker containers (drachtio, freeswitch, voice-app)
-- Starts gemini-api-server
-
-### Pi Auto-Detection
-
-On Raspberry Pi, the setup wizard:
-
-- Recommends "Voice Server" mode if you select "Both"
-- Checks for an existing SBC on port 5060 and auto-configures drachtio to use 5070 to avoid conflicts
-- Uses optimized settings for Pi hardware
+- Connects them to your local Ollama server
 
 ## Commands
 
@@ -99,15 +56,11 @@ ai-phone config reset       # Reset config (creates backup first)
 ### Service Management
 
 ```bash
-ai-phone start              # Start services based on installation type
+ai-phone start              # Start Docker services
 ai-phone stop               # Stop all services
 ai-phone status             # Show service status
 ai-phone doctor             # Health check for dependencies and services
-ai-phone api-server         # Start API server standalone (default port 3333)
-ai-phone api-server -p 4000 # Start on custom port
 ```
-
-
 
 ### Logs
 
@@ -141,7 +94,6 @@ All configuration is stored in `~/.ai-phone/`:
 ├── config.json           # Main configuration (chmod 600)
 ├── docker-compose.yml    # Generated Docker config
 ├── .env                  # Generated environment file
-├── server.pid            # API server process ID
 └── backups/              # Configuration backups
 ```
 
@@ -150,10 +102,10 @@ All configuration is stored in `~/.ai-phone/`:
 ```json
 {
   "version": "1.0.0",
-  "installationType": "both",
   "api": {
-    "elevenlabs": { "apiKey": "...", "defaultVoiceId": "...", "validated": true },
-    "openai": { "apiKey": "...", "validated": true }
+    "ollama": { "apiUrl": "http://127.0.0.1:11434" },
+    "localSttUrl": "http://127.0.0.1:8080",
+    "localTtsUrl": "http://127.0.0.1:5002"
   },
   "sip": {
     "domain": "pbx.example.com",
@@ -161,7 +113,6 @@ All configuration is stored in `~/.ai-phone/`:
     "transport": "udp"
   },
   "server": {
-    "geminiApiPort": 3333,
     "httpPort": 3000, 
     "externalIp": "192.168.1.50"
   },
@@ -170,49 +121,16 @@ All configuration is stored in `~/.ai-phone/`:
     "extension": "9000",
     "authId": "9000",
     "password": "***",
-    "voiceId": "elevenlabs-voice-id",
+    "voiceId": "1",
     "prompt": "You are Morpheus..."
-  }],
-  "deployment": {
-    "mode": "both"
-  }
+  }]
 }
-```
-
-## Split Deployment Example
-
-### On Raspberry Pi (Voice Server)
-
-```bash
-# Install
-curl -sSL https://raw.githubusercontent.com/theNetworkChuck/ai-phone/main/install.sh | bash
-
-# Setup - select "Voice Server"
-# Enter your Mac's IP when prompted for API server
-ai-phone setup
-
-# Start voice services
-ai-phone start
-```
-
-### On Mac (API Server)
-
-```bash
-# Install (if not already)
-curl -sSL https://raw.githubusercontent.com/theNetworkChuck/ai-phone/main/install.sh | bash
-
-# Start API server (no setup needed)
-ai-phone api-server
-
-# Or on a custom port
-ai-phone api-server --port 4000
 ```
 
 ## Requirements
 
 - **Node.js 18+** - Required for CLI
-- **Docker** - Required for Voice Server or Both modes
-- **Gemini Code CLI** - Required for API Server or Both modes
+- **Docker** - Required for Voice App
 
 ## Development
 

@@ -6,7 +6,7 @@
  * - VAD-based speech detection
  * - DTMF # key to end speech early
  * - Whisper transcription
- * - Gemini API integration
+ * - AI API integration
  * - TTS response generation
  * - Turn-taking audio cues (beeps)
  * - Hold music during processing
@@ -22,7 +22,7 @@ const READY_BEEP_URL = 'http://127.0.0.1:3000/static/ready-beep.wav';
 const GOTIT_BEEP_URL = 'http://127.0.0.1:3000/static/gotit-beep.wav';
 const HOLD_MUSIC_URL = 'http://127.0.0.1:3000/static/hold-music.mp3';
 
-// Gemini Code-style thinking phrases
+// AI Code-style thinking phrases
 const THINKING_PHRASES = [
   "Pondering...",
   "Elucidating...",
@@ -55,7 +55,7 @@ function isGoodbye(transcript) {
 }
 
 /**
- * Extract voice-friendly line from Gemini's response
+ * Extract voice-friendly line from AI's response
  * Priority: VOICE_RESPONSE > CUSTOM COMPLETED > COMPLETED > first sentence
  */
 function extractVoiceLine(response) {
@@ -119,7 +119,7 @@ function extractVoiceLine(response) {
  * @param {Object} options - Configuration options
  * @param {Object} options.audioForkServer - WebSocket audio fork server
  * @param {Object} options.whisperClient - Whisper transcription client
- * @param {Object} options.geminiBridge - Gemini API bridge
+ * @param {Object} options.aiBridge - AI API bridge
  * @param {Object} options.ttsService - TTS service
  * @param {number} options.wsPort - WebSocket port
  * @param {string} [options.initialContext] - Context for outbound calls (why we're calling)
@@ -131,7 +131,7 @@ async function runConversationLoop(endpoint, dialog, callUuid, options) {
   const {
     audioForkServer,
     whisperClient,
-    geminiBridge,
+    aiBridge,
     ttsService,
     wsPort,
     initialContext = null,
@@ -187,11 +187,11 @@ async function runConversationLoop(endpoint, dialog, callUuid, options) {
       await endpoint.play(greetingUrl);
     }
 
-    // Prime Gemini with context if this is an outbound call (NON-BLOCKING)
+    // Prime AI with context if this is an outbound call (NON-BLOCKING)
     // Fire-and-forget: we don't use the response, just establishing session context
     if (initialContext && callActive) {
-      logger.info('Priming Gemini with outbound context (non-blocking)', { callUuid });
-      geminiBridge.query(
+      logger.info('Priming AI with outbound context (non-blocking)', { callUuid });
+      aiBridge.query(
         `[SYSTEM CONTEXT - DO NOT REPEAT]: You just called the user to tell them: "${initialContext}". They have answered. Now listen to their response and help them.`,
         { callId: callUuid, devicePrompt: devicePrompt, isSystemPrime: true }
       ).catch(err => logger.warn('Prime query failed', { callUuid, error: err.message }));
@@ -371,8 +371,8 @@ async function runConversationLoop(endpoint, dialog, callUuid, options) {
         musicPlaying = true;
       }
 
-      // 3. Query Gemini
-      logger.info('Querying Gemini', { callUuid });
+      // 3. Query AI
+      logger.info('Querying AI', { callUuid });
 
       // Check for voicemail intent
       let voicemailContext = '';
@@ -385,7 +385,7 @@ async function runConversationLoop(endpoint, dialog, callUuid, options) {
         }
       }
 
-      const geminiResponse = await geminiBridge.query(
+      const aiResponse = await aiBridge.query(
         transcript + voicemailContext + systemContext,
         { callId: callUuid, devicePrompt: devicePrompt }
       );
@@ -399,27 +399,27 @@ async function runConversationLoop(endpoint, dialog, callUuid, options) {
         }
       }
 
-      // Check if call ended during Gemini processing
+      // Check if call ended during AI processing
       if (!callActive) {
-        logger.info('Call ended during Gemini processing', { callUuid });
+        logger.info('Call ended during AI processing', { callUuid });
         break;
       }
 
-      logger.info('Gemini responded', { callUuid });
+      logger.info('AI responded', { callUuid });
 
       // 5. Extract and play voice line
-      const voiceLine = extractVoiceLine(geminiResponse);
+      const voiceLine = extractVoiceLine(aiResponse);
       logger.info('Voice line', { callUuid, voiceLine });
 
       // Check for IMMEDIATE CALLBACK
-      const callbackMatch = geminiResponse.match(/🗣️\s*CALLBACK:\s*([+\d]+)/im);
+      const callbackMatch = aiResponse.match(/🗣️\s*CALLBACK:\s*([+\d]+)/im);
       if (callbackMatch) {
         callbackTarget = callbackMatch[1].trim();
         logger.info('IMMEDIATE CALLBACK Detected', { callUuid, target: callbackTarget });
       }
 
       // Check for SCHEDULED CALLBACK
-      const scheduledMatch = geminiResponse.match(/🗣️\s*SCHEDULED_CALLBACK:\s*([+\d]+)\s*\|\s*([^|]+)\s*\|\s*(.+)/im);
+      const scheduledMatch = aiResponse.match(/🗣️\s*SCHEDULED_CALLBACK:\s*([+\d]+)\s*\|\s*([^|]+)\s*\|\s*(.+)/im);
       if (scheduledMatch) {
         scheduledCallbackInfo = {
           phoneNumber: scheduledMatch[1].trim(),
@@ -480,9 +480,9 @@ async function runConversationLoop(endpoint, dialog, callUuid, options) {
       audioForkServer.cancelExpectation(callUuid);
     }
 
-    // End Gemini session
+    // End AI session
     try {
-      await geminiBridge.endSession(callUuid);
+      await aiBridge.endSession(callUuid);
     } catch (e) {
       // Ignore
     }

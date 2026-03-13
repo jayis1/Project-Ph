@@ -119,12 +119,11 @@ function normalizeConfig(config) {
   config.api = config.api || {};
   config.api.elevenlabs = config.api.elevenlabs || {};
   config.api.openai = config.api.openai || {};
-  config.api.gemini = config.api.gemini || {};
+  config.api.ollama = config.api.ollama || {};
   config.api.n8n = config.api.n8n || {};
   config.api.freepbx = config.api.freepbx || {};
 
   // Defaults
-  if (!config.server.geminiApiPort) config.server.geminiApiPort = 3333;
   if (!config.server.httpPort) config.server.httpPort = 3000;
 
   // Map flat keys to nested structure
@@ -134,14 +133,14 @@ function normalizeConfig(config) {
 
   if (config.elevenlabsKey) config.api.elevenlabs.apiKey = config.elevenlabsKey;
   if (config.openaiKey) config.api.openai.apiKey = config.openaiKey;
-  if (config.geminiKey) config.api.gemini.apiKey = config.geminiKey;
+
   if (config.n8nWebhookUrl) config.api.n8n.webhookUrl = config.n8nWebhookUrl;
 
   // Map devices
   if (!config.devices || config.devices.length === 0) {
     if (config.sipExtension) {
       config.devices = [{
-        name: config.botName || 'Gemini',
+        name: config.botName || 'AI',
         extension: config.sipExtension,
         authId: config.sipExtension,
         password: config.sipPassword || '',

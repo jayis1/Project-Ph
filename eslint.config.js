@@ -4,7 +4,7 @@ module.exports = [
     ignores: [
       'node_modules/**',
       'voice-app/node_modules/**',
-      'gemini-api-server/node_modules/**',
+
       'cli/node_modules/**',
       'voice-app/audio/**',
       '*.md',
@@ -41,9 +41,9 @@ module.exports = [
       'semi': ['warn', 'always']
     }
   },
-  // voice-app and gemini-api-server use ES5-style CommonJS
+  // voice-app uses ES5-style CommonJS
   {
-    files: ['voice-app/**/*.js', 'gemini-api-server/**/*.js'],
+    files: ['voice-app/**/*.js'],
     languageOptions: {
       ecmaVersion: 2020,
       sourceType: 'commonjs',

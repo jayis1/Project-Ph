@@ -122,7 +122,7 @@ export async function setupCommand() {
       type: 'input',
       name: 'botName',
       message: 'Bot name:',
-      default: existingConfig.botName || 'Gemini',
+      default: existingConfig.botName || 'AI',
     },
     {
       type: 'input',
@@ -155,7 +155,6 @@ export async function setupCommand() {
       server: {
         externalIp: config.externalIp,
         httpPort: 3000,
-        geminiApiPort: 3333,
       },
       sip: {
         domain: config.sipDomain,

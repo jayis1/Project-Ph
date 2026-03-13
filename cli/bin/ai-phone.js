@@ -22,7 +22,7 @@ const program = new Command();
 
 program
   .name('ai-phone')
-  .description('Voice interface for Gemini CLI via SIP')
+  .description('Voice interface for local AI via SIP')
   .version(pkg.version);
 
 // Setup command
@@ -70,14 +70,6 @@ program
     await doctorCommand();
   });
 
-// API Server command (standalone)
-program
-  .command('api-server')
-  .description('Start Gemini API server (standalone mode)')
-  .action(async () => {
-    const { apiServerCommand } = await import('../lib/commands/api-server.js');
-    await apiServerCommand();
-  });
 
 // Config commands
 const config = program.command('config').description('Manage configuration');

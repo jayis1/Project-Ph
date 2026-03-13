@@ -1,5 +1,5 @@
 /**
- * Gemini tools for inter-extension calling and callback coordination
+ * AI tools for inter-extension calling and callback coordination
  * These tools enable crew members to call each other and coordinate callbacks
  */
 
@@ -17,7 +17,7 @@ const CREW_EXTENSIONS = {
 };
 
 /**
- * Tool definitions for Gemini
+ * Tool definitions for AI
  */
 export const callbackTools = [
     {

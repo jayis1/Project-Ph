@@ -1,7 +1,7 @@
 {
   "name": "ai-phone-voice-app",
   "version": "2.1.4",
-  "description": "Voice interface for Gemini Code via SIP/FreePBX",
+  "description": "Voice interface for Ollama AI via SIP/FreePBX",
   "main": "index.js",
   "scripts": {
     "start": "node index.js",
@@ -26,7 +26,7 @@
   "keywords": [
     "voice",
     "sip",
-    "gemini",
+    "ollama",
     "ai",
     "freepbx",
     "drachtio"

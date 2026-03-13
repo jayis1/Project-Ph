@@ -21,7 +21,7 @@ const callHistory = new Map();
  * @returns {Promise<string>} AI response text
  */
 async function query(prompt, options = {}) {
-  const { callId, devicePrompt, timeout = 120 } = options;
+  const { callId, devicePrompt, timeout = 120, format } = options;
   const timestamp = new Date().toISOString();
 
   // Initialize conversation history for this call if it doesn't exist
@@ -42,6 +42,10 @@ async function query(prompt, options = {}) {
     messages: messages,
     stream: false
   };
+
+  if (format === 'json') {
+    payload.format = 'json';
+  }
 
   try {
     const response = await axios.post(

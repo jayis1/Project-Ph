@@ -1,12 +1,12 @@
-# GEMINI AI Phone
+# Local AI Phone
 
-Voice interface for Gemini Code via SIP/FreePBX. Call your AI, and your AI can call you.
+Voice interface for Local AI (Ollama) via SIP/FreePBX. Call your AI, and your AI can call you.
 
 ## Project Overview
 
-AI Phone gives your Gemini Code installation a phone number through FreePBX integration:
+AI Phone gives your local AI installation a phone number through FreePBX integration:
 
-- **Inbound**: Call an extension and talk to Gemini - run commands, check status, ask questions
+- **Inbound**: Call an extension and talk to your AI - run commands, check status, ask questions
 - **Outbound**: Your server can call YOU with alerts, then have a conversation about what to do
 
 ## Tech Stack
@@ -16,9 +16,9 @@ AI Phone gives your Gemini Code installation a phone number through FreePBX inte
 | Language | Node.js (ES modules for CLI, CommonJS for voice-app) |
 | SIP Server | drachtio-srf |
 | Media Server | FreeSWITCH (via drachtio-fsmrf) |
-| STT | OpenAI Whisper API |
-| TTS | ElevenLabs API |
-| AI Backend | Gemini CLI (via HTTP wrapper) |
+| STT | Whisper.cpp (faster-whisper) |
+| TTS | OpenedAI Speech |
+| AI Backend | Ollama |
 | PBX | FreePBX (any SIP-compatible works) |
 | Container | Docker Compose |
 
@@ -46,8 +46,8 @@ AI Phone gives your Gemini Code installation a phone number through FreePBX inte
 │                       │ HTTP                                │
 │                       ↓                                      │
 │  ┌─────────────────────────────────────────────────┐       │
-│  │   gemini-api-server                              │       │
-│  │   Wraps Gemini CLI with session management │       │
+│  │   Local Ollama / STT / TTS                      │       │
+│  │   Direct inference services                     │       │
 │  └─────────────────────────────────────────────────┘       │
 └─────────────────────────────────────────────────────────────┘
 ```
@@ -122,7 +122,7 @@ ai-phone/
 │   │   └── devices.json      # Device configurations
 │   ├── lib/
 │   │   ├── audio-fork.js     # WebSocket audio streaming
-│   │   ├── gemini-bridge.js  # HTTP client for Gemini API
+│   │   ├── ai-bridge.js      # HTTP client for Ollama API
 │   │   ├── connection-retry.js # Connection retry logic
 │   │   ├── conversation-loop.js  # Core conversation flow
 │   │   ├── device-registry.js    # Multi-device management
@@ -141,11 +141,7 @@ ai-phone/
 │   ├── README-OUTBOUND.md    # Outbound calling API docs
 │   └── API-QUERY-CONTRACT.md # Query API specification
 │
-├── gemini-api-server/        # HTTP wrapper for Gemini CLI
-│   ├── package.json
-│   ├── server.js             # Express server
-│   └── structured.js         # JSON validation helpers
-│
+
 ├── docs/
 │   └── TROUBLESHOOTING.md    # Troubleshooting guide
 │
@@ -207,22 +203,15 @@ npm run lint:fix      # Auto-fix issues
 | POST | `/api/query` | Query device programmatically |
 | GET | `/api/devices` | List configured devices |
 
-### Gemini API Server (port 3333)
 
-| Method | Endpoint | Purpose |
-|--------|----------|---------|
-| POST | `/ask` | Send prompt to Gemini |
-| POST | `/ask-structured` | Send prompt, return JSON |
-| POST | `/end-session` | Clean up session |
-| GET | `/health` | Health check |
 
 ## Key Design Decisions
 
 1. **CommonJS for voice-app** - Compatibility with drachtio ecosystem
 2. **ES Modules for CLI** - Modern Node.js tooling
 3. **Host networking mode** - Required for FreeSWITCH RTP
-4. **Separate gemini-api-server** - Runs where Gemini CLI is installed
-5. **Session-per-call** - Each call gets Gemini session for multi-turn context
+4. **Integrated AI Bridge** - Native interaction with Ollama
+5. **Session-per-call** - Each call gets a unique conversation session context
 6. **RTP ports 30000-30100** - Avoids conflict with SBC (uses 20000-20099)
 7. **Config in ~/.ai-phone** - User config separate from codebase
 
@@ -233,9 +222,9 @@ See `.env.example` for all variables. Key ones:
 | Variable | Purpose |
 |----------|---------|
 | `EXTERNAL_IP` | Server LAN IP for RTP routing |
-| `GEMINI_API_URL` | URL to gemini-api-server |
-| `ELEVENLABS_API_KEY` | TTS API key |
-| `OPENAI_API_KEY` | Whisper STT API key |
+| `OLLAMA_API_URL` | URL to Ollama instance |
+| `LOCAL_TTS_URL` | TTS API proxy |
+| `LOCAL_STT_URL` | Whisper STT API proxy |
 | `SIP_DOMAIN` | FreePBX server FQDN |
 | `SIP_REGISTRAR` | SIP registrar address |
 

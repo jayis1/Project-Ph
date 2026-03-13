@@ -15,7 +15,7 @@ var sipHandler = require("./lib/sip-handler");
 var handleInvite = sipHandler.handleInvite;
 var extractCallerId = sipHandler.extractCallerId;
 var whisperClient = require("./lib/whisper-client");
-var geminiBridge = require("./lib/gemini-bridge");
+var aiBridge = require("./lib/ai-bridge");
 var ttsService = require("./lib/tts-service");
 
 // Multi-extension support
@@ -213,7 +213,7 @@ function initializeServers() {
     deviceRegistry: deviceRegistry,  // Required for device lookup
     audioForkServer: audioForkServer,
     whisperClient: whisperClient,
-    geminiBridge: geminiBridge,
+    aiBridge: aiBridge,
     ttsService: ttsService,
     wsPort: config.ws_port
   });
@@ -223,7 +223,7 @@ function initializeServers() {
 
   // ========== QUERY API ROUTES ==========
   setupQueryRoutes({
-    geminiBridge: geminiBridge
+    aiBridge: aiBridge
   });
 
   httpServer.app.use("/api", queryRouter);
@@ -283,7 +283,7 @@ function checkReadyState() {
         deviceRegistry: deviceRegistry,
         config: config,
         whisperClient: whisperClient,
-        geminiBridge: geminiBridge,
+        aiBridge: aiBridge,
         ttsService: ttsService,
         wsPort: config.ws_port,
         externalIp: config.external_ip,

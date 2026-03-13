@@ -1,7 +1,7 @@
 {
   "name": "ai-phone",
   "version": "2.2.0",
-  "description": "Voice interface for Gemini Code via SIP/FreePBX",
+  "description": "Voice interface for Local AI via SIP/FreePBX",
   "private": true,
   "scripts": {
     "test": "npm run test:cli && npm run test:voice-app",
@@ -10,7 +10,6 @@
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
     "lint:voice-app": "eslint voice-app/",
-    "lint:api-server": "eslint gemini-api-server/",
     "precommit": "npm run lint",
     "prepare": "husky"
   },
