@@ -36,6 +36,8 @@ SQL
 mysql -u root asterisk << 'SQL'
 INSERT IGNORE INTO trunks (trunkid, name, tech, outcid, keepcid, maxchans, failscript, dialoutprefix, channelid, usercontext, provider, disabled, `continue`)
 VALUES
+(2, 'ai_phone_trunk', 'pjsip', '', 'off', '', '', '', 'ai_phone_trunk', '', '', 'off', 'off');
+
 INSERT IGNORE INTO pjsip (id, keyword, data, flags) VALUES 
 ('2', 'allow_unauthenticated_options', 'off', 0),
 ('2', 'auth_rejection_permanent', 'off', 0),
