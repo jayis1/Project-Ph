@@ -45,12 +45,12 @@ var callbackRouter = require("./lib/callback-routes");
 // Configuration
 var config = {
   drachtio: {
-    host: process.env.DRACHTIO_HOST || "drachtio",
+    host: process.env.DRACHTIO_HOST || "127.0.0.1",
     port: parseInt(process.env.DRACHTIO_PORT) || 9022,
     secret: process.env.DRACHTIO_SECRET || "cymru"
   },
   freeswitch: {
-    host: process.env.FREESWITCH_HOST || "freeswitch",
+    host: process.env.FREESWITCH_HOST || "127.0.0.1",
     port: parseInt(process.env.FREESWITCH_PORT) || 8021,
     secret: process.env.FREESWITCH_SECRET || "JambonzR0ck$"
   },
