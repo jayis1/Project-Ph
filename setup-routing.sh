@@ -75,6 +75,7 @@ INSERT IGNORE INTO pjsip (id, keyword, data, flags) VALUES
 ('2', 'retry_interval', '60', 0),
 ('2', 'rewrite_contact', 'no', 0),
 ('2', 'rtp_symmetric', 'yes', 0),
+('2', 'secret', '', 0),
 ('2', 'send_connected_line', 'no', 0),
 ('2', 'sendrpid', 'no', 0),
 ('2', 'server_uri', '', 0),
