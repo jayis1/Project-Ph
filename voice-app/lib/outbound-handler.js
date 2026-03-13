@@ -52,29 +52,37 @@ async function initiateOutboundCall(srf, mediaServer, options) {
     // Get local SDP from FreeSWITCH
     const localSdp = endpoint.local.sdp;
 
-    // Format SIP URI for FreePBX
-    // Internal extensions: dial as-is. External (E.164 with +): strip the + and dial digits
+    // Determine if this is an external PSTN call or internal extension
+    const isExternal = to.startsWith('+');
     const phoneNumber = to.replace(/^\+/, '');
-    const sipTrunkHost = process.env.SIP_TRUNK_HOST || process.env.SIP_REGISTRAR || '127.0.0.1';
-    const externalIp = process.env.EXTERNAL_IP || '10.70.7.81';
+
+    // Route: external calls go directly to SIP trunk, internal go to FreePBX
+    const sipTrunkHost = isExternal
+      ? (process.env.SIP_TRUNK_HOST || process.env.SIP_REGISTRAR || '127.0.0.1')
+      : (process.env.SIP_REGISTRAR || '127.0.0.1');
+
+    const externalIp = process.env.EXTERNAL_IP || '127.0.0.1';
     const defaultCallerId = callerId || process.env.DEFAULT_CALLER_ID || '+15551234567';
 
-    // SIP Authentication for * Handles SIP Registration (UAC) with the PBX
-    const sipAuthUsername = process.env.SIP_AUTH_USERNAME;
-    const sipAuthPassword = process.env.SIP_AUTH_PASSWORD;
+    // SIP Authentication: trunk credentials for external, device credentials for internal
+    const trunkUsername = process.env.SIP_TRUNK_USERNAME;
+    const trunkPassword = process.env.SIP_TRUNK_PASSWORD;
 
     const sipUri = 'sip:' + phoneNumber + '@' + sipTrunkHost;
 
     logger.info('Dialing SIP URI', {
       callId,
       sipUri,
+      isExternal,
+      trunkHost: sipTrunkHost,
       from: defaultCallerId,
-      hasAuth: !!(sipAuthUsername && sipAuthPassword)
+      hasAuth: isExternal ? !!(trunkUsername && trunkPassword) : !!(deviceConfig && deviceConfig.authId)
     });
 
     // STEP 2: Create UAC (outbound call) with Early Offer
-    // Use device extension and display name if available, otherwise fall back to callerId
-    const fromExtension = deviceConfig ? deviceConfig.extension : defaultCallerId.replace('+', '');
+    const fromExtension = isExternal
+      ? (trunkUsername || defaultCallerId.replace('+', ''))
+      : (deviceConfig ? deviceConfig.extension : defaultCallerId.replace('+', ''));
     const displayName = deviceConfig ? deviceConfig.name : null;
     const fromHeader = displayName
       ? '"' + displayName + '" <sip:' + fromExtension + '@' + sipTrunkHost + '>'
@@ -89,19 +97,28 @@ async function initiateOutboundCall(srf, mediaServer, options) {
       }
     };
 
-    // Add SIP authentication - prefer device credentials, fall back to env vars
-    const authUsername = deviceConfig ? deviceConfig.authId : sipAuthUsername;
-    const authPassword = deviceConfig ? deviceConfig.password : sipAuthPassword;
-
-    if (authUsername && authPassword) {
+    // Add SIP authentication
+    if (isExternal && trunkUsername && trunkPassword) {
+      // External: use SIP trunk credentials
       uacOptions.auth = {
-        username: authUsername,
-        password: authPassword
+        username: trunkUsername,
+        password: trunkPassword
       };
-      logger.info('SIP authentication enabled', {
+      logger.info('SIP trunk authentication enabled', {
         callId,
-        username: authUsername,
-        device: deviceConfig ? deviceConfig.name : 'default'
+        username: trunkUsername,
+        trunkHost: sipTrunkHost
+      });
+    } else if (deviceConfig && deviceConfig.authId) {
+      // Internal: use device/extension credentials
+      uacOptions.auth = {
+        username: deviceConfig.authId,
+        password: deviceConfig.password
+      };
+      logger.info('SIP device authentication enabled', {
+        callId,
+        username: deviceConfig.authId,
+        device: deviceConfig.name
       });
     }
 
