@@ -80,9 +80,25 @@ install_rocm() {
   echo "🔴 Installing AMD ROCm (GPU drivers for Ollama)..."
   case "$PKG_MANAGER" in
     apt)
+      # Detect OS codename for ROCm repo (ubuntu 22.04=jammy, 24.04=noble, debian 12=bookworm)
+      if [ -f /etc/os-release ]; then
+        . /etc/os-release
+        OS_CODENAME=$VERSION_CODENAME
+      else
+        OS_CODENAME="jammy" # fallback
+      fi
+      
+      # Map Debian 12 (bookworm) to Ubuntu 22.04 (jammy) repo as AMD doesn't have an official bookworm repo
+      # but the jammy packages are compatible with Debian 12
+      REPO_CODENAME=$OS_CODENAME
+      if [ "$OS_CODENAME" = "bookworm" ]; then
+        REPO_CODENAME="jammy"
+        echo "   Mapping Debian bookworm to Ubuntu jammy ROCm repository"
+      fi
+
       # Add AMD ROCm repository
-      curl -fsSL https://repo.radeon.com/rocm/rocm.gpg.key | $SUDO gpg --dearmor -o /etc/apt/keyrings/rocm.gpg
-      echo "deb [arch=amd64 signed-by=/etc/apt/keyrings/rocm.gpg] https://repo.radeon.com/rocm/apt/latest noble main" | $SUDO tee /etc/apt/sources.list.d/rocm.list
+      curl -fsSL https://repo.radeon.com/rocm/rocm.gpg.key | $SUDO gpg --dearmor -o /etc/apt/keyrings/rocm.gpg --yes
+      echo "deb [arch=amd64 signed-by=/etc/apt/keyrings/rocm.gpg] https://repo.radeon.com/rocm/apt/latest $REPO_CODENAME main" | $SUDO tee /etc/apt/sources.list.d/rocm.list
       echo -e 'Package: *\nPin: release o=repo.radeon.com\nPin-Priority: 600' | $SUDO tee /etc/apt/preferences.d/rocm-pin-600
       $SUDO apt-get update
       $SUDO apt-get install -y rocm
