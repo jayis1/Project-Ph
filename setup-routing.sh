@@ -7,8 +7,8 @@ echo "Setting up AI Phone Routing in FreePBX..."
 mysql -u root asterisk << 'SQL'
 DELETE FROM users WHERE extension = '9001';
 DELETE FROM devices WHERE id = '9001';
-DELETE FROM pjsip WHERE id = '9001' OR id = 'ai_phone_trunk';
-DELETE FROM trunks WHERE trunkid = 9001 OR channelid = 'ai_phone_trunk';
+DELETE FROM pjsip WHERE id = '9001' OR id = 'ai_phone_trunk' OR id = '2';
+DELETE FROM trunks WHERE trunkid = 2 OR channelid = 'ai_phone_trunk';
 DELETE FROM incoming WHERE destination LIKE '%9001%';
 FLUSH PRIVILEGES;
 SQL
@@ -36,7 +36,11 @@ SQL
 mysql -u root asterisk << 'SQL'
 INSERT IGNORE INTO trunks (trunkid, name, tech, outcid, keepcid, maxchans, failscript, dialoutprefix, channelid, usercontext, provider, disabled, `continue`)
 VALUES
-(9001, 'ai_phone_trunk', 'pjsip', '', 'off', '', '', '', 'ai_phone_trunk', '', '', 'off', 'off');
+(2, 'ai_phone_trunk', 'pjsip', '', 'off', '', '', '', 'ai_phone_trunk', '', '', 'off', 'off');
+
+INSERT IGNORE INTO pjsip (id, keyword, data, flags) VALUES ('2', 'sv_channelid', 'ai_phone_trunk', 0);
+INSERT IGNORE INTO pjsip (id, keyword, data, flags) VALUES ('2', 'sv_trunk_name', 'ai_phone_trunk', 0);
+INSERT IGNORE INTO pjsip (id, keyword, data, flags) VALUES ('2', 'trunk_name', 'ai_phone_trunk', 0);
 
 INSERT IGNORE INTO pjsip (id, keyword, data, flags) VALUES ('ai_phone_trunk', 'endpoint', 'ai_phone_trunk', 24);
 INSERT IGNORE INTO pjsip (id, keyword, data, flags) VALUES 
@@ -64,14 +68,14 @@ SQL
 # 4. Create the Outbound Route (AI calling out)
 mysql -u root asterisk << 'SQL'
 INSERT IGNORE INTO outbound_routes (route_id, name) 
-VALUES (1, 'From_AI_Phone')
+VALUES (2, 'From_AI_Phone')
 ON DUPLICATE KEY UPDATE name='From_AI_Phone';
 
 INSERT IGNORE INTO outbound_route_patterns (route_id, match_pattern_pass) 
-VALUES (1, 'X.');
+VALUES (2, 'X.');
 
 INSERT IGNORE INTO outbound_route_trunks (route_id, trunk_id, seq) 
-VALUES (1, 9001, 0);
+VALUES (2, 2, 0);
 SQL
 
 # 5. Fix the GUI Apply Config State
