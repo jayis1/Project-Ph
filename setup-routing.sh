@@ -10,8 +10,8 @@ DELETE FROM devices WHERE id = '9001';
 DELETE FROM pjsip WHERE id = '9001' OR id = 'ai_phone_trunk' OR id = '2' OR id = 'to_ai_phone';
 DELETE FROM trunks WHERE trunkid = 2 OR channelid = 'ai_phone_trunk';
 DELETE FROM incoming;
-INSERT IGNORE INTO incoming (cidnum, extension, destination, privacymanager, alertinfo, ringing, delay_answer, pricid, pmmaxretries, pmminlength, description, grppre)
-VALUES ('', '', 'from-did-direct,9001,1', '0', '', '', '0', '', '', '', 'Catch-All to Trinity', '');
+INSERT IGNORE INTO incoming (cidnum, extension, destination, description)
+VALUES ('', '', 'from-did-direct,9001,1', 'Catch-All to Trinity');
 FLUSH PRIVILEGES;
 SQL
 
