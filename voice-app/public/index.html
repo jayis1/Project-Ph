@@ -320,6 +320,8 @@
             e.preventDefault();
             const btn = document.getElementById('callBtn');
             const resultDiv = document.getElementById('outboundResult');
+            const targetNum = document.getElementById('targetNumber').value;
+            const deviceName = document.getElementById('deviceSelect').selectedOptions[0]?.textContent || 'Unknown';
 
             btn.classList.add('loading');
             btn.textContent = 'Initiating...';
@@ -331,7 +333,7 @@
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
-                        to: document.getElementById('targetNumber').value,
+                        to: targetNum,
                         message: document.getElementById('callContext').value,
                         device: document.getElementById('deviceSelect').value,
                         mode: 'conversation'
@@ -342,12 +344,12 @@
 
                 resultDiv.style.display = 'block';
                 if (res.ok && data.success) {
-                    resultDiv.textContent = 'Success: Call initiated to ' + data.to + ' as ' + data.callerId;
+                    resultDiv.textContent = '✓ Call queued — ' + deviceName + ' is calling ' + targetNum + ' (ID: ' + data.callId + ')';
                     resultDiv.className = 'result-success';
                     document.getElementById('targetNumber').value = '';
                     document.getElementById('callContext').value = '';
                 } else {
-                    resultDiv.textContent = 'Error: ' + (data.error || 'Failed to initiate call');
+                    resultDiv.textContent = 'Error: ' + (data.message || data.error || 'Failed to initiate call');
                     resultDiv.className = 'result-error';
                 }
             } catch (err) {
