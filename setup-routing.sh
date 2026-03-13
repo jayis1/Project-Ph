@@ -3,7 +3,17 @@ set -e
 
 echo "Setting up AI Phone Routing in FreePBX..."
 
-# 1. Create the AI Phone SIP Extension (9001)
+# 1. Clean up any existing duplicates
+mysql -u root asterisk -e "
+DELETE FROM users WHERE extension = '9001';
+DELETE FROM devices WHERE id = '9001';
+DELETE FROM pjsip WHERE id = '9001' OR id = 'to_ai_phone';
+DELETE FROM trunks WHERE trunkid = 9001 OR channelid = 'to_ai_phone';
+DELETE FROM incoming WHERE destination LIKE '%9001%';
+FLUSH PRIVILEGES;
+"
+
+# 2. Create the AI Phone SIP Extension (9001)
 mysql -u root asterisk -e "
 INSERT IGNORE INTO users (extension, name, outboundcid, sipname, noanswer_cid, busy_cid, chanunavail_cid, noanswer_dest, busy_dest, chanunavail_dest) VALUES ('9001', 'Trinity (AI)', 'Trinity <9001>', '9001', '', '', '', '', '', '');
 INSERT IGNORE INTO devices (id, tech, dial, devicetype, user, description) VALUES ('9001', 'pjsip', 'PJSIP/9001', 'fixed', '9001', 'Trinity (AI)');
