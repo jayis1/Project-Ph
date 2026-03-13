@@ -80,20 +80,23 @@ install_rocm() {
   echo "🔴 Installing AMD ROCm (GPU drivers for Ollama)..."
   case "$PKG_MANAGER" in
     apt)
-      # Detect OS codename for ROCm repo (ubuntu 22.04=jammy, 24.04=noble, debian 12=bookworm)
+      # Detect OS codename for ROCm repo (ubuntu 22.04=jammy, 24.04=noble)
+      # For Debian, map to jammy since AMD doesn't publish official Debian repos
       if [ -f /etc/os-release ]; then
         . /etc/os-release
         OS_CODENAME=$VERSION_CODENAME
+        OS_ID=$ID
       else
         OS_CODENAME="jammy" # fallback
+        OS_ID="unknown"
       fi
       
-      # Map Debian 12 (bookworm) to Ubuntu 22.04 (jammy) repo as AMD doesn't have an official bookworm repo
-      # but the jammy packages are compatible with Debian 12
       REPO_CODENAME=$OS_CODENAME
-      if [ "$OS_CODENAME" = "bookworm" ]; then
+      
+      # Map all Debian versions (buster, bullseye, bookworm) to Ubuntu 22.04 (jammy)
+      if [ "$OS_ID" = "debian" ] || [ "$OS_CODENAME" = "bookworm" ] || [ "$OS_CODENAME" = "bullseye" ] || [ "$OS_CODENAME" = "buster" ]; then
         REPO_CODENAME="jammy"
-        echo "   Mapping Debian bookworm to Ubuntu jammy ROCm repository"
+        echo "   Mapping Debian ($OS_CODENAME) to Ubuntu jammy ROCm repository"
       fi
 
       # Add AMD ROCm repository
