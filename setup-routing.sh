@@ -12,6 +12,12 @@ DELETE FROM trunks WHERE trunkid = 2 OR channelid = 'ai_phone_trunk';
 DELETE FROM incoming;
 INSERT IGNORE INTO incoming (cidnum, extension, destination, description)
 VALUES ('', '', 'from-did-direct,9001,1', 'Catch-All to Trinity');
+
+INSERT IGNORE INTO users (extension, name, outboundcid, sipname, noanswer_cid, busy_cid, chanunavail_cid, noanswer_dest, busy_dest, chanunavail_dest) 
+VALUES ('9001', 'Trinity (AI)', 'Trinity <9001>', '9001', '', '', '', '', '', '');
+INSERT IGNORE INTO devices (id, tech, dial, devicetype, user, description) 
+VALUES ('9001', 'custom', 'PJSIP/ai_phone_trunk/sip:ai_phone@127.0.0.1:5070', 'fixed', '9001', 'Trinity (AI)');
+
 FLUSH PRIVILEGES;
 SQL
 
@@ -46,14 +52,6 @@ type=identify
 endpoint=ai_phone_trunk
 match=127.0.0.1
 EOF
-
-# 3. Create Custom Dialplan Route
-cat << 'DIALPLAN' >> /etc/asterisk/extensions_custom.conf
-
-[from-internal-custom]
-exten => 9001,1,Dial(PJSIP/ai_phone_trunk/sip:ai_phone@127.0.0.1:5070,30,r)
-exten => 9001,n,Hangup()
-DIALPLAN
 
 # 4. Reload Asterisk completely to ingest the raw files
 echo "✅ Configuration files generated successfully!"
