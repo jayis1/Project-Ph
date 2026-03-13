@@ -35,7 +35,9 @@ services:
     # - 30000-30100: RTP Audio (changed from 20000-20100 to avoid conflict with standard PBX SBC ports)
 
   voice-app:
-    build: ./voice-app
+    build: 
+      context: ./voice-app
+      network: host
     container_name: voice-app
     restart: unless-stopped
     network_mode: host
