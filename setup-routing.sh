@@ -66,8 +66,8 @@ INSERT IGNORE INTO outbound_routes (route_id, name)
 VALUES (1, 'From_AI_Phone')
 ON DUPLICATE KEY UPDATE name='From_AI_Phone';
 
-INSERT IGNORE INTO outbound_route_patterns (route_id, match_pattern_pass, match_pattern_prefix, match_pattern_pass_replace) 
-VALUES (1, 'X.', '', '');
+INSERT IGNORE INTO outbound_route_patterns (route_id, match_pattern_pass) 
+VALUES (1, 'X.');
 
 INSERT IGNORE INTO outbound_route_trunks (route_id, trunk_id, seq) 
 VALUES (1, 9001, 0);
