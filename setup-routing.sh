@@ -16,10 +16,13 @@ VALUES ('', '', 'from-did-direct,9001,1', 'Catch-All to Trinity');
 INSERT IGNORE INTO users (extension, name, outboundcid, sipname, noanswer_cid, busy_cid, chanunavail_cid, noanswer_dest, busy_dest, chanunavail_dest) 
 VALUES ('9001', 'Trinity (AI)', 'Trinity <9001>', '9001', '', '', '', '', '', '');
 INSERT IGNORE INTO devices (id, tech, dial, devicetype, user, description) 
-VALUES ('9001', 'custom', 'PJSIP/ai_phone_trunk/sip:ai_phone@127.0.0.1:5070', 'fixed', '9001', 'Trinity (AI)');
+VALUES ('9001', 'custom', 'PJSIP/ai_phone_trunk', 'fixed', '9001', 'Trinity (AI)');
 
 FLUSH PRIVILEGES;
 SQL
+
+# 1.5 Clean out any leftover broken test dialplans from earlier iterations
+sed -i '/exten => 9001/d' /etc/asterisk/extensions_custom.conf || true
 
 # 2. Add the AI Phone custom PJSIP Endpoint configuration
 cat > /etc/asterisk/pjsip.endpoint_custom.conf <<'EOF'
