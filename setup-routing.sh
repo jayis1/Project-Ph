@@ -36,11 +36,56 @@ SQL
 mysql -u root asterisk << 'SQL'
 INSERT IGNORE INTO trunks (trunkid, name, tech, outcid, keepcid, maxchans, failscript, dialoutprefix, channelid, usercontext, provider, disabled, `continue`)
 VALUES
-(2, 'ai_phone_trunk', 'pjsip', '', 'off', '', '', '', 'ai_phone_trunk', '', '', 'off', 'off');
-
-INSERT IGNORE INTO pjsip (id, keyword, data, flags) VALUES ('2', 'sv_channelid', 'ai_phone_trunk', 0);
-INSERT IGNORE INTO pjsip (id, keyword, data, flags) VALUES ('2', 'sv_trunk_name', 'ai_phone_trunk', 0);
-INSERT IGNORE INTO pjsip (id, keyword, data, flags) VALUES ('2', 'trunk_name', 'ai_phone_trunk', 0);
+INSERT IGNORE INTO pjsip (id, keyword, data, flags) VALUES 
+('2', 'allow_unauthenticated_options', 'off', 0),
+('2', 'auth_rejection_permanent', 'off', 0),
+('2', 'authentication', 'outbound', 0),
+('2', 'client_uri', '', 0),
+('2', 'contact_user', '', 0),
+('2', 'context', 'from-internal', 0),
+('2', 'dialopts', '', 0),
+('2', 'dialoutopts_cb', 'sys', 0),
+('2', 'direct_media', 'no', 0),
+('2', 'disabletrunk', 'off', 0),
+('2', 'dtmfmode', 'auto', 0),
+('2', 'expiration', '3600', 0),
+('2', 'failtrunk_enable', '0', 0),
+('2', 'fatal_retry_interval', '30', 0),
+('2', 'fax_detect', 'no', 0),
+('2', 'forbidden_retry_interval', '30', 0),
+('2', 'force_rport', 'yes', 0),
+('2', 'from_domain', '', 0),
+('2', 'from_user', '', 0),
+('2', 'hcid', 'on', 0),
+('2', 'identify_by', 'default', 0),
+('2', 'inband_progress', 'no', 0),
+('2', 'match', '', 0),
+('2', 'max_retries', '10000', 0),
+('2', 'maxchans', '', 0),
+('2', 'media_address', '', 0),
+('2', 'media_encryption', 'no', 0),
+('2', 'outbound_proxy', '', 0),
+('2', 'peerdetails', '', 0),
+('2', 'pjsip_line', 'true', 0),
+('2', 'qualify_frequency', '60', 0),
+('2', 'register', '', 0),
+('2', 'registration', 'none', 0),
+('2', 'retry_interval', '60', 0),
+('2', 'rewrite_contact', 'no', 0),
+('2', 'rtp_symmetric', 'yes', 0),
+('2', 'send_connected_line', 'no', 0),
+('2', 'sendrpid', 'no', 0),
+('2', 'server_uri', '', 0),
+('2', 'support_path', 'no', 0),
+('2', 'sv_channelid', 'ai_phone_trunk', 0),
+('2', 'sv_trunk_name', 'ai_phone_trunk', 0),
+('2', 't38_udptl', 'no', 0),
+('2', 't38_udptl_nat', 'no', 0),
+('2', 'transport', '0.0.0.0-udp', 0),
+('2', 'trunk_name', 'ai_phone_trunk', 0),
+('2', 'trust_id_outbound', 'no', 0),
+('2', 'trust_rpid', 'no', 0),
+('2', 'user_eq_phone', 'no', 0);
 
 INSERT IGNORE INTO pjsip (id, keyword, data, flags) VALUES ('ai_phone_trunk', 'endpoint', 'ai_phone_trunk', 24);
 INSERT IGNORE INTO pjsip (id, keyword, data, flags) VALUES 
