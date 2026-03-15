@@ -111,12 +111,11 @@ test('docker compose generation', async (t) => {
     assert.ok(compose.includes('EXTERNAL_IP=192.168.1.50'), 'Should use configured external IP');
   });
 
-  await t.test('generates env file with Mac API URL for pi-split mode', () => {
+  await t.test('generates env file with Ollama API URL', () => {
     const config = {
       server: {
         externalIp: '192.168.1.50',
-        httpPort: 3000,
-        geminiApiPort: 3333
+        httpPort: 3000
       },
       sip: {
         domain: 'freepbx.local',
@@ -126,96 +125,13 @@ test('docker compose generation', async (t) => {
         {
           extension: '9000',
           authId: 'user123',
-          password: 'pass123',
-          voiceId: 'voice-id'
+          password: 'pass123'
         }
       ],
       api: {
-        elevenlabs: { apiKey: 'elev-key' },
-        openai: { apiKey: 'openai-key' }
-      },
-      secrets: {
-        drachtio: 'drachtio-secret',
-        freeswitch: 'fs-secret'
-      },
-      deployment: {
-        mode: 'pi-split',
-        pi: {
-          macIp: '192.168.1.100'
-        }
-      }
-    };
-
-    const envFile = generateEnvFile(config);
-
-    // Should use Mac API URL instead of localhost
-    assert.ok(envFile.includes('GEMINI_API_URL=http://192.168.1.100:3333'),
-      'Should use Mac API URL for pi-split mode');
-    assert.ok(!envFile.includes('GEMINI_API_URL=http://localhost:'),
-      'Should not use localhost for pi-split mode');
-  });
-
-  await t.test('generates env file with localhost for standard mode', () => {
-    const config = {
-      server: {
-        externalIp: '192.168.1.50',
-        httpPort: 3000,
-        geminiApiPort: 3333
-      },
-      sip: {
-        domain: 'freepbx.local',
-        registrar: '192.168.1.10'
-      },
-      devices: [
-        {
-          extension: '9000',
-          authId: 'user123',
-          password: 'pass123',
-          voiceId: 'voice-id'
-        }
-      ],
-      api: {
-        elevenlabs: { apiKey: 'elev-key' },
-        openai: { apiKey: 'openai-key' }
-      },
-      secrets: {
-        drachtio: 'drachtio-secret',
-        freeswitch: 'fs-secret'
-      },
-      deployment: {
-        mode: 'standard'
-      }
-    };
-
-    const envFile = generateEnvFile(config);
-
-    // Should use localhost for standard mode
-    assert.ok(envFile.includes('GEMINI_API_URL=http://localhost:3333'),
-      'Should use localhost for standard mode');
-  });
-
-  await t.test('generates env file with localhost for both mode (all-in-one)', () => {
-    const config = {
-      server: {
-        externalIp: '192.168.1.50',
-        httpPort: 3000,
-        geminiApiPort: 3333
-      },
-      sip: {
-        domain: 'freepbx.local',
-        registrar: '192.168.1.10'
-      },
-      devices: [
-        {
-          extension: '9000',
-          authId: 'user123',
-          password: 'pass123',
-          voiceId: 'voice-id'
-        }
-      ],
-      api: {
-        elevenlabs: { apiKey: 'elev-key' },
-        openai: { apiKey: 'openai-key' }
+        ollama: { apiUrl: 'http://host.docker.internal:11434', model: 'qwen2.5:14b' },
+        localSttUrl: 'http://host.docker.internal:8080/v1',
+        localTtsUrl: 'http://host.docker.internal:5002/api/tts'
       },
       secrets: {
         drachtio: 'drachtio-secret',
@@ -228,21 +144,21 @@ test('docker compose generation', async (t) => {
 
     const envFile = generateEnvFile(config);
 
-    // Should use localhost for both mode (all services on same machine)
-    assert.ok(envFile.includes('GEMINI_API_URL=http://localhost:3333'),
-      'Should use localhost for both mode (all-in-one installation)');
-
-    // Should NOT use any remote IP
-    assert.ok(!envFile.includes('GEMINI_API_URL=http://192.168.'),
-      'Should not use remote IP for both mode');
+    assert.ok(envFile.includes('OLLAMA_API_URL=http://host.docker.internal:11434'),
+      'Should include Ollama API URL');
+    assert.ok(envFile.includes('OLLAMA_MODEL=qwen2.5:14b'),
+      'Should include Ollama model');
+    assert.ok(envFile.includes('LOCAL_STT_URL=http://host.docker.internal:8080/v1'),
+      'Should include local STT URL');
+    assert.ok(envFile.includes('LOCAL_TTS_URL=http://host.docker.internal:5002/api/tts'),
+      'Should include local TTS URL');
   });
 
-  await t.test('generates env file with remote API for voice-server mode', () => {
+  await t.test('generates env file with SIP configuration', () => {
     const config = {
       server: {
         externalIp: '192.168.1.50',
-        httpPort: 3000,
-        geminiApiPort: 3333
+        httpPort: 3000
       },
       sip: {
         domain: 'freepbx.local',
@@ -252,31 +168,107 @@ test('docker compose generation', async (t) => {
         {
           extension: '9000',
           authId: 'user123',
-          password: 'pass123',
-          voiceId: 'voice-id'
+          password: 'pass123'
         }
       ],
       api: {
-        elevenlabs: { apiKey: 'elev-key' },
-        openai: { apiKey: 'openai-key' }
+        ollama: { apiUrl: 'http://host.docker.internal:11434', model: 'llama3' }
       },
       secrets: {
         drachtio: 'drachtio-secret',
         freeswitch: 'fs-secret'
       },
       deployment: {
-        mode: 'voice-server',
-        apiServerIp: '192.168.1.200'
+        mode: 'standard'
       }
     };
 
     const envFile = generateEnvFile(config);
 
-    // Voice server mode should use the remote API server IP, not localhost
-    assert.ok(envFile.includes('GEMINI_API_URL=http://192.168.1.200:3333'),
-      'voice-server mode should use remote apiServerIp');
+    assert.ok(envFile.includes('SIP_DOMAIN=freepbx.local'),
+      'Should include SIP domain');
+    assert.ok(envFile.includes('SIP_REGISTRAR=192.168.1.10'),
+      'Should include SIP registrar');
+    assert.ok(envFile.includes('SIP_EXTENSION=9000'),
+      'Should include SIP extension');
+    assert.ok(envFile.includes('SIP_AUTH_ID=user123'),
+      'Should include SIP auth ID');
+    assert.ok(envFile.includes('SIP_PASSWORD=pass123'),
+      'Should include SIP password');
+  });
 
-    assert.ok(!envFile.includes('GEMINI_API_URL=http://localhost:'),
-      'voice-server mode should NOT use localhost when apiServerIp is set');
+  await t.test('generates env file with drachtio and freeswitch secrets', () => {
+    const config = {
+      server: {
+        externalIp: '192.168.1.50',
+        httpPort: 3000
+      },
+      sip: {
+        domain: 'freepbx.local',
+        registrar: '192.168.1.10'
+      },
+      devices: [
+        {
+          extension: '9000',
+          authId: 'user123',
+          password: 'pass123'
+        }
+      ],
+      api: {
+        ollama: { apiUrl: 'http://host.docker.internal:11434', model: 'llama3' }
+      },
+      secrets: {
+        drachtio: 'my-drachtio-secret',
+        freeswitch: 'my-fs-secret'
+      },
+      deployment: {
+        mode: 'both'
+      }
+    };
+
+    const envFile = generateEnvFile(config);
+
+    assert.ok(envFile.includes('DRACHTIO_SECRET=my-drachtio-secret'),
+      'Should include drachtio secret');
+    assert.ok(envFile.includes('EXTERNAL_IP=192.168.1.50'),
+      'Should include external IP');
+    assert.ok(envFile.includes('HTTP_PORT=3000'),
+      'Should include HTTP port');
+  });
+
+  await t.test('generates env file with default Ollama values when not configured', () => {
+    const config = {
+      server: {
+        externalIp: '192.168.1.50',
+        httpPort: 3000
+      },
+      sip: {
+        domain: 'freepbx.local',
+        registrar: '192.168.1.10'
+      },
+      devices: [
+        {
+          extension: '9000',
+          authId: 'user123',
+          password: 'pass123'
+        }
+      ],
+      api: {},
+      secrets: {
+        drachtio: 'drachtio-secret',
+        freeswitch: 'fs-secret'
+      },
+      deployment: {
+        mode: 'both'
+      }
+    };
+
+    const envFile = generateEnvFile(config);
+
+    // Should use defaults when Ollama is not explicitly configured
+    assert.ok(envFile.includes('OLLAMA_API_URL=http://host.docker.internal:11434'),
+      'Should use default Ollama API URL');
+    assert.ok(envFile.includes('OLLAMA_MODEL=llama3'),
+      'Should use default Ollama model');
   });
 });

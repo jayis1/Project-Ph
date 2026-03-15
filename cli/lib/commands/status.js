@@ -91,14 +91,26 @@ async function showVoiceServerStatus(config, isPiSplit, installationType) {
   const containers = await getContainerStatus();
 
   if (containers.length === 0) {
-    console.log(chalk.red('  ✗ No containers running'));
+    console.log(chalk.gray('  No containers found'));
     console.log(chalk.gray('    Run "ai-phone start" to launch'));
   } else {
     for (const container of containers) {
-      const isRunning = container.status.toLowerCase().includes('up') ||
-        container.status.toLowerCase().includes('running');
-      const icon = isRunning ? '✓' : '✗';
-      const color = isRunning ? chalk.green : chalk.red;
+      const statusLower = container.status.toLowerCase();
+      const isRunning = statusLower.includes('up') || statusLower.includes('running');
+      const isExited = statusLower.includes('exited') || statusLower.includes('dead');
+
+      let icon, color;
+      if (isRunning) {
+        icon = '✓';
+        color = chalk.green;
+      } else if (isExited) {
+        icon = '✗';
+        color = chalk.red;
+      } else {
+        icon = '○';
+        color = chalk.yellow;
+      }
+
       console.log(color(`  ${icon} ${container.name}`));
       console.log(chalk.gray(`    Status: ${container.status}`));
 

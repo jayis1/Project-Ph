@@ -258,7 +258,7 @@ export async function startContainers(services = []) {
   }
 
   const compose = getComposeCommand();
-  const composeArgs = [...compose.args, '-f', dockerComposePath, 'up', '-d', '--build', ...services];
+  const composeArgs = [...compose.args, '-f', dockerComposePath, 'up', '-d', '--build', '--force-recreate', '--remove-orphans', ...services];
 
   return new Promise((resolve, reject) => {
     const child = spawn(compose.cmd, composeArgs, {
@@ -308,29 +308,22 @@ export async function stopContainers(services = []) {
   const dockerComposePath = getDockerComposePath();
 
   if (!fs.existsSync(dockerComposePath)) {
-    // No containers to stop
+    // No compose file — still try to clean up orphaned containers
+    await forceRemoveStaleContainers();
     return;
   }
 
   const compose = getComposeCommand();
-  // 'stop' simply stops containers; 'down' removes them.
-  // Generally 'down' is better for full stop, but if stopping specific services, use 'stop' or 'rm -s -v'?
-  // Docker compose down doesn't take service arguments in older versions, but 'stop' does.
-  // However, start.js used 'down' before.
-  // If services are specified, we can't easily use 'down' for just those without affecting network?
-  // 'docker compose stop' works with services.
-
-  // Use 'down' if no services specified (clean shutdown)
-  // Use 'stop' if services specified
 
   let composeArgs;
   if (services.length > 0) {
     composeArgs = [...compose.args, '-f', dockerComposePath, 'stop', ...services];
   } else {
-    composeArgs = [...compose.args, '-f', dockerComposePath, 'down'];
+    // Use 'down --remove-orphans' for clean shutdown + removal of stale containers
+    composeArgs = [...compose.args, '-f', dockerComposePath, 'down', '--remove-orphans'];
   }
 
-  return new Promise((resolve, reject) => {
+  await new Promise((resolve, reject) => {
     const child = spawn(compose.cmd, composeArgs, {
       cwd: configDir,
       stdio: 'pipe'
@@ -353,6 +346,26 @@ export async function stopContainers(services = []) {
       }
     });
   });
+
+  // Force-remove any orphaned containers that compose down missed
+  await forceRemoveStaleContainers();
+}
+
+/**
+ * Force-remove stale containers by known service names
+ * This catches orphaned containers that compose down missed
+ * @returns {Promise<void>}
+ */
+async function forceRemoveStaleContainers() {
+  const knownContainers = ['drachtio', 'freeswitch', 'voice-app'];
+
+  for (const name of knownContainers) {
+    try {
+      execSync(`docker rm -f ${name}`, { stdio: 'pipe' });
+    } catch (e) {
+      // Container doesn't exist — that's fine
+    }
+  }
 }
 
 /**
@@ -367,7 +380,8 @@ export async function getContainerStatus() {
   }
 
   const compose = getComposeCommand();
-  const composeArgs = [...compose.args, '-f', dockerComposePath, 'ps', '--format', 'json'];
+  // Use -a to show all containers, including stopped/exited ones
+  const composeArgs = [...compose.args, '-f', dockerComposePath, 'ps', '-a', '--format', 'json'];
 
   return new Promise((resolve) => {
     const child = spawn(compose.cmd, composeArgs, {
