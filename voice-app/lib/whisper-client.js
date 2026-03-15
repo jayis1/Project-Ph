@@ -13,6 +13,40 @@ const path = require('path');
 const LOCAL_STT_URL = process.env.LOCAL_STT_URL || 'http://host.docker.internal:8080/v1';
 
 /**
+ * Detect hallucinated transcription (repeated phrases)
+ * Whisper commonly hallucinates by repeating the same word/phrase many times
+ * @param {string} text
+ * @returns {boolean} true if hallucination detected
+ */
+function isHallucination(text) {
+  if (!text || text.length < 10) return false;
+
+  // Split into words
+  const words = text.toLowerCase().split(/\s+/).filter(w => w.length > 0);
+  if (words.length < 4) return false;
+
+  // Check if a single word dominates (>70% of words are the same)
+  const freq = {};
+  words.forEach(w => { freq[w] = (freq[w] || 0) + 1; });
+  const maxFreq = Math.max(...Object.values(freq));
+  if (maxFreq / words.length > 0.7 && maxFreq >= 4) return true;
+
+  // Check for repeated 2-3 word phrases
+  for (const phraseLen of [2, 3]) {
+    if (words.length < phraseLen * 3) continue;
+    const phrases = {};
+    for (let i = 0; i <= words.length - phraseLen; i++) {
+      const phrase = words.slice(i, i + phraseLen).join(' ');
+      phrases[phrase] = (phrases[phrase] || 0) + 1;
+    }
+    const maxPhraseFreq = Math.max(...Object.values(phrases));
+    if (maxPhraseFreq >= 4 && maxPhraseFreq / (words.length / phraseLen) > 0.5) return true;
+  }
+
+  return false;
+}
+
+/**
  * Convert L16 PCM buffer to WAV
  * @param {Buffer} pcmBuffer
  * @param {number} sampleRate
@@ -55,6 +89,9 @@ async function transcribe(audioBuffer, options = {}) {
         f.append('language', language);
       }
       f.append('response_format', 'json');
+      // Anti-hallucination parameters
+      f.append('temperature', '0');
+      f.append('condition_on_previous_text', 'false');
       return f;
     };
 
@@ -103,6 +140,13 @@ async function transcribe(audioBuffer, options = {}) {
     }
 
     console.log(`[${timestamp}] WHISPER Transcribed: "${text.substring(0, 80)}${text.length > 80 ? '...' : ''}"`);
+
+    // Detect and reject hallucinated transcriptions
+    if (isHallucination(text)) {
+      console.log(`[${timestamp}] WHISPER Hallucination detected, discarding: "${text.substring(0, 60)}..."`);
+      return '';
+    }
+
     return text;
 
   } catch (error) {
