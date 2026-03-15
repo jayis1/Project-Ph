@@ -187,7 +187,9 @@ router.post('/outbound-call', async function (req, res) {
       mode: mode,
       callerId: callerId,
       webhookUrl: webhookUrl,
-      device: deviceConfig ? deviceConfig.name : null
+      device: deviceConfig ? deviceConfig.name : null,
+      deviceName: deviceConfig ? deviceConfig.name : null,
+      deviceExtension: deviceConfig ? deviceConfig.extension : null
     });
 
     var callId = session.callId;

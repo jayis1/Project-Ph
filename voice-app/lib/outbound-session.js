@@ -9,6 +9,7 @@
 const { EventEmitter } = require('events');
 const { randomUUID } = require('crypto');
 const logger = require('./logger');
+const { saveRecording } = require('./call-recordings');
 
 // Active session tracking
 const activeSessions = new Map(); // callId -> OutboundSession
@@ -27,6 +28,8 @@ class OutboundSession extends EventEmitter {
     this.mode = options.mode || 'announce'; // 'announce' or 'conversation'
     this.callerId = options.callerId;
     this.webhookUrl = options.webhookUrl;
+    this.deviceName = options.deviceName || null;
+    this.deviceExtension = options.deviceExtension || null;
 
     // State tracking
     this.state = 'QUEUED';
@@ -97,6 +100,22 @@ class OutboundSession extends EventEmitter {
     // Cleanup on terminal states
     if (newState === 'COMPLETED' || newState === 'FAILED') {
       this.endedAt = Date.now();
+
+      // Save call recording to disk
+      try {
+        saveRecording({
+          callId: this.callId,
+          direction: 'outbound',
+          callerNumber: this.to,
+          device: this.deviceName || 'Unknown',
+          extension: this.deviceExtension || '',
+          duration: this.getDuration(),
+          conversation: this.conversationHistory,
+          initialMessage: this.message
+        });
+      } catch (e) {
+        logger.warn('Failed to save call recording', { callId: this.callId, error: e.message });
+      }
 
       // Keep session for 1 minute for status queries, then remove
       setTimeout(() => {

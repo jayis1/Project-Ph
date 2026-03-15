@@ -701,13 +701,12 @@
                 </div>
             </div>
 
-            <!-- ─── VOICEMAIL ─── -->
+            <!-- ─── CALL RECORDINGS ─── -->
             <div class="card col-4">
-                <div class="card-title"><span class="icon">📩</span> Voicemail</div>
-                <div id="voicemailList">
-                    <div class="empty-state">No voicemails</div>
+                <div class="card-title"><span class="icon">🎙️</span> Call Recordings</div>
+                <div id="recordingsList" style="max-height: 300px; overflow-y: auto;">
+                    <div class="empty-state">No recordings yet</div>
                 </div>
-                <audio id="vmPlayer" class="vm-audio"></audio>
             </div>
 
             <!-- ─── LIVE LOGS ─── -->
@@ -948,57 +947,40 @@
             } catch (e) { console.error('Callbacks error:', e); }
         }
 
-        // ─── FETCH: VOICEMAILS ───
-        async function fetchVoicemails() {
+        // ─── FETCH: CALL RECORDINGS ───
+        async function fetchRecordings() {
             try {
-                const data = await fetch('/api/voicemails').then(r => r.json());
-                const container = document.getElementById('voicemailList');
-                const vms = data.voicemails || [];
+                const data = await fetch('/api/recordings?limit=20').then(r => r.json());
+                const container = document.getElementById('recordingsList');
+                const recs = data.recordings || [];
 
-                if (vms.length === 0) {
-                    container.innerHTML = '<div class="empty-state">No voicemails</div>';
+                if (recs.length === 0) {
+                    container.innerHTML = '<div class="empty-state">No recordings yet</div>';
                     return;
                 }
 
-                container.innerHTML = vms.slice(0, 10).map((vm, i) =>
-                    `<div class="vm-item">
-                        <button class="vm-play-btn" id="vmBtn${i}" onclick="playVoicemail('${vm.extension}','${vm.id}',${i})">▶</button>
-                        <div class="vm-info">
-                            <div class="vm-caller">${vm.callerId}</div>
-                            <div class="vm-meta">Ext ${vm.extension} · ${vm.duration}s · ${timeAgo(vm.timestamp)}</div>
+                container.innerHTML = recs.map(rec => {
+                    const turns = rec.conversation || [];
+                    const preview = turns.length > 0
+                        ? turns[0].assistant?.substring(0, 60) + '...' : rec.initialMessage?.substring(0, 60) + '...' || 'No transcript';
+                    const dirIcon = rec.direction === 'inbound' ? '📥' : '📤';
+                    return `<div class="vm-item" style="cursor:pointer" onclick="this.querySelector('.rec-detail').style.display = this.querySelector('.rec-detail').style.display === 'none' ? 'block' : 'none'">
+                        <div style="flex:1; min-width:0">
+                            <div class="vm-caller">${dirIcon} ${rec.callerNumber || 'Unknown'}</div>
+                            <div class="vm-meta">${rec.device} · ${rec.duration || 0}s · ${timeAgo(rec.timestamp)}</div>
+                            <div class="vm-meta" style="color:var(--text-primary);margin-top:2px">${preview}</div>
+                            <div class="rec-detail" style="display:none;margin-top:0.5rem;padding-top:0.5rem;border-top:1px solid var(--border)">
+                                ${turns.map(t => `
+                                    <div style="margin-bottom:0.4rem">
+                                        <div style="font-size:0.7rem;color:var(--accent)">👤 ${t.user || '(listening)'}</div>
+                                        <div style="font-size:0.7rem;color:var(--success)">🤖 ${t.assistant || ''}</div>
+                                    </div>
+                                `).join('') || '<div class="vm-meta">No conversation turns</div>'}
+                            </div>
                         </div>
-                    </div>`
-                ).join('');
-            } catch (e) { console.error('Voicemail error:', e); }
-        }
-
-        function playVoicemail(ext, id, idx) {
-            const player = document.getElementById('vmPlayer');
-            const btn = document.getElementById('vmBtn' + idx);
-
-            // Stop current
-            if (currentlyPlaying !== null) {
-                const prev = document.getElementById('vmBtn' + currentlyPlaying);
-                if (prev) { prev.textContent = '▶'; prev.classList.remove('playing'); }
-            }
-
-            if (currentlyPlaying === idx) {
-                player.pause();
-                currentlyPlaying = null;
-                return;
-            }
-
-            player.src = `/api/voicemails/${ext}/${id}/audio`;
-            player.play();
-            btn.textContent = '⏸';
-            btn.classList.add('playing');
-            currentlyPlaying = idx;
-
-            player.onended = () => {
-                btn.textContent = '▶';
-                btn.classList.remove('playing');
-                currentlyPlaying = null;
-            };
+                    </div>`;
+                }).join('');
+            } catch (e) { console.error('Recordings error:', e); }
         }
 
         // ─── FETCH: LOGS ───
@@ -1093,14 +1075,14 @@
         fetchDevices();
         fetchCalls();
         fetchCallbacks();
-        fetchVoicemails();
+        fetchRecordings();
         fetchLogs();
 
         setInterval(fetchStatus, 8000);
         setInterval(fetchSystemStats, 10000);
         setInterval(fetchCalls, 3000);
         setInterval(fetchCallbacks, 5000);
-        setInterval(fetchVoicemails, 30000);
+        setInterval(fetchRecordings, 10000);
         setInterval(fetchLogs, 3000);
     </script>
 </body>

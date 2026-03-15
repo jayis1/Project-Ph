@@ -1,6 +1,6 @@
 /**
  * System Routes
- * Provides system stats, health checks, and voicemail access for Mission Control
+ * Provides system stats, health checks, and call recordings for Mission Control
  */
 
 const express = require('express');
@@ -9,7 +9,7 @@ const fs = require('fs');
 const path = require('path');
 const { execSync } = require('child_process');
 const axios = require('axios');
-const voicemailService = require('./voicemail-service');
+const recordings = require('./call-recordings');
 
 const router = express.Router();
 
@@ -73,7 +73,6 @@ router.get('/health', async (req, res) => {
     // Whisper STT
     try {
         const sttUrl = process.env.LOCAL_STT_URL || 'http://127.0.0.1:8080/v1';
-        // Just check if the endpoint responds
         const baseUrl = sttUrl.replace(/\/v1\/?$/, '');
         await axios.get(`${baseUrl}/health`, { timeout: 3000 }).catch(() =>
             axios.get(baseUrl, { timeout: 3000 })
@@ -97,50 +96,24 @@ router.get('/health', async (req, res) => {
 });
 
 /**
- * GET /api/voicemails
- * List voicemails for all configured extensions
+ * GET /api/recordings
+ * List saved call recordings (transcripts + metadata)
  */
-router.get('/voicemails', async (req, res) => {
-    try {
-        const deviceRegistry = require('./device-registry');
-        const extensions = deviceRegistry.getAllDevices().map(d => d.extension);
-
-        const allMessages = [];
-        for (const ext of extensions) {
-            const messages = await voicemailService.listVoicemails(ext);
-            messages.forEach(m => {
-                m.extension = ext;
-                allMessages.push(m);
-            });
-        }
-
-        // Sort newest first
-        allMessages.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
-        res.json({ voicemails: allMessages });
-    } catch (err) {
-        res.json({ voicemails: [], error: err.message });
-    }
+router.get('/recordings', (req, res) => {
+    const limit = parseInt(req.query.limit) || 50;
+    res.json({ recordings: recordings.listRecordings(limit) });
 });
 
 /**
- * GET /api/voicemails/:extension/:id/audio
- * Stream voicemail audio file for playback
+ * GET /api/recordings/:callId
+ * Get a specific call recording detail
  */
-router.get('/voicemails/:extension/:id/audio', async (req, res) => {
-    try {
-        const { extension, id } = req.params;
-        const messages = await voicemailService.listVoicemails(extension);
-        const msg = messages.find(m => m.id === id);
-
-        if (!msg || !msg.wavPath) {
-            return res.status(404).json({ error: 'Voicemail not found' });
-        }
-
-        res.setHeader('Content-Type', 'audio/wav');
-        fs.createReadStream(msg.wavPath).pipe(res);
-    } catch (err) {
-        res.status(500).json({ error: err.message });
+router.get('/recordings/:callId', (req, res) => {
+    const record = recordings.getRecording(req.params.callId);
+    if (!record) {
+        return res.status(404).json({ error: 'Recording not found' });
     }
+    res.json(record);
 });
 
 module.exports = router;
