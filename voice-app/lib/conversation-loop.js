@@ -55,6 +55,30 @@ function isGoodbye(transcript) {
 }
 
 /**
+ * Validate a phone number is real (not a placeholder/example)
+ * @param {string} number - Phone number to validate
+ * @returns {boolean} True if the number looks real
+ */
+function isValidPhoneNumber(number) {
+  if (!number || number.length < 7) return false;
+
+  // Strip + and country code for checking
+  const digits = number.replace(/\D/g, '');
+
+  // Reject known placeholder patterns
+  const placeholders = [
+    '15551234567', '5551234567', '1234567890', '0000000000',
+    '1111111111', '9999999999', '5555555555'
+  ];
+  if (placeholders.includes(digits)) return false;
+
+  // Reject numbers with 555 area code (US fictitious)
+  if (digits.match(/^1?555\d{7}$/)) return false;
+
+  return true;
+}
+
+/**
  * Extract voice-friendly line from AI's response
  * Priority: VOICE_RESPONSE > CUSTOM COMPLETED > COMPLETED > first sentence
  */
@@ -153,13 +177,19 @@ async function runConversationLoop(endpoint, dialog, callUuid, options) {
   let scheduledCallbackInfo = null; // Track scheduled callback intent
 
   // Enhance system prompt with caller info and callback capabilities
+  // Only advertise callbacks if we have a real caller ID to call back
+  const hasRealCallerId = callerId && callerId !== 'unknown' && callerId.length >= 4;
+  const callbackInstructions = hasRealCallerId ? `
+[SYSTEM] CALLBACK CAPABILITY (use ONLY when the caller explicitly asks you to call them back):
+- If the caller says "call me back" or "remind me later", respond with:
+  🗣️ SCHEDULED_CALLBACK: CALLER | <delay> | <message>
+  The word CALLER will be replaced with their real number automatically.
+- NEVER invent or guess phone numbers. NEVER use placeholder numbers.
+- NEVER schedule a callback unless the user explicitly requests one.` : '';
+
   const systemContext = `
 [SYSTEM] Incoming call from ${callerId}. You are ${deviceConfig?.name || 'Morpheus'}. Answer accordingly.
-
-[SYSTEM] CALLBACK CAPABILITIES:
-- Immediate callback: "I'll call them now. 🗣️ CALLBACK: <number>"
-- Scheduled callback: "I'll call back in X. 🗣️ SCHEDULED_CALLBACK: <number> | <delay> | <message>"
-  Examples: "🗣️ SCHEDULED_CALLBACK: +15551234567 | 5 minutes | Here's your server status"
+${callbackInstructions}
 `;
 
   // Track when call ends to prevent operations on dead endpoints
@@ -413,21 +443,44 @@ async function runConversationLoop(endpoint, dialog, callUuid, options) {
       logger.info('Voice line', { callUuid, voiceLine });
 
       // Check for IMMEDIATE CALLBACK
-      const callbackMatch = aiResponse.match(/🗣️\s*CALLBACK:\s*([+\d]+)/im);
+      const callbackMatch = aiResponse.match(/🗣️\s*CALLBACK:\s*(CALLER|[+\d]+)/im);
       if (callbackMatch) {
-        callbackTarget = callbackMatch[1].trim();
-        logger.info('IMMEDIATE CALLBACK Detected', { callUuid, target: callbackTarget });
+        const target = callbackMatch[1].trim();
+        // Replace CALLER keyword with real caller ID, reject fake numbers
+        if (target === 'CALLER' && hasRealCallerId) {
+          callbackTarget = callerId;
+          logger.info('IMMEDIATE CALLBACK Detected', { callUuid, target: callbackTarget });
+        } else if (isValidPhoneNumber(target)) {
+          callbackTarget = target;
+          logger.info('IMMEDIATE CALLBACK Detected', { callUuid, target: callbackTarget });
+        } else {
+          logger.warn('CALLBACK rejected - invalid or placeholder number', { callUuid, target });
+        }
       }
 
       // Check for SCHEDULED CALLBACK
-      const scheduledMatch = aiResponse.match(/🗣️\s*SCHEDULED_CALLBACK:\s*([+\d]+)\s*\|\s*([^|]+)\s*\|\s*(.+)/im);
+      const scheduledMatch = aiResponse.match(/🗣️\s*SCHEDULED_CALLBACK:\s*(CALLER|[+\d]+)\s*\|\s*([^|]+)\s*\|\s*(.+)/im);
       if (scheduledMatch) {
-        scheduledCallbackInfo = {
-          phoneNumber: scheduledMatch[1].trim(),
-          delay: scheduledMatch[2].trim(),
-          message: scheduledMatch[3].trim()
-        };
-        logger.info('SCHEDULED CALLBACK Detected', { callUuid, info: scheduledCallbackInfo });
+        const target = scheduledMatch[1].trim();
+        let resolvedNumber = null;
+
+        // Replace CALLER keyword with real caller ID, reject fake numbers
+        if (target === 'CALLER' && hasRealCallerId) {
+          resolvedNumber = callerId;
+        } else if (isValidPhoneNumber(target)) {
+          resolvedNumber = target;
+        }
+
+        if (resolvedNumber) {
+          scheduledCallbackInfo = {
+            phoneNumber: resolvedNumber,
+            delay: scheduledMatch[2].trim(),
+            message: scheduledMatch[3].trim()
+          };
+          logger.info('SCHEDULED CALLBACK Detected', { callUuid, info: scheduledCallbackInfo });
+        } else {
+          logger.warn('SCHEDULED CALLBACK rejected - invalid or placeholder number', { callUuid, target });
+        }
       }
 
       const responseUrl = await ttsService.generateSpeech(voiceLine, voiceId);
