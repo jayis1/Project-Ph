@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="assets/logo-256.png" alt="AI Phone Logo" width="128" />
+</p>
+
 # AI Phone
 
 Voice interface via SIP — call your local AI, and your AI can call you. **100% private. No cloud APIs required.**
@@ -12,14 +16,7 @@ AI Phone gives your local AI a phone number through FreePBX:
 
 ## How it works
 
-```
-Phone Call → FreePBX → voice-app (Docker)
-                            │
-                ┌───────────┼───────────┐
-                ▼           ▼           ▼
-           Ollama LLM   Local STT   Local TTS
-        (qwen2.5:14b)  (Whisper)  (OpenedAI Speech)
-```
+![AI Phone Architecture](assets/ai-phone-architecture.png)
 
 ## Prerequisites
 
