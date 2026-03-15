@@ -4,19 +4,28 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AI Phone Mission Control</title>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <title>AI Phone · Mission Control</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <style>
         :root {
-            --bg-base: #0f172a;
-            --bg-surface: rgba(30, 41, 59, 0.7);
-            --text-primary: #f8fafc;
-            --text-secondary: #94a3b8;
+            --bg-base: #0a0e1a;
+            --bg-surface: rgba(15, 23, 42, 0.85);
+            --bg-elevated: rgba(30, 41, 59, 0.6);
+            --text-primary: #f1f5f9;
+            --text-secondary: #64748b;
+            --text-muted: #475569;
             --accent: #3b82f6;
-            --accent-hover: #60a5fa;
+            --accent-glow: rgba(59, 130, 246, 0.4);
+            --accent-secondary: #8b5cf6;
             --success: #10b981;
+            --success-bg: rgba(16, 185, 129, 0.15);
+            --warning: #f59e0b;
+            --warning-bg: rgba(245, 158, 11, 0.15);
             --error: #ef4444;
-            --border: rgba(255, 255, 255, 0.1);
+            --error-bg: rgba(239, 68, 68, 0.15);
+            --border: rgba(255, 255, 255, 0.06);
+            --border-hover: rgba(255, 255, 255, 0.12);
+            --radius: 14px;
         }
 
         * {
@@ -26,120 +35,274 @@
         }
 
         body {
-            font-family: 'Inter', sans-serif;
+            font-family: 'Inter', -apple-system, sans-serif;
             background: var(--bg-base);
             color: var(--text-primary);
             min-height: 100vh;
             background-image:
-                radial-gradient(circle at 15% 50%, rgba(59, 130, 246, 0.15) 0%, transparent 50%),
-                radial-gradient(circle at 85% 30%, rgba(139, 92, 246, 0.15) 0%, transparent 50%);
+                radial-gradient(ellipse at 20% 0%, rgba(59, 130, 246, 0.08) 0%, transparent 60%),
+                radial-gradient(ellipse at 80% 100%, rgba(139, 92, 246, 0.08) 0%, transparent 60%);
         }
 
-        .container {
-            max-width: 1200px;
-            margin: 0 auto;
-            padding: 2rem;
-        }
-
-        header {
-            margin-bottom: 3rem;
-            text-align: left;
+        /* ─── HEADER ─── */
+        .topbar {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 1rem 2rem;
             border-bottom: 1px solid var(--border);
-            padding-bottom: 1.5rem;
+            backdrop-filter: blur(20px);
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            background: rgba(10, 14, 26, 0.8);
         }
 
-        h1 {
-            font-size: 2.5rem;
+        .topbar-left {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+
+        .topbar-left img {
+            width: 36px;
+            height: 36px;
+            border-radius: 8px;
+        }
+
+        .topbar-title {
+            font-size: 1.25rem;
             font-weight: 700;
             background: linear-gradient(135deg, #60a5fa, #a78bfa);
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
-            margin-bottom: 0.5rem;
         }
 
-        header p {
+        .topbar-right {
+            display: flex;
+            align-items: center;
+            gap: 1.5rem;
+            font-size: 0.85rem;
             color: var(--text-secondary);
+        }
+
+        .uptime-badge {
+            display: flex;
+            align-items: center;
+            gap: 0.4rem;
+            background: var(--bg-elevated);
+            padding: 0.35rem 0.75rem;
+            border-radius: 20px;
+            border: 1px solid var(--border);
+            font-variant-numeric: tabular-nums;
+        }
+
+        .uptime-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: var(--success);
+            box-shadow: 0 0 8px var(--success);
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+
+            0%,
+            100% {
+                opacity: 1;
+            }
+
+            50% {
+                opacity: 0.5;
+            }
+        }
+
+        /* ─── LAYOUT ─── */
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 1.5rem 2rem 6rem;
         }
 
         .grid {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
-            gap: 2rem;
+            grid-template-columns: repeat(12, 1fr);
+            gap: 1.25rem;
         }
 
+        .col-4 {
+            grid-column: span 4;
+        }
+
+        .col-6 {
+            grid-column: span 6;
+        }
+
+        .col-8 {
+            grid-column: span 8;
+        }
+
+        .col-12 {
+            grid-column: span 12;
+        }
+
+        @media (max-width: 1024px) {
+
+            .col-4,
+            .col-6,
+            .col-8 {
+                grid-column: span 12;
+            }
+
+            .container {
+                padding: 1rem;
+            }
+        }
+
+        /* ─── CARDS ─── */
         .card {
             background: var(--bg-surface);
-            backdrop-filter: blur(12px);
-            -webkit-backdrop-filter: blur(12px);
+            backdrop-filter: blur(16px);
             border: 1px solid var(--border);
-            border-radius: 16px;
-            padding: 1.5rem;
-            transition: transform 0.3s ease, box-shadow 0.3s ease;
+            border-radius: var(--radius);
+            padding: 1.25rem 1.5rem;
+            transition: border-color 0.3s;
         }
 
         .card:hover {
-            transform: translateY(-5px);
-            box-shadow: 0 10px 30px -10px rgba(0, 0, 0, 0.5);
-            border-color: rgba(255, 255, 255, 0.2);
+            border-color: var(--border-hover);
         }
 
-        .card-header {
-            font-size: 1.25rem;
+        .card-title {
+            font-size: 0.75rem;
             font-weight: 600;
-            margin-bottom: 1.5rem;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+            color: var(--text-secondary);
+            margin-bottom: 1rem;
             display: flex;
             align-items: center;
             gap: 0.5rem;
         }
 
-        .status-indicator {
-            width: 10px;
-            height: 10px;
-            border-radius: 50%;
-            display: inline-block;
+        .card-title .icon {
+            font-size: 1rem;
         }
 
-        .status-indicator.connected {
-            background: var(--success);
-            box-shadow: 0 0 10px var(--success);
-        }
-
-        .status-indicator.disconnected {
-            background: var(--error);
-            box-shadow: 0 0 10px var(--error);
-        }
-
-        .stat-row {
+        /* ─── STATUS PILLS ─── */
+        .status-grid {
             display: flex;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+        }
+
+        .status-pill {
+            display: flex;
+            align-items: center;
+            gap: 0.4rem;
+            background: var(--bg-elevated);
+            padding: 0.4rem 0.75rem;
+            border-radius: 8px;
+            font-size: 0.8rem;
+            border: 1px solid var(--border);
+            transition: all 0.3s;
+        }
+
+        .status-dot {
+            width: 7px;
+            height: 7px;
+            border-radius: 50%;
+            flex-shrink: 0;
+        }
+
+        .status-dot.on {
+            background: var(--success);
+            box-shadow: 0 0 6px var(--success);
+        }
+
+        .status-dot.off {
+            background: var(--error);
+            box-shadow: 0 0 6px var(--error);
+        }
+
+        .status-dot.unknown {
+            background: var(--text-muted);
+        }
+
+        /* ─── ACTIVE CALLS ─── */
+        .call-item {
+            display: flex;
+            align-items: center;
             justify-content: space-between;
-            padding: 0.75rem 0;
-            border-bottom: 1px solid var(--border);
+            padding: 0.75rem;
+            background: var(--bg-elevated);
+            border-radius: 10px;
+            margin-bottom: 0.5rem;
+            border: 1px solid var(--border);
         }
 
-        .stat-row:last-child {
-            border-bottom: none;
+        .call-info {
+            display: flex;
+            flex-direction: column;
+            gap: 0.2rem;
         }
 
-        .tag {
-            background: rgba(59, 130, 246, 0.2);
-            color: #93c5fd;
-            padding: 0.25rem 0.5rem;
-            border-radius: 4px;
+        .call-number {
+            font-weight: 600;
+            font-size: 0.95rem;
+        }
+
+        .call-meta {
+            font-size: 0.75rem;
+            color: var(--text-secondary);
+        }
+
+        .call-timer {
+            font-variant-numeric: tabular-nums;
             font-size: 0.85rem;
+            color: var(--accent);
+            font-weight: 500;
         }
 
+        .hangup-btn {
+            background: var(--error);
+            color: white;
+            border: none;
+            padding: 0.35rem 0.75rem;
+            border-radius: 6px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            cursor: pointer;
+            width: auto;
+            transition: all 0.2s;
+        }
+
+        .hangup-btn:hover {
+            background: #dc2626;
+            transform: none;
+        }
+
+        .empty-state {
+            color: var(--text-muted);
+            font-size: 0.85rem;
+            padding: 0.5rem 0;
+        }
+
+        /* ─── OUTBOUND FORM ─── */
         input,
         select,
         textarea {
             width: 100%;
-            padding: 0.75rem 1rem;
-            margin-bottom: 1rem;
-            background: rgba(0, 0, 0, 0.2);
+            padding: 0.65rem 0.85rem;
+            margin-bottom: 0.75rem;
+            background: rgba(0, 0, 0, 0.25);
             border: 1px solid var(--border);
             border-radius: 8px;
-            color: white;
+            color: var(--text-primary);
             font-family: 'Inter', sans-serif;
-            transition: all 0.2s;
+            font-size: 0.85rem;
+            transition: border-color 0.2s;
         }
 
         input:focus,
@@ -147,304 +310,797 @@
         textarea:focus {
             outline: none;
             border-color: var(--accent);
-            box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.2);
+            box-shadow: 0 0 0 2px var(--accent-glow);
         }
 
-        button {
+        input::placeholder,
+        textarea::placeholder {
+            color: var(--text-muted);
+        }
+
+        .btn-primary {
             width: 100%;
-            padding: 0.875rem;
-            background: var(--accent);
+            padding: 0.7rem;
+            background: linear-gradient(135deg, var(--accent), var(--accent-secondary));
             color: white;
             border: none;
             border-radius: 8px;
             font-weight: 600;
+            font-size: 0.85rem;
             cursor: pointer;
             transition: all 0.2s;
         }
 
-        button:hover {
-            background: var(--accent-hover);
-            transform: translateY(-2px);
+        .btn-primary:hover {
+            opacity: 0.9;
+            transform: translateY(-1px);
         }
 
-        .badge {
-            background: rgba(255, 255, 255, 0.1);
-            padding: 1rem;
-            border-radius: 8px;
-            margin-bottom: 0.5rem;
-        }
-
-        .loading {
+        .btn-primary.loading {
             opacity: 0.5;
             pointer-events: none;
         }
 
-        #outboundResult {
-            margin-top: 1rem;
-            font-size: 0.9rem;
-            padding: 0.75rem;
+        .result-msg {
+            margin-top: 0.75rem;
+            font-size: 0.8rem;
+            padding: 0.6rem 0.85rem;
             border-radius: 8px;
             display: none;
         }
 
-        .result-success {
-            background: rgba(16, 185, 129, 0.2);
+        .result-msg.success {
+            display: block;
+            background: var(--success-bg);
             color: #6ee7b7;
-            border: 1px solid var(--success);
+            border: 1px solid rgba(16, 185, 129, 0.3);
         }
 
-        .result-error {
-            background: rgba(239, 68, 68, 0.2);
+        .result-msg.error {
+            display: block;
+            background: var(--error-bg);
             color: #fca5a5;
-            border: 1px solid var(--error);
+            border: 1px solid rgba(239, 68, 68, 0.3);
+        }
+
+        /* ─── DEVICES ─── */
+        .device-card {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            padding: 0.75rem;
+            background: var(--bg-elevated);
+            border-radius: 10px;
+            border: 1px solid var(--border);
+            margin-bottom: 0.5rem;
+        }
+
+        .device-avatar {
+            width: 36px;
+            height: 36px;
+            border-radius: 8px;
+            background: linear-gradient(135deg, var(--accent), var(--accent-secondary));
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1rem;
+            flex-shrink: 0;
+        }
+
+        .device-name {
+            font-weight: 600;
+            font-size: 0.9rem;
+        }
+
+        .device-ext {
+            font-size: 0.75rem;
+            color: var(--text-secondary);
+        }
+
+        .device-status {
+            margin-left: auto;
+            font-size: 0.7rem;
+            padding: 0.2rem 0.5rem;
+            border-radius: 10px;
+            font-weight: 600;
+        }
+
+        .device-status.online {
+            background: var(--success-bg);
+            color: var(--success);
+        }
+
+        .device-status.offline {
+            background: var(--error-bg);
+            color: var(--error);
+        }
+
+        /* ─── CALLBACKS ─── */
+        .callback-item {
+            padding: 0.6rem 0.75rem;
+            background: var(--bg-elevated);
+            border-radius: 8px;
+            margin-bottom: 0.5rem;
+            border: 1px solid var(--border);
+            font-size: 0.8rem;
+        }
+
+        .callback-top {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .callback-phone {
+            font-weight: 600;
+        }
+
+        .callback-countdown {
+            color: var(--warning);
+            font-variant-numeric: tabular-nums;
+            font-weight: 500;
+        }
+
+        .callback-message {
+            color: var(--text-secondary);
+            font-size: 0.75rem;
+            margin-top: 0.25rem;
+        }
+
+        /* ─── VOICEMAIL ─── */
+        .vm-item {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            padding: 0.6rem 0.75rem;
+            background: var(--bg-elevated);
+            border-radius: 8px;
+            margin-bottom: 0.5rem;
+            border: 1px solid var(--border);
+        }
+
+        .vm-play-btn {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            background: var(--accent);
+            border: none;
+            color: white;
+            font-size: 0.75rem;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+            transition: all 0.2s;
+        }
+
+        .vm-play-btn:hover {
+            background: var(--accent-secondary);
+            transform: none;
+        }
+
+        .vm-play-btn.playing {
+            background: var(--warning);
+        }
+
+        .vm-info {
+            flex: 1;
+            min-width: 0;
+        }
+
+        .vm-caller {
+            font-weight: 600;
+            font-size: 0.85rem;
+        }
+
+        .vm-meta {
+            font-size: 0.7rem;
+            color: var(--text-secondary);
+        }
+
+        .vm-audio {
+            display: none;
+        }
+
+        /* ─── LOG PANEL ─── */
+        .log-filters {
+            display: flex;
+            gap: 0.4rem;
+            margin-bottom: 0.75rem;
+        }
+
+        .log-filter-btn {
+            padding: 0.3rem 0.6rem;
+            border-radius: 6px;
+            background: var(--bg-elevated);
+            border: 1px solid var(--border);
+            color: var(--text-secondary);
+            font-size: 0.7rem;
+            font-weight: 600;
+            cursor: pointer;
+            width: auto;
+            transition: all 0.2s;
+        }
+
+        .log-filter-btn.active {
+            background: var(--accent);
+            color: white;
+            border-color: var(--accent);
+        }
+
+        .log-filter-btn:hover {
+            border-color: var(--border-hover);
+            transform: none;
+        }
+
+        .log-panel {
+            max-height: 350px;
+            overflow-y: auto;
+            font-family: 'JetBrains Mono', 'Fira Code', monospace;
+            font-size: 0.72rem;
+            line-height: 1.6;
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 8px;
+            padding: 0.75rem;
+        }
+
+        .log-panel::-webkit-scrollbar {
+            width: 4px;
+        }
+
+        .log-panel::-webkit-scrollbar-thumb {
+            background: var(--text-muted);
+            border-radius: 4px;
+        }
+
+        .log-line {
+            padding: 1px 0;
+        }
+
+        .log-time {
+            color: var(--text-muted);
+        }
+
+        .log-level {
+            font-weight: 700;
+        }
+
+        .log-data {
+            color: var(--text-muted);
+            font-size: 0.65rem;
+        }
+
+        /* ─── FOOTER ─── */
+        .footer {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: rgba(10, 14, 26, 0.9);
+            backdrop-filter: blur(12px);
+            border-top: 1px solid var(--border);
+            padding: 0.6rem 2rem;
+            display: flex;
+            justify-content: center;
+            gap: 3rem;
+            z-index: 100;
+        }
+
+        .resource-bar {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            font-size: 0.75rem;
+            color: var(--text-secondary);
+        }
+
+        .resource-label {
+            min-width: 50px;
+        }
+
+        .resource-track {
+            width: 120px;
+            height: 4px;
+            background: rgba(255, 255, 255, 0.06);
+            border-radius: 4px;
+            overflow: hidden;
+        }
+
+        .resource-fill {
+            height: 100%;
+            border-radius: 4px;
+            transition: width 1s ease;
+        }
+
+        .resource-fill.green {
+            background: var(--success);
+        }
+
+        .resource-fill.yellow {
+            background: var(--warning);
+        }
+
+        .resource-fill.red {
+            background: var(--error);
+        }
+
+        .resource-value {
+            min-width: 30px;
+            text-align: right;
+            font-variant-numeric: tabular-nums;
         }
     </style>
 </head>
 
 <body>
-    <div class="container">
-        <header>
-            <h1>AI Phone Mission Control</h1>
-            <p>Monitor your SIP connections, active devices, and initiate outbound calls.</p>
-        </header>
+    <!-- ─── TOP BAR ─── -->
+    <div class="topbar">
+        <div class="topbar-left">
+            <img src="/logo.png" alt="AI Phone">
+            <span class="topbar-title">Mission Control</span>
+        </div>
+        <div class="topbar-right">
+            <div class="uptime-badge">
+                <span class="uptime-dot" id="globalDot"></span>
+                <span id="uptimeDisplay">--:--:--</span>
+            </div>
+        </div>
+    </div>
 
+    <div class="container">
         <div class="grid">
-            <!-- Systems Status Card -->
-            <div class="card" id="statusCard">
-                <div class="card-header">
-                    <span class="status-indicator disconnected" id="overallStatus"></span>
-                    System Status
-                </div>
-                <div class="stat-row">
-                    <span class="text-secondary">Drachtio (SIP)</span>
-                    <span id="drachtioStatus" class="tag">Checking</span>
-                </div>
-                <div class="stat-row">
-                    <span class="text-secondary">FreeSWITCH (Media)</span>
-                    <span id="freeswitchStatus" class="tag">Checking</span>
-                </div>
-                <div class="stat-row">
-                    <span class="text-secondary">Total Registrations</span>
-                    <span id="regCount" class="text-primary">0</span>
+
+            <!-- ─── SYSTEM STATUS ─── -->
+            <div class="card col-4">
+                <div class="card-title"><span class="icon">⚡</span> System Status</div>
+                <div class="status-grid" id="statusGrid">
+                    <div class="status-pill"><span class="status-dot unknown"></span> Drachtio</div>
+                    <div class="status-pill"><span class="status-dot unknown"></span> FreeSWITCH</div>
+                    <div class="status-pill"><span class="status-dot unknown"></span> Ollama</div>
+                    <div class="status-pill"><span class="status-dot unknown"></span> Whisper</div>
+                    <div class="status-pill"><span class="status-dot unknown"></span> TTS</div>
                 </div>
             </div>
 
-            <!-- Outbound Call Card -->
-            <div class="card">
-                <div class="card-header">Initiate Outbound Call</div>
+            <!-- ─── ACTIVE CALLS ─── -->
+            <div class="card col-4">
+                <div class="card-title"><span class="icon">📞</span> Active Calls</div>
+                <div id="activeCalls">
+                    <div class="empty-state">No active calls</div>
+                </div>
+            </div>
+
+            <!-- ─── REGISTERED DEVICES ─── -->
+            <div class="card col-4">
+                <div class="card-title"><span class="icon">📱</span> Devices</div>
+                <div id="devicesList">
+                    <div class="empty-state">Loading...</div>
+                </div>
+            </div>
+
+            <!-- ─── OUTBOUND CALL ─── -->
+            <div class="card col-4">
+                <div class="card-title"><span class="icon">📤</span> Outbound Call</div>
                 <form id="callForm">
-                    <input type="text" id="targetNumber" placeholder="Target Number (e.g. +1234567890)" required>
+                    <input type="text" id="targetNumber" placeholder="Phone number" required>
                     <select id="deviceSelect" required>
-                        <option value="">Loading Devices...</option>
+                        <option value="">Loading...</option>
                     </select>
-                    <textarea id="callContext" rows="3"
-                        placeholder="Context for AI (e.g. 'Tell them their server is down')" required></textarea>
-                    <button type="submit" id="callBtn">Initiate Call</button>
-                    <div id="outboundResult"></div>
+                    <textarea id="callContext" rows="2" placeholder="Context for AI..." required></textarea>
+                    <button type="submit" class="btn-primary" id="callBtn">📞 Initiate Call</button>
+                    <div class="result-msg" id="outboundResult"></div>
                 </form>
             </div>
 
-            <!-- Devices List Card -->
-            <div class="card" style="grid-column: 1 / -1;">
-                <div class="card-header">Active Devices / Extensions</div>
-                <div id="devicesList" class="grid"
-                    style="grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 1rem;">
-                    <div class="text-secondary">Loading...</div>
+            <!-- ─── SCHEDULED CALLBACKS ─── -->
+            <div class="card col-4">
+                <div class="card-title"><span class="icon">⏰</span> Scheduled Callbacks</div>
+                <div id="callbacksList">
+                    <div class="empty-state">No pending callbacks</div>
                 </div>
             </div>
 
-            <!-- Call History Card -->
-            <div class="card" style="grid-column: 1 / -1;">
-                <div class="card-header">📞 Call History</div>
-                <div id="callHistory">
-                    <div class="text-secondary">No calls yet.</div>
+            <!-- ─── VOICEMAIL ─── -->
+            <div class="card col-4">
+                <div class="card-title"><span class="icon">📩</span> Voicemail</div>
+                <div id="voicemailList">
+                    <div class="empty-state">No voicemails</div>
                 </div>
+                <audio id="vmPlayer" class="vm-audio"></audio>
             </div>
 
-            <!-- Live Logs Card -->
-            <div class="card" style="grid-column: 1 / -1;">
-                <div class="card-header">📋 Live Logs</div>
-                <div id="logPanel"
-                    style="max-height: 400px; overflow-y: auto; font-family: monospace; font-size: 0.8rem; background: rgba(0,0,0,0.3); border-radius: 8px; padding: 1rem;">
-                    <div class="text-secondary">Loading logs...</div>
+            <!-- ─── LIVE LOGS ─── -->
+            <div class="card col-12">
+                <div class="card-title"><span class="icon">📋</span> Live Activity Feed</div>
+                <div class="log-filters">
+                    <button class="log-filter-btn active" data-level="all">All</button>
+                    <button class="log-filter-btn" data-level="info">Info</button>
+                    <button class="log-filter-btn" data-level="warn">Warn</button>
+                    <button class="log-filter-btn" data-level="error">Error</button>
+                </div>
+                <div class="log-panel" id="logPanel">
+                    <div class="empty-state">Waiting for logs...</div>
                 </div>
             </div>
         </div>
     </div>
 
+    <!-- ─── FOOTER ─── -->
+    <div class="footer">
+        <div class="resource-bar">
+            <span class="resource-label">CPU</span>
+            <div class="resource-track">
+                <div class="resource-fill green" id="cpuFill" style="width:0%"></div>
+            </div>
+            <span class="resource-value" id="cpuValue">--%</span>
+        </div>
+        <div class="resource-bar">
+            <span class="resource-label">Memory</span>
+            <div class="resource-track">
+                <div class="resource-fill green" id="memFill" style="width:0%"></div>
+            </div>
+            <span class="resource-value" id="memValue">--%</span>
+        </div>
+        <div class="resource-bar">
+            <span class="resource-label">Disk</span>
+            <div class="resource-track">
+                <div class="resource-fill green" id="diskFill" style="width:0%"></div>
+            </div>
+            <span class="resource-value" id="diskValue">--%</span>
+        </div>
+    </div>
+
     <script>
-        // Poll status every 5 seconds
+        // ─── STATE ───
+        let logFilter = 'all';
+        let allLogs = [];
+        let currentlyPlaying = null;
+
+        // ─── HELPERS ───
+        function formatUptime(seconds) {
+            const d = Math.floor(seconds / 86400);
+            const h = Math.floor((seconds % 86400) / 3600);
+            const m = Math.floor((seconds % 3600) / 60);
+            const s = seconds % 60;
+            if (d > 0) return `${d}d ${h}h ${String(m).padStart(2, '0')}m`;
+            return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
+        }
+        function formatBytes(bytes) {
+            if (bytes >= 1073741824) return (bytes / 1073741824).toFixed(1) + ' GB';
+            if (bytes >= 1048576) return (bytes / 1048576).toFixed(0) + ' MB';
+            return (bytes / 1024).toFixed(0) + ' KB';
+        }
+        function fillColor(pct) {
+            if (pct > 85) return 'red';
+            if (pct > 60) return 'yellow';
+            return 'green';
+        }
+        function timeAgo(iso) {
+            const diff = Math.floor((Date.now() - new Date(iso).getTime()) / 1000);
+            if (diff < 60) return `${diff}s ago`;
+            if (diff < 3600) return `${Math.floor(diff / 60)}m ago`;
+            if (diff < 86400) return `${Math.floor(diff / 3600)}h ago`;
+            return `${Math.floor(diff / 86400)}d ago`;
+        }
+
+        // ─── FETCH: SIP + HEALTH STATUS ───
         async function fetchStatus() {
             try {
-                const res = await fetch('/api/sip-status');
-                const data = await res.json();
+                const [sipRes, healthRes] = await Promise.all([
+                    fetch('/api/sip-status').then(r => r.json()).catch(() => null),
+                    fetch('/api/health').then(r => r.json()).catch(() => null)
+                ]);
 
-                document.getElementById('overallStatus').className =
-                    'status-indicator ' + (data.isReady ? 'connected' : 'disconnected');
+                const sip = sipRes || {};
+                const health = healthRes || {};
 
-                document.getElementById('drachtioStatus').textContent = data.drachtioConnected ? 'Connected' : 'Disconnected';
-                document.getElementById('drachtioStatus').style.color = data.drachtioConnected ? '#93c5fd' : '#fca5a5';
+                const services = [
+                    { name: 'Drachtio', ok: sip.drachtioConnected },
+                    { name: 'FreeSWITCH', ok: sip.freeswitchConnected },
+                    { name: 'Ollama', ok: health.ollama?.status === 'online' },
+                    { name: 'Whisper', ok: health.whisper?.status === 'online' },
+                    { name: 'TTS', ok: health.tts?.status === 'online' }
+                ];
 
-                document.getElementById('freeswitchStatus').textContent = data.freeswitchConnected ? 'Connected' : 'Disconnected';
-                document.getElementById('freeswitchStatus').style.color = data.freeswitchConnected ? '#93c5fd' : '#fca5a5';
+                const grid = document.getElementById('statusGrid');
+                grid.innerHTML = services.map(s =>
+                    `<div class="status-pill">
+                        <span class="status-dot ${s.ok ? 'on' : 'off'}"></span> ${s.name}
+                    </div>`
+                ).join('');
 
-                document.getElementById('regCount').textContent = data.registrations ? data.registrations.length : 0;
-            } catch (err) {
-                console.error(err);
-            }
+                const allUp = services.every(s => s.ok);
+                document.getElementById('globalDot').className = 'uptime-dot' + (allUp ? '' : ' off');
+                if (!allUp) document.getElementById('globalDot').style.background = 'var(--error)';
+                else document.getElementById('globalDot').style.background = '';
+
+                // Update devices with registration info
+                updateDeviceRegistration(sip.registrations || []);
+            } catch (e) { console.error('Status fetch error:', e); }
         }
 
+        // ─── FETCH: SYSTEM STATS ───
+        async function fetchSystemStats() {
+            try {
+                const data = await fetch('/api/system-stats').then(r => r.json());
+
+                document.getElementById('uptimeDisplay').textContent = formatUptime(data.uptime);
+
+                // CPU (load avg / cores = approximate %)
+                const cpuPct = Math.min(100, Math.round((data.cpu.loadAvg[0] / data.cpu.cores) * 100));
+                document.getElementById('cpuFill').style.width = cpuPct + '%';
+                document.getElementById('cpuFill').className = 'resource-fill ' + fillColor(cpuPct);
+                document.getElementById('cpuValue').textContent = cpuPct + '%';
+
+                // Memory
+                const memPct = data.memory.percent;
+                document.getElementById('memFill').style.width = memPct + '%';
+                document.getElementById('memFill').className = 'resource-fill ' + fillColor(memPct);
+                document.getElementById('memValue').textContent = memPct + '%';
+
+                // Disk
+                const diskPct = data.disk.percent;
+                document.getElementById('diskFill').style.width = diskPct + '%';
+                document.getElementById('diskFill').className = 'resource-fill ' + fillColor(diskPct);
+                document.getElementById('diskValue').textContent = diskPct + '%';
+            } catch (e) { console.error('Stats error:', e); }
+        }
+
+        // ─── FETCH: DEVICES ───
+        let allDevices = [];
         async function fetchDevices() {
             try {
-                const res = await fetch('/api/devices');
-                const data = await res.json();
+                const data = await fetch('/api/devices').then(r => r.json());
+                allDevices = data.devices || [];
 
                 const select = document.getElementById('deviceSelect');
-                const list = document.getElementById('devicesList');
+                select.innerHTML = allDevices.map(d =>
+                    `<option value="${d.extension}">${d.name} (${d.extension})</option>`
+                ).join('') || '<option value="">No devices</option>';
 
-                select.innerHTML = '';
-                list.innerHTML = '';
-
-                if (data.devices && data.devices.length > 0) {
-                    data.devices.forEach(device => {
-                        // Populate Select
-                        const option = document.createElement('option');
-                        option.value = device.extension;
-                        option.textContent = `${device.name} (Ext ${device.extension})`;
-                        select.appendChild(option);
-
-                        // Populate List
-                        const badge = document.createElement('div');
-                        badge.className = 'badge';
-                        badge.innerHTML = `
-                            <div style="font-weight: 600; margin-bottom: 0.25rem;">${device.name}</div>
-                            <div class="text-secondary" style="font-size: 0.85rem;">Extension: ${device.extension}</div>
-                            ${device.voiceId ? '<div class="text-secondary" style="font-size: 0.85rem;">Voice: ' + device.voiceId + '</div>' : ''}
-                        `;
-                        list.appendChild(badge);
-                    });
-                } else {
-                    select.innerHTML = '<option value="">No devices found</option>';
-                    list.innerHTML = '<div class="text-secondary">No devices configured.</div>';
-                }
-            } catch (err) {
-                console.error(err);
-            }
+                renderDevices();
+            } catch (e) { console.error('Devices error:', e); }
         }
 
+        let registrations = [];
+        function updateDeviceRegistration(regs) {
+            registrations = regs;
+            renderDevices();
+        }
+
+        function renderDevices() {
+            const list = document.getElementById('devicesList');
+            if (allDevices.length === 0) {
+                list.innerHTML = '<div class="empty-state">No devices configured</div>';
+                return;
+            }
+            list.innerHTML = allDevices.map(d => {
+                const reg = registrations.find(r => r.extension === d.extension);
+                const isOnline = !!reg;
+                return `<div class="device-card">
+                    <div class="device-avatar">🤖</div>
+                    <div>
+                        <div class="device-name">${d.name}</div>
+                        <div class="device-ext">Ext ${d.extension}</div>
+                    </div>
+                    <span class="device-status ${isOnline ? 'online' : 'offline'}">${isOnline ? 'Online' : 'Offline'}</span>
+                </div>`;
+            }).join('');
+        }
+
+        // ─── FETCH: ACTIVE CALLS ───
+        async function fetchCalls() {
+            try {
+                const data = await fetch('/api/calls').then(r => r.json());
+                const container = document.getElementById('activeCalls');
+                const calls = data.calls || [];
+
+                if (calls.length === 0) {
+                    container.innerHTML = '<div class="empty-state">No active calls</div>';
+                    return;
+                }
+
+                container.innerHTML = calls.map(call => {
+                    const isActive = ['RINGING', 'IN_PROGRESS', 'CONNECTED'].includes(call.state);
+                    return `<div class="call-item">
+                        <div class="call-info">
+                            <span class="call-number">→ ${call.to}</span>
+                            <span class="call-meta">${call.state} · ${call.mode || 'conversation'}</span>
+                        </div>
+                        ${call.duration ? `<span class="call-timer">${call.duration}s</span>` : ''}
+                        ${isActive ? `<button class="hangup-btn" onclick="hangupCall('${call.callId}')">Hang Up</button>` : ''}
+                    </div>`;
+                }).join('');
+            } catch (e) { console.error('Calls error:', e); }
+        }
+
+        async function hangupCall(callId) {
+            try {
+                await fetch(`/api/call/${callId}/hangup`, { method: 'POST' });
+                fetchCalls();
+            } catch (e) { console.error('Hangup error:', e); }
+        }
+
+        // ─── FETCH: CALLBACKS ───
+        async function fetchCallbacks() {
+            try {
+                const data = await fetch('/api/callbacks').then(r => r.json());
+                const container = document.getElementById('callbacksList');
+                const cbs = data.callbacks || [];
+                const pending = cbs.filter(cb => cb.status === 'pending');
+
+                if (pending.length === 0) {
+                    container.innerHTML = '<div class="empty-state">No pending callbacks</div>';
+                    return;
+                }
+
+                container.innerHTML = pending.map(cb => {
+                    const remaining = Math.max(0, Math.floor((new Date(cb.scheduledTime) - Date.now()) / 1000));
+                    return `<div class="callback-item">
+                        <div class="callback-top">
+                            <span class="callback-phone">📞 ${cb.phoneNumber}</span>
+                            <span class="callback-countdown">${formatUptime(remaining)}</span>
+                        </div>
+                        <div class="callback-message">${cb.message || ''}</div>
+                    </div>`;
+                }).join('');
+            } catch (e) { console.error('Callbacks error:', e); }
+        }
+
+        // ─── FETCH: VOICEMAILS ───
+        async function fetchVoicemails() {
+            try {
+                const data = await fetch('/api/voicemails').then(r => r.json());
+                const container = document.getElementById('voicemailList');
+                const vms = data.voicemails || [];
+
+                if (vms.length === 0) {
+                    container.innerHTML = '<div class="empty-state">No voicemails</div>';
+                    return;
+                }
+
+                container.innerHTML = vms.slice(0, 10).map((vm, i) =>
+                    `<div class="vm-item">
+                        <button class="vm-play-btn" id="vmBtn${i}" onclick="playVoicemail('${vm.extension}','${vm.id}',${i})">▶</button>
+                        <div class="vm-info">
+                            <div class="vm-caller">${vm.callerId}</div>
+                            <div class="vm-meta">Ext ${vm.extension} · ${vm.duration}s · ${timeAgo(vm.timestamp)}</div>
+                        </div>
+                    </div>`
+                ).join('');
+            } catch (e) { console.error('Voicemail error:', e); }
+        }
+
+        function playVoicemail(ext, id, idx) {
+            const player = document.getElementById('vmPlayer');
+            const btn = document.getElementById('vmBtn' + idx);
+
+            // Stop current
+            if (currentlyPlaying !== null) {
+                const prev = document.getElementById('vmBtn' + currentlyPlaying);
+                if (prev) { prev.textContent = '▶'; prev.classList.remove('playing'); }
+            }
+
+            if (currentlyPlaying === idx) {
+                player.pause();
+                currentlyPlaying = null;
+                return;
+            }
+
+            player.src = `/api/voicemails/${ext}/${id}/audio`;
+            player.play();
+            btn.textContent = '⏸';
+            btn.classList.add('playing');
+            currentlyPlaying = idx;
+
+            player.onended = () => {
+                btn.textContent = '▶';
+                btn.classList.remove('playing');
+                currentlyPlaying = null;
+            };
+        }
+
+        // ─── FETCH: LOGS ───
+        async function fetchLogs() {
+            try {
+                const data = await fetch('/api/logs?count=100').then(r => r.json());
+                allLogs = data.logs || [];
+                renderLogs();
+            } catch (e) { console.error('Logs error:', e); }
+        }
+
+        function renderLogs() {
+            const panel = document.getElementById('logPanel');
+            const filtered = logFilter === 'all' ? allLogs : allLogs.filter(l => l.level === logFilter);
+
+            if (filtered.length === 0) {
+                panel.innerHTML = '<div class="empty-state">No matching logs</div>';
+                return;
+            }
+
+            const colors = { error: 'var(--error)', warn: 'var(--warning)', info: '#94a3b8' };
+            panel.innerHTML = filtered.map(log => {
+                const c = colors[log.level] || '#94a3b8';
+                const extra = Object.keys(log.data || {}).length > 0
+                    ? ` <span class="log-data">${JSON.stringify(log.data)}</span>` : '';
+                return `<div class="log-line">
+                    <span class="log-time">${log.timestamp?.slice(11, 19) || ''}</span>
+                    <span class="log-level" style="color:${c}"> ${log.level?.toUpperCase().padEnd(5)}</span>
+                    <span style="color:${c}">${log.message || ''}</span>${extra}
+                </div>`;
+            }).join('');
+
+            panel.scrollTop = panel.scrollHeight;
+        }
+
+        // ─── LOG FILTERS ───
+        document.querySelectorAll('.log-filter-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                document.querySelectorAll('.log-filter-btn').forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                logFilter = btn.dataset.level;
+                renderLogs();
+            });
+        });
+
+        // ─── OUTBOUND FORM ───
         document.getElementById('callForm').addEventListener('submit', async (e) => {
             e.preventDefault();
             const btn = document.getElementById('callBtn');
-            const resultDiv = document.getElementById('outboundResult');
-            const targetNum = document.getElementById('targetNumber').value;
-            const deviceName = document.getElementById('deviceSelect').selectedOptions[0]?.textContent || 'Unknown';
+            const result = document.getElementById('outboundResult');
+            const target = document.getElementById('targetNumber').value;
 
             btn.classList.add('loading');
-            btn.textContent = 'Initiating...';
-            resultDiv.style.display = 'none';
-            resultDiv.className = '';
+            btn.textContent = 'Calling...';
+            result.className = 'result-msg';
 
             try {
                 const res = await fetch('/api/outbound-call', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
-                        to: targetNum,
+                        to: target,
                         message: document.getElementById('callContext').value,
                         device: document.getElementById('deviceSelect').value,
                         mode: 'conversation'
                     })
                 });
-
                 const data = await res.json();
 
-                resultDiv.style.display = 'block';
                 if (res.ok && data.success) {
-                    resultDiv.textContent = '✓ Call queued — ' + deviceName + ' is calling ' + targetNum + ' (ID: ' + data.callId + ')';
-                    resultDiv.className = 'result-success';
+                    result.textContent = `✓ Calling ${target} (ID: ${data.callId})`;
+                    result.className = 'result-msg success';
                     document.getElementById('targetNumber').value = '';
                     document.getElementById('callContext').value = '';
+                    setTimeout(fetchCalls, 1000);
                 } else {
-                    resultDiv.textContent = 'Error: ' + (data.message || data.error || 'Failed to initiate call');
-                    resultDiv.className = 'result-error';
+                    result.textContent = 'Error: ' + (data.message || data.error || 'Failed');
+                    result.className = 'result-msg error';
                 }
             } catch (err) {
-                resultDiv.style.display = 'block';
-                resultDiv.textContent = 'Network Error: ' + err.message;
-                resultDiv.className = 'result-error';
+                result.textContent = 'Network error: ' + err.message;
+                result.className = 'result-msg error';
             } finally {
                 btn.classList.remove('loading');
-                btn.textContent = 'Initiate Call';
+                btn.textContent = '📞 Initiate Call';
             }
         });
 
-        async function fetchCalls() {
-            try {
-                const res = await fetch('/api/calls');
-                const data = await res.json();
-                const container = document.getElementById('callHistory');
-
-                if (data.calls && data.calls.length > 0) {
-                    container.innerHTML = data.calls.map(call => {
-                        const stateColor = call.state === 'COMPLETED' ? 'var(--success)'
-                            : call.state === 'FAILED' ? 'var(--error)'
-                                : 'var(--accent)';
-                        return `<div class="badge" style="border-left: 3px solid ${stateColor}; margin-bottom: 0.5rem;">
-                            <div style="display: flex; justify-content: space-between; align-items: center;">
-                                <span style="font-weight: 600;">→ ${call.to}</span>
-                                <span class="tag" style="background: ${stateColor}22; color: ${stateColor};">${call.state}</span>
-                            </div>
-                            <div class="text-secondary" style="font-size: 0.8rem; margin-top: 0.25rem;">
-                                ${call.mode} · ${call.createdAt} ${call.duration ? '· ' + call.duration + 's' : ''}
-                            </div>
-                        </div>`;
-                    }).join('');
-                } else {
-                    container.innerHTML = '<div class="text-secondary">No calls yet.</div>';
-                }
-            } catch (err) {
-                console.error(err);
-            }
-        }
-
-        async function fetchLogs() {
-            try {
-                const res = await fetch('/api/logs?count=80');
-                const data = await res.json();
-                const panel = document.getElementById('logPanel');
-
-                if (data.logs && data.logs.length > 0) {
-                    panel.innerHTML = data.logs.map(log => {
-                        const color = log.level === 'error' ? '#fca5a5'
-                            : log.level === 'warn' ? '#fde68a'
-                                : '#94a3b8';
-                        const dataStr = Object.keys(log.data).length > 0
-                            ? ' <span style="color: #64748b;">' + JSON.stringify(log.data) + '</span>'
-                            : '';
-                        return `<div style="color: ${color}; padding: 2px 0; border-bottom: 1px solid rgba(255,255,255,0.03);">
-                            <span style="color: #64748b;">${log.timestamp.slice(11, 19)}</span>
-                            <span style="font-weight: 600;">${log.level.toUpperCase().padEnd(5)}</span>
-                            ${log.message}${dataStr}
-                        </div>`;
-                    }).join('');
-
-                    // Auto-scroll to bottom
-                    panel.scrollTop = panel.scrollHeight;
-                } else {
-                    panel.innerHTML = '<div class="text-secondary">No logs yet.</div>';
-                }
-            } catch (err) {
-                console.error(err);
-            }
-        }
-
-        // Init
+        // ─── INIT & POLLING ───
         fetchStatus();
+        fetchSystemStats();
         fetchDevices();
         fetchCalls();
+        fetchCallbacks();
+        fetchVoicemails();
         fetchLogs();
-        setInterval(fetchStatus, 5000);
-        setInterval(fetchCalls, 5000);
+
+        setInterval(fetchStatus, 8000);
+        setInterval(fetchSystemStats, 10000);
+        setInterval(fetchCalls, 3000);
+        setInterval(fetchCallbacks, 5000);
+        setInterval(fetchVoicemails, 30000);
         setInterval(fetchLogs, 3000);
     </script>
 </body>

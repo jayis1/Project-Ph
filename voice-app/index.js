@@ -39,6 +39,9 @@ var setupQueryRoutes = queryModule.setupRoutes;
 // Import callback routes
 var callbackRouter = require("./lib/callback-routes");
 
+// Import system routes (stats, health, voicemails)
+var systemRouter = require("./lib/system-routes");
+
 // Load device registry first
 // deviceRegistry is a singleton, already instantiated
 
@@ -264,6 +267,10 @@ function initializeServers() {
     res.json({ logs: logger.getRecentLogs(count) });
   });
   console.log("[" + new Date().toISOString() + "] LOGS API enabled (/api/logs)");
+
+  // ========== SYSTEM / HEALTH / VOICEMAIL ROUTES ==========
+  httpServer.app.use("/api", systemRouter);
+  console.log("[" + new Date().toISOString() + "] SYSTEM API enabled (/api/system-stats, /api/health, /api/voicemails)");
 
   // Start Mission Control
   try {
