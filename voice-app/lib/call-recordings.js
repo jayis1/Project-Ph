@@ -40,6 +40,7 @@ function saveRecording(data) {
             device: data.device || 'Unknown',
             extension: data.extension || '',
             duration: data.duration || 0,
+            initialMessage: data.initialMessage || null,
             conversation: data.conversation || [],
             ttsAudioUrl: data.ttsAudioUrl || null,
             timestamp: new Date().toISOString(),
