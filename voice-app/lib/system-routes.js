@@ -70,12 +70,15 @@ router.get('/health', async (req, res) => {
         checks.ollama = { status: 'offline', error: e.message };
     }
 
-    // Whisper STT
+    // Whisper STT — try multiple endpoints for compatibility with different servers
     try {
         const sttUrl = process.env.LOCAL_STT_URL || 'http://127.0.0.1:8080/v1';
         const baseUrl = sttUrl.replace(/\/v1\/?$/, '');
+        // Try /health (fedirz), then /v1/models (OpenAI-compat), then base URL
         await axios.get(`${baseUrl}/health`, { timeout: 3000 }).catch(() =>
-            axios.get(baseUrl, { timeout: 3000 })
+            axios.get(`${sttUrl}/models`, { timeout: 3000 }).catch(() =>
+                axios.get(baseUrl, { timeout: 3000 })
+            )
         );
         checks.whisper = { status: 'online' };
     } catch (e) {
