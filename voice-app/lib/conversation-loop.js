@@ -45,51 +45,20 @@ const FILLER_PHRASES = [
   "I'm putting something together for you, one more moment.",
 ];
 
-// TTS cache for pre-generated phrases
+// Lazy TTS cache — caches phrases on first use, no upfront generation
 const phraseCache = new Map();
-let phraseCacheReady = false;
 
 /**
- * Pre-generate TTS for all filler and thinking phrases
- * Call once after TTS service is available
- */
-async function preCachePhrases(ttsService, voiceId) {
-  if (phraseCacheReady) return;
-  logger.info('Pre-caching TTS phrases', {
-    thinking: THINKING_PHRASES.length,
-    filler: FILLER_PHRASES.length
-  });
-
-  const allPhrases = [...THINKING_PHRASES, ...FILLER_PHRASES];
-  // Generate in parallel batches of 3 to avoid overwhelming TTS
-  for (let i = 0; i < allPhrases.length; i += 3) {
-    const batch = allPhrases.slice(i, i + 3);
-    const results = await Promise.allSettled(
-      batch.map(async (phrase) => {
-        const url = await ttsService.generateSpeech(phrase, voiceId);
-        phraseCache.set(phrase, url);
-      })
-    );
-    results.forEach((r, idx) => {
-      if (r.status === 'rejected') {
-        logger.warn('Failed to pre-cache phrase', { phrase: batch[idx], error: r.reason?.message });
-      }
-    });
-  }
-
-  phraseCacheReady = true;
-  logger.info('TTS phrase cache ready', { cached: phraseCache.size });
-}
-
-/**
- * Get cached TTS URL for a phrase, or generate on-the-fly as fallback
+ * Get TTS URL for a phrase, caching on first use for instant replay later
  */
 async function getCachedPhrase(phrase, ttsService, voiceId) {
   if (phraseCache.has(phrase)) {
     return phraseCache.get(phrase);
   }
-  // Fallback: generate on the fly
-  return ttsService.generateSpeech(phrase, voiceId);
+  // Generate on first use, cache for next time
+  const url = await ttsService.generateSpeech(phrase, voiceId);
+  phraseCache.set(phrase, url);
+  return url;
 }
 
 function getRandomThinkingPhrase() {
@@ -98,6 +67,12 @@ function getRandomThinkingPhrase() {
 
 function isGoodbye(transcript) {
   const lower = transcript.toLowerCase().trim();
+  const words = lower.split(/\s+/);
+
+  // Only consider short phrases as goodbye (6 words or less)
+  // This prevents 'Why did you hang up the phone?' from matching
+  if (words.length > 6) return false;
+
   const goodbyePhrases = ['goodbye', 'good bye', 'bye', 'hang up', 'end call', "that's all", 'thats all'];
   return goodbyePhrases.some(phrase => {
     return lower === phrase || lower.includes(` ${phrase}`) ||
@@ -264,10 +239,6 @@ ${callbackInstructions}
     // Listen for call end
     dialog.on('destroy', onDialogDestroy);
 
-    // Pre-cache TTS phrases in background (don't block conversation start)
-    preCachePhrases(ttsService, voiceId).catch(err =>
-      logger.warn('Phrase pre-caching failed', { callUuid, error: err.message })
-    );
 
     // Play greeting (skip for outbound where initial message already played)
     if (!skipGreeting && callActive) {
