@@ -54,6 +54,38 @@ services:
     depends_on:
       - drachtio
       - freeswitch
+      - whisper-stt
+      - openedai-speech
     # Ports (for reference):
     # - 3000: HTTP API
     # - 3001: WebSocket for audio streaming
+
+  whisper-stt:
+    image: fedirz/faster-whisper-server:latest-cpu
+    container_name: whisper-stt
+    restart: unless-stopped
+    network_mode: host
+    environment:
+      - WHISPER__MODEL=${WHISPER_MODEL:-Systran/faster-whisper-large-v3-turbo}
+      - UVICORN_HOST=0.0.0.0
+      - UVICORN_PORT=8080
+    volumes:
+      - whisper-models:/root/.cache/huggingface
+    # Ports (for reference - host mode):
+    # - 8080: OpenAI-compatible STT API (/v1/audio/transcriptions)
+
+  openedai-speech:
+    image: ghcr.io/matatonic/openedai-speech:latest
+    container_name: openedai-speech
+    restart: unless-stopped
+    network_mode: host
+    volumes:
+      - tts-voices:/app/voices
+      - tts-config:/app/config
+    # Ports (for reference - host mode):
+    # - 8000: OpenAI-compatible TTS API (/v1/audio/speech)
+
+volumes:
+  whisper-models:
+  tts-voices:
+  tts-config:
