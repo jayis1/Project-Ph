@@ -696,24 +696,26 @@ ${callbackInstructions}
       }
     }
 
-    // Save call recording (transcript + audio) for both inbound and outbound
-    try {
-      const duration = Math.round((Date.now() - callStartTime) / 1000);
-      // Check if audio file actually exists
-      const audioFileExists = audioRecordingPath && fs.existsSync(audioRecordingPath);
-      saveRecording({
-        callId: callUuid,
-        direction: initialContext ? 'outbound' : 'inbound',
-        callerNumber: callerId,
-        device: deviceConfig?.name || 'Unknown',
-        extension: deviceConfig?.extension || '',
-        duration: duration,
-        conversation: conversationLog,
-        initialMessage: initialContext || null,
-        audioFile: audioFileExists ? path.basename(audioRecordingPath) : null
-      });
-    } catch (e) {
-      logger.warn('Failed to save call recording', { callUuid, error: e.message });
+    // Save call recording (transcript + audio) — only for inbound calls
+    // Outbound calls are saved by outbound-session.js to avoid duplicates
+    if (!initialContext) {
+      try {
+        const duration = Math.round((Date.now() - callStartTime) / 1000);
+        // Check if audio file actually exists
+        const audioFileExists = audioRecordingPath && fs.existsSync(audioRecordingPath);
+        saveRecording({
+          callId: callUuid,
+          direction: 'inbound',
+          callerNumber: callerId,
+          device: deviceConfig?.name || 'Unknown',
+          extension: deviceConfig?.extension || '',
+          duration: duration,
+          conversation: conversationLog,
+          audioFile: audioFileExists ? path.basename(audioRecordingPath) : null
+        });
+      } catch (e) {
+        logger.warn('Failed to save call recording', { callUuid, error: e.message });
+      }
     }
 
     // Remove dialog listener
