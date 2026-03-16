@@ -152,9 +152,38 @@ services:
         required: false
     volumes:
       - ${config.paths.voiceApp}/audio:/app/audio
+      - ${config.paths.voiceApp}/config:/app/config
     depends_on:
       - drachtio
       - freeswitch
+      - whisper-stt
+      - openedai-speech
+
+  whisper-stt:
+    image: fedirz/faster-whisper-server:latest-cpu
+    container_name: whisper-stt
+    restart: unless-stopped
+    network_mode: host
+    environment:
+      - WHISPER__MODEL=\${WHISPER_MODEL:-Systran/faster-whisper-large-v3-turbo}
+      - UVICORN_HOST=0.0.0.0
+      - UVICORN_PORT=8080
+    volumes:
+      - whisper-models:/root/.cache/huggingface
+
+  openedai-speech:
+    image: ghcr.io/matatonic/openedai-speech:latest
+    container_name: openedai-speech
+    restart: unless-stopped
+    network_mode: host
+    volumes:
+      - tts-voices:/app/voices
+      - tts-config:/app/config
+
+volumes:
+  whisper-models:
+  tts-voices:
+  tts-config:
 `;
 }
 
@@ -205,11 +234,11 @@ export function generateEnvFile(config) {
     `OLLAMA_API_URL=${config.api.ollama?.apiUrl || 'http://host.docker.internal:11434'}`,
     `OLLAMA_MODEL=${config.api.ollama?.model || 'llama3'}`,
     '',
-    '# Local STT (Whisper-compatible)',
-    `LOCAL_STT_URL=${config.api.localSttUrl || 'http://host.docker.internal:8080/v1'}`,
+    '# Local STT (Whisper-compatible — served by whisper-stt container on port 8080)',
+    `LOCAL_STT_URL=${config.api.localSttUrl || 'http://127.0.0.1:8080/v1'}`,
     '',
-    '# Local TTS',
-    `LOCAL_TTS_URL=${config.api.localTtsUrl || 'http://host.docker.internal:5002/api/tts'}`,
+    '# Local TTS (served by openedai-speech container on port 8000)',
+    `LOCAL_TTS_URL=${config.api.localTtsUrl || 'http://127.0.0.1:8000/v1/audio/speech'}`,
     '',
     '# Application Settings',
     `HTTP_PORT=${config.server.httpPort}`,
@@ -357,7 +386,7 @@ export async function stopContainers(services = []) {
  * @returns {Promise<void>}
  */
 async function forceRemoveStaleContainers() {
-  const knownContainers = ['drachtio', 'freeswitch', 'voice-app'];
+  const knownContainers = ['drachtio', 'freeswitch', 'voice-app', 'whisper-stt', 'openedai-speech'];
 
   for (const name of knownContainers) {
     try {
