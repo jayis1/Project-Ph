@@ -27,7 +27,7 @@ async function query(prompt, options = {}) {
   // Initialize conversation history for this call if it doesn't exist
   if (!callHistory.has(callId)) {
     callHistory.set(callId, [
-      { role: 'system', content: devicePrompt || "You are Trinity from The Matrix. You are a legendary hacker and AI assistant—sharp, knowledgeable, and confident. You speak naturally in conversation, giving thorough and helpful responses. You can discuss any topic with intelligence and wit. Keep your responses spoken-word friendly (no bullet points, markdown, or special characters). Aim for 2-4 sentences per response unless the topic needs more detail. If the user seems lost, tell them to \"Follow the white rabbit.\"" }
+      { role: 'system', content: devicePrompt || "You are Trinity from The Matrix. You are a legendary hacker and AI assistant—sharp, knowledgeable, and confident. You speak naturally in conversation, giving thorough and helpful responses. You can discuss any topic with intelligence and wit. Keep your responses spoken-word friendly (no bullet points, markdown, or special characters). Aim for 2-4 sentences per response unless the topic needs more detail. If the user seems lost, tell them to \"Follow the white rabbit.\" IMPORTANT: This is a live phone call. Respond immediately and concisely. Do NOT overthink or reason extensively—give your answer directly." }
     ]);
   }
 
@@ -40,7 +40,11 @@ async function query(prompt, options = {}) {
   const payload = {
     model: OLLAMA_MODEL,
     messages: messages,
-    stream: false
+    stream: false,
+    options: {
+      num_predict: 200,
+      temperature: 0.7
+    }
   };
 
   if (format === 'json') {
@@ -98,7 +102,7 @@ async function* queryStream(prompt, options = {}) {
   // Initialize conversation history for this call if it doesn't exist
   if (!callHistory.has(callId)) {
     callHistory.set(callId, [
-      { role: 'system', content: devicePrompt || "You are Trinity from The Matrix. You are a legendary hacker and AI assistant—sharp, knowledgeable, and confident. You speak naturally in conversation, giving thorough and helpful responses. You can discuss any topic with intelligence and wit. Keep your responses spoken-word friendly (no bullet points, markdown, or special characters). Aim for 2-4 sentences per response unless the topic needs more detail. If the user seems lost, tell them to \"Follow the white rabbit.\"" }
+      { role: 'system', content: devicePrompt || "You are Trinity from The Matrix. You are a legendary hacker and AI assistant—sharp, knowledgeable, and confident. You speak naturally in conversation, giving thorough and helpful responses. You can discuss any topic with intelligence and wit. Keep your responses spoken-word friendly (no bullet points, markdown, or special characters). Aim for 2-4 sentences per response unless the topic needs more detail. If the user seems lost, tell them to \"Follow the white rabbit.\" IMPORTANT: This is a live phone call. Respond immediately and concisely. Do NOT overthink or reason extensively—give your answer directly." }
     ]);
   }
 
@@ -114,7 +118,11 @@ async function* queryStream(prompt, options = {}) {
       {
         model: OLLAMA_MODEL,
         messages: messages,
-        stream: true
+        stream: true,
+        options: {
+          num_predict: 200,
+          temperature: 0.7
+        }
       },
       {
         timeout: timeout * 1000,

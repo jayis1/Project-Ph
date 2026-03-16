@@ -41,13 +41,16 @@ const THINKING_PHRASES = [
   "Let me dig into that, bear with me.",
 ];
 
-// Filler phrases — played when AI takes too long (>8 seconds of silence)
+// Filler phrases — played when AI takes too long (>3 seconds of silence)
 const FILLER_PHRASES = [
   "I'm still working on that, bear with me.",
   "This is taking a bit longer than usual, hang tight.",
   "Still thinking, I haven't forgotten about you.",
   "Almost there, just a moment longer.",
   "I'm putting something together for you, one more moment.",
+  "Processing, one sec.",
+  "Thinking it through, stay with me.",
+  "Working on it, almost ready.",
 ];
 
 // Lazy TTS cache — caches phrases on first use, no upfront generation
@@ -481,9 +484,10 @@ ${callbackInstructions}
         let fillerTimer = null;
         let fillerIndex = 0;
 
-        // Filler timeout: first fires at 5s, subsequent at 12s
-        const FILLER_FIRST_DELAY = 5000;
-        const FILLER_REPEAT_DELAY = 12000;
+        // Filler timeout: first fires at 3s, subsequent at 7s
+        // Aggressive timing needed for deepseek-r1 which has a long <think> phase
+        const FILLER_FIRST_DELAY = 3000;
+        const FILLER_REPEAT_DELAY = 7000;
 
         const startFillerTimer = (delayMs) => {
           if (fillerTimer) clearTimeout(fillerTimer);
