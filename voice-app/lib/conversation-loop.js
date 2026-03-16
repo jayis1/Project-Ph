@@ -12,10 +12,15 @@
  * - Hold music during processing
  */
 
+const fs = require('fs');
+const path = require('path');
 const logger = require('./logger');
 const voicemailService = require('./voicemail-service');
 const { initiateOutboundCall } = require('./outbound-handler');
 const { scheduleCallback } = require('./scheduled-callbacks');
+
+// Path to audio-temp for cache validation
+const AUDIO_TEMP_DIR = path.join(__dirname, '../audio-temp');
 
 // Audio cue URLs
 const READY_BEEP_URL = 'http://127.0.0.1:3000/static/ready-beep.wav';
@@ -52,8 +57,17 @@ const phraseCache = new Map();
  * Get TTS URL for a phrase, caching on first use for instant replay later
  */
 async function getCachedPhrase(phrase, ttsService, voiceId) {
-  if (phraseCache.has(phrase)) {
-    return phraseCache.get(phrase);
+  const cachedUrl = phraseCache.get(phrase);
+  if (cachedUrl) {
+    // Validate the cached audio file still exists on disk
+    const filename = cachedUrl.split('/').pop();
+    const filepath = path.join(AUDIO_TEMP_DIR, filename);
+    if (fs.existsSync(filepath)) {
+      return cachedUrl;
+    }
+    // File was cleaned up — regenerate
+    phraseCache.delete(phrase);
+    logger.warn('Cached TTS file missing, regenerating', { phrase: phrase.substring(0, 40) });
   }
   // Generate on first use, cache for next time
   const url = await ttsService.generateSpeech(phrase, voiceId);
@@ -422,8 +436,13 @@ ${callbackInstructions}
       // 1. Play random thinking phrase
       const thinkingPhrase = getRandomThinkingPhrase();
       logger.info('Playing thinking phrase', { callUuid, phrase: thinkingPhrase });
-      const thinkingUrl = await getCachedPhrase(thinkingPhrase, ttsService, voiceId);
-      if (callActive) await endpoint.play(thinkingUrl);
+      try {
+        const thinkingUrl = await getCachedPhrase(thinkingPhrase, ttsService, voiceId);
+        if (callActive) await endpoint.play(thinkingUrl);
+      } catch (e) {
+        if (!callActive) break;
+        logger.warn('Thinking phrase failed', { callUuid, error: e.message });
+      }
 
       // 2. Start hold music in background
       let musicPlaying = false;
