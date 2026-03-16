@@ -169,12 +169,16 @@ async function* queryStream(prompt, options = {}) {
 
         // Filter out deepseek-r1 <think>...</think> reasoning blocks
         if (token.includes('<think>')) {
+          if (!insideThink) {
+            console.log(`[${timestamp}] OLLAMA Model entering <think> phase (reasoning internally)`);
+          }
           insideThink = true;
           token = token.replace(/<think>[\s\S]*/g, '');
         }
         if (insideThink) {
           if (token.includes('</think>')) {
             insideThink = false;
+            console.log(`[${timestamp}] OLLAMA Model exited <think> phase (generating response now)`);
             token = token.replace(/[\s\S]*<\/think>/g, '');
           } else if (!token.includes('<think>')) {
             token = '';  // Swallow tokens inside <think> block

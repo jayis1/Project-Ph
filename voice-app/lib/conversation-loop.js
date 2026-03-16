@@ -439,8 +439,11 @@ ${callbackInstructions}
         let fillerTimer = null;
         let fillerIndex = 0;
 
-        // Filler timeout: if no sentence arrives within 8s, play a filler phrase
-        const startFillerTimer = () => {
+        // Filler timeout: first fires at 5s, subsequent at 12s
+        const FILLER_FIRST_DELAY = 5000;
+        const FILLER_REPEAT_DELAY = 12000;
+
+        const startFillerTimer = (delayMs) => {
           if (fillerTimer) clearTimeout(fillerTimer);
           fillerTimer = setTimeout(async () => {
             if (!callActive) return;
@@ -463,12 +466,12 @@ ${callbackInstructions}
               logger.warn('Filler phrase failed', { callUuid, error: e.message });
             }
             // Set up next filler (longer interval)
-            startFillerTimer();
-          }, 10000);
+            startFillerTimer(FILLER_REPEAT_DELAY);
+          }, delayMs);
         };
 
-        // Start the filler timer
-        startFillerTimer();
+        // Start the filler timer (short first delay)
+        startFillerTimer(FILLER_FIRST_DELAY);
 
         for await (const sentence of stream) {
           if (!callActive) break;
@@ -493,7 +496,7 @@ ${callbackInstructions}
           if (callActive) await endpoint.play(sentenceUrl);
 
           // Restart filler timer for next sentence
-          startFillerTimer();
+          startFillerTimer(FILLER_REPEAT_DELAY);
         }
 
         // Clear filler timer
