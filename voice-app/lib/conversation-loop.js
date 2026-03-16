@@ -45,6 +45,53 @@ const FILLER_PHRASES = [
   "I'm putting something together for you, one more moment.",
 ];
 
+// TTS cache for pre-generated phrases
+const phraseCache = new Map();
+let phraseCacheReady = false;
+
+/**
+ * Pre-generate TTS for all filler and thinking phrases
+ * Call once after TTS service is available
+ */
+async function preCachePhrases(ttsService, voiceId) {
+  if (phraseCacheReady) return;
+  logger.info('Pre-caching TTS phrases', {
+    thinking: THINKING_PHRASES.length,
+    filler: FILLER_PHRASES.length
+  });
+
+  const allPhrases = [...THINKING_PHRASES, ...FILLER_PHRASES];
+  // Generate in parallel batches of 3 to avoid overwhelming TTS
+  for (let i = 0; i < allPhrases.length; i += 3) {
+    const batch = allPhrases.slice(i, i + 3);
+    const results = await Promise.allSettled(
+      batch.map(async (phrase) => {
+        const url = await ttsService.generateSpeech(phrase, voiceId);
+        phraseCache.set(phrase, url);
+      })
+    );
+    results.forEach((r, idx) => {
+      if (r.status === 'rejected') {
+        logger.warn('Failed to pre-cache phrase', { phrase: batch[idx], error: r.reason?.message });
+      }
+    });
+  }
+
+  phraseCacheReady = true;
+  logger.info('TTS phrase cache ready', { cached: phraseCache.size });
+}
+
+/**
+ * Get cached TTS URL for a phrase, or generate on-the-fly as fallback
+ */
+async function getCachedPhrase(phrase, ttsService, voiceId) {
+  if (phraseCache.has(phrase)) {
+    return phraseCache.get(phrase);
+  }
+  // Fallback: generate on the fly
+  return ttsService.generateSpeech(phrase, voiceId);
+}
+
 function getRandomThinkingPhrase() {
   return THINKING_PHRASES[Math.floor(Math.random() * THINKING_PHRASES.length)];
 }
@@ -216,6 +263,11 @@ ${callbackInstructions}
 
     // Listen for call end
     dialog.on('destroy', onDialogDestroy);
+
+    // Pre-cache TTS phrases in background (don't block conversation start)
+    preCachePhrases(ttsService, voiceId).catch(err =>
+      logger.warn('Phrase pre-caching failed', { callUuid, error: err.message })
+    );
 
     // Play greeting (skip for outbound where initial message already played)
     if (!skipGreeting && callActive) {
@@ -399,7 +451,7 @@ ${callbackInstructions}
       // 1. Play random thinking phrase
       const thinkingPhrase = getRandomThinkingPhrase();
       logger.info('Playing thinking phrase', { callUuid, phrase: thinkingPhrase });
-      const thinkingUrl = await ttsService.generateSpeech(thinkingPhrase, voiceId);
+      const thinkingUrl = await getCachedPhrase(thinkingPhrase, ttsService, voiceId);
       if (callActive) await endpoint.play(thinkingUrl);
 
       // 2. Start hold music in background
@@ -455,7 +507,7 @@ ${callbackInstructions}
               if (musicPlaying) {
                 try { await endpoint.api('uuid_break', endpoint.uuid); } catch (e) { /* ignore */ }
               }
-              const fillerUrl = await ttsService.generateSpeech(filler, voiceId);
+              const fillerUrl = await getCachedPhrase(filler, ttsService, voiceId);
               if (callActive) await endpoint.play(fillerUrl);
               // Restart hold music after filler
               if (callActive) {
