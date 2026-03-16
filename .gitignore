@@ -49,3 +49,7 @@ temp/
 !assets/*.png
 !assets/*.jpg
 voice-app/config/devices.json
+
+# Local dev files
+Agents.md
+GEMINI.md
