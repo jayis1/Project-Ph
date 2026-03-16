@@ -22,23 +22,27 @@ const READY_BEEP_URL = 'http://127.0.0.1:3000/static/ready-beep.wav';
 const GOTIT_BEEP_URL = 'http://127.0.0.1:3000/static/gotit-beep.wav';
 const HOLD_MUSIC_URL = 'http://127.0.0.1:3000/static/hold-music.mp3';
 
-// AI Code-style thinking phrases
+// Conversational thinking phrases — long enough to feel natural while AI processes
 const THINKING_PHRASES = [
-  "Pondering...",
-  "Elucidating...",
-  "Cogitating...",
-  "Ruminating...",
-  "Contemplating...",
-  "Consulting the oracle...",
-  "Summoning knowledge...",
-  "Engaging neural pathways...",
-  "Accessing the mainframe...",
-  "Querying the void...",
-  "Let me think about that...",
-  "Processing...",
-  "Hmm, interesting question...",
-  "One moment...",
-  "Searching my brain...",
+  "That's a great question, give me a moment to think about that.",
+  "Hold on, let me look into that for you.",
+  "Interesting, let me process that for a moment.",
+  "Let me think about that, one moment please.",
+  "Hmm, that's a good one. Give me a second.",
+  "Alright, let me work through that.",
+  "Sure, let me figure that out for you.",
+  "Good question. Let me think on that.",
+  "One moment while I consider that.",
+  "Let me dig into that, bear with me.",
+];
+
+// Filler phrases — played when AI takes too long (>8 seconds of silence)
+const FILLER_PHRASES = [
+  "I'm still working on that, bear with me.",
+  "This is taking a bit longer than usual, hang tight.",
+  "Still thinking, I haven't forgotten about you.",
+  "Almost there, just a moment longer.",
+  "I'm putting something together for you, one more moment.",
 ];
 
 function getRandomThinkingPhrase() {
@@ -381,7 +385,7 @@ ${callbackInstructions}
       }
 
       // ============================================
-      // THINKING FEEDBACK
+      // THINKING FEEDBACK + STREAMING AI RESPONSE
       // ============================================
 
       // Check if call still active before thinking feedback
@@ -402,10 +406,7 @@ ${callbackInstructions}
         musicPlaying = true;
       }
 
-      // 3. Query AI
-      logger.info('Querying AI', { callUuid });
-
-      // Check for voicemail intent
+      // 3. Build AI prompt with context
       let voicemailContext = '';
       if (transcript.toLowerCase().includes('voicemail') || transcript.toLowerCase().includes('message')) {
         const messages = await voicemailService.listVoicemails(deviceConfig?.extension || '9000');
@@ -416,18 +417,105 @@ ${callbackInstructions}
         }
       }
 
-      const aiResponse = await aiBridge.query(
-        transcript + voicemailContext + systemContext,
-        { callId: callUuid, devicePrompt: devicePrompt }
-      );
+      const aiPrompt = transcript + voicemailContext + systemContext;
+      let fullAiResponse = '';
 
-      // 4. Stop hold music
-      if (musicPlaying && callActive) {
-        try {
-          await endpoint.api('uuid_break', endpoint.uuid);
-        } catch (e) {
-          // Ignore - music may have already stopped
+      // 4. Stream AI response — TTS + play each sentence as it arrives
+      logger.info('Querying AI (streaming)', { callUuid });
+
+      try {
+        const stream = aiBridge.queryStream(aiPrompt, { callId: callUuid, devicePrompt: devicePrompt });
+        let sentenceCount = 0;
+        let fillerTimer = null;
+        let fillerIndex = 0;
+
+        // Filler timeout: if no sentence arrives within 8s, play a filler phrase
+        const startFillerTimer = () => {
+          if (fillerTimer) clearTimeout(fillerTimer);
+          fillerTimer = setTimeout(async () => {
+            if (!callActive) return;
+            const filler = FILLER_PHRASES[fillerIndex % FILLER_PHRASES.length];
+            fillerIndex++;
+            logger.info('Playing filler phrase (AI slow)', { callUuid, phrase: filler });
+            try {
+              // Stop hold music briefly for filler
+              if (musicPlaying) {
+                try { await endpoint.api('uuid_break', endpoint.uuid); } catch (e) { /* ignore */ }
+              }
+              const fillerUrl = await ttsService.generateSpeech(filler, voiceId);
+              if (callActive) await endpoint.play(fillerUrl);
+              // Restart hold music after filler
+              if (callActive) {
+                endpoint.play(HOLD_MUSIC_URL).catch(() => { });
+                musicPlaying = true;
+              }
+            } catch (e) {
+              logger.warn('Filler phrase failed', { callUuid, error: e.message });
+            }
+            // Set up next filler (longer interval)
+            startFillerTimer();
+          }, 10000);
+        };
+
+        // Start the filler timer
+        startFillerTimer();
+
+        for await (const sentence of stream) {
+          if (!callActive) break;
+
+          // Cancel filler timer on each sentence
+          if (fillerTimer) clearTimeout(fillerTimer);
+
+          sentenceCount++;
+          fullAiResponse += (sentenceCount > 1 ? ' ' : '') + sentence;
+          logger.info('Stream sentence', { callUuid, sentenceNum: sentenceCount, text: sentence.substring(0, 80) });
+
+          // Stop hold music before first sentence
+          if (sentenceCount === 1 && musicPlaying) {
+            try {
+              await endpoint.api('uuid_break', endpoint.uuid);
+              musicPlaying = false;
+            } catch (e) { /* ignore */ }
+          }
+
+          // Generate TTS and play this sentence immediately
+          const sentenceUrl = await ttsService.generateSpeech(sentence, voiceId);
+          if (callActive) await endpoint.play(sentenceUrl);
+
+          // Restart filler timer for next sentence
+          startFillerTimer();
         }
+
+        // Clear filler timer
+        if (fillerTimer) clearTimeout(fillerTimer);
+
+        logger.info('AI stream complete', { callUuid, sentences: sentenceCount, totalLength: fullAiResponse.length });
+
+      } catch (streamError) {
+        logger.warn('Streaming failed, falling back to non-streaming', { callUuid, error: streamError.message });
+
+        // Fallback to non-streaming query
+        fullAiResponse = await aiBridge.query(aiPrompt, { callId: callUuid, devicePrompt: devicePrompt });
+
+        // Stop hold music
+        if (musicPlaying && callActive) {
+          try { await endpoint.api('uuid_break', endpoint.uuid); } catch (e) { /* ignore */ }
+          musicPlaying = false;
+        }
+
+        if (!callActive) {
+          logger.info('Call ended during AI processing', { callUuid });
+          break;
+        }
+
+        const voiceLine = extractVoiceLine(fullAiResponse);
+        const responseUrl = await ttsService.generateSpeech(voiceLine, voiceId);
+        if (callActive) await endpoint.play(responseUrl);
+      }
+
+      // Stop hold music if still playing
+      if (musicPlaying && callActive) {
+        try { await endpoint.api('uuid_break', endpoint.uuid); } catch (e) { /* ignore */ }
       }
 
       // Check if call ended during AI processing
@@ -438,15 +526,10 @@ ${callbackInstructions}
 
       logger.info('AI responded', { callUuid });
 
-      // 5. Extract and play voice line
-      const voiceLine = extractVoiceLine(aiResponse);
-      logger.info('Voice line', { callUuid, voiceLine });
-
-      // Check for IMMEDIATE CALLBACK
-      const callbackMatch = aiResponse.match(/🗣️\s*CALLBACK:\s*(CALLER|[+\d]+)/im);
+      // 5. Check for IMMEDIATE CALLBACK in full response
+      const callbackMatch = fullAiResponse.match(/🗣️\s*CALLBACK:\s*(CALLER|[+\d]+)/im);
       if (callbackMatch) {
         const target = callbackMatch[1].trim();
-        // Replace CALLER keyword with real caller ID, reject fake numbers
         if (target === 'CALLER' && hasRealCallerId) {
           callbackTarget = callerId;
           logger.info('IMMEDIATE CALLBACK Detected', { callUuid, target: callbackTarget });
@@ -459,12 +542,11 @@ ${callbackInstructions}
       }
 
       // Check for SCHEDULED CALLBACK
-      const scheduledMatch = aiResponse.match(/🗣️\s*SCHEDULED_CALLBACK:\s*(CALLER|[+\d]+)\s*\|\s*([^|]+)\s*\|\s*(.+)/im);
+      const scheduledMatch = fullAiResponse.match(/🗣️\s*SCHEDULED_CALLBACK:\s*(CALLER|[+\d]+)\s*\|\s*([^|]+)\s*\|\s*(.+)/im);
       if (scheduledMatch) {
         const target = scheduledMatch[1].trim();
         let resolvedNumber = null;
 
-        // Replace CALLER keyword with real caller ID, reject fake numbers
         if (target === 'CALLER' && hasRealCallerId) {
           resolvedNumber = callerId;
         } else if (isValidPhoneNumber(target)) {
@@ -482,9 +564,6 @@ ${callbackInstructions}
           logger.warn('SCHEDULED CALLBACK rejected - invalid or placeholder number', { callUuid, target });
         }
       }
-
-      const responseUrl = await ttsService.generateSpeech(voiceLine, voiceId);
-      if (callActive) await endpoint.play(responseUrl);
 
       if (callbackTarget || scheduledCallbackInfo) break; // End loop to trigger callback
 
