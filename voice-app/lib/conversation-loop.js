@@ -18,6 +18,7 @@ const logger = require('./logger');
 const voicemailService = require('./voicemail-service');
 const { initiateOutboundCall } = require('./outbound-handler');
 const { scheduleCallback } = require('./scheduled-callbacks');
+const { saveRecording } = require('./call-recordings');
 
 // Path to audio-temp for cache validation
 const AUDIO_TEMP_DIR = path.join(__dirname, '../audio-temp');
@@ -219,6 +220,9 @@ async function runConversationLoop(endpoint, dialog, callUuid, options) {
   let callbackTarget = null; // Track immediate callback intent
   let scheduledCallbackInfo = null; // Track scheduled callback intent
   let streamAbortController = null; // Abort AI stream on hangup
+  let audioRecordingPath = null; // Path to call audio recording
+  const conversationLog = []; // Track user/AI turns for transcript saving
+  const callStartTime = Date.now();
 
   // Enhance system prompt with caller info and callback capabilities
   // Only advertise callbacks if we have a real caller ID to call back
@@ -301,6 +305,18 @@ ${callbackInstructions}
       sampling: '16k'
     });
     forkRunning = true;
+
+    // Start audio recording for the full call
+    const audioDir = '/app/recordings/audio';
+    try {
+      if (!fs.existsSync(audioDir)) fs.mkdirSync(audioDir, { recursive: true });
+      audioRecordingPath = path.join(audioDir, `${callUuid}.wav`);
+      await endpoint.api('uuid_record', `${endpoint.uuid} start ${audioRecordingPath}`);
+      logger.info('Audio recording started', { callUuid, path: audioRecordingPath });
+    } catch (recErr) {
+      logger.warn('Failed to start audio recording', { callUuid, error: recErr.message });
+      audioRecordingPath = null;
+    }
 
     try {
       session = await sessionPromise;
@@ -588,6 +604,14 @@ ${callbackInstructions}
 
       logger.info('AI responded', { callUuid });
 
+      // Log conversation turn for transcript
+      conversationLog.push({
+        turn: turnCount,
+        timestamp: Date.now(),
+        user: transcript,
+        assistant: fullAiResponse
+      });
+
       // 5. Check for IMMEDIATE CALLBACK in full response
       const callbackMatch = fullAiResponse.match(/🗣️\s*CALLBACK:\s*(CALLER|[+\d]+)/im);
       if (callbackMatch) {
@@ -661,6 +685,36 @@ ${callbackInstructions}
     }
   } finally {
     logger.info('Conversation loop cleanup', { callUuid });
+
+    // Stop audio recording
+    if (audioRecordingPath) {
+      try {
+        await endpoint.api('uuid_record', `${endpoint.uuid} stop ${audioRecordingPath}`);
+        logger.info('Audio recording stopped', { callUuid, path: audioRecordingPath });
+      } catch (e) {
+        logger.warn('Failed to stop audio recording', { callUuid, error: e.message });
+      }
+    }
+
+    // Save call recording (transcript + audio) for both inbound and outbound
+    try {
+      const duration = Math.round((Date.now() - callStartTime) / 1000);
+      // Check if audio file actually exists
+      const audioFileExists = audioRecordingPath && fs.existsSync(audioRecordingPath);
+      saveRecording({
+        callId: callUuid,
+        direction: initialContext ? 'outbound' : 'inbound',
+        callerNumber: callerId,
+        device: deviceConfig?.name || 'Unknown',
+        extension: deviceConfig?.extension || '',
+        duration: duration,
+        conversation: conversationLog,
+        initialMessage: initialContext || null,
+        audioFile: audioFileExists ? path.basename(audioRecordingPath) : null
+      });
+    } catch (e) {
+      logger.warn('Failed to save call recording', { callUuid, error: e.message });
+    }
 
     // Remove dialog listener
     dialog.off('destroy', onDialogDestroy);

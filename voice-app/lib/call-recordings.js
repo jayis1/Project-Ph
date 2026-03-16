@@ -43,6 +43,7 @@ function saveRecording(data) {
             initialMessage: data.initialMessage || null,
             conversation: data.conversation || [],
             ttsAudioUrl: data.ttsAudioUrl || null,
+            audioFile: data.audioFile || null,
             timestamp: new Date().toISOString(),
             savedAt: Date.now()
         };

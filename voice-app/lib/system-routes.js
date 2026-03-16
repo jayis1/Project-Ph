@@ -119,4 +119,28 @@ router.get('/recordings/:callId', (req, res) => {
     res.json(record);
 });
 
+/**
+ * GET /api/recordings/audio/:filename
+ * Serve recorded call audio files
+ */
+router.get('/recordings/audio/:filename', (req, res) => {
+    const filename = path.basename(req.params.filename); // Prevent path traversal
+    const audioDir = process.env.RECORDINGS_DIR
+        ? path.join(process.env.RECORDINGS_DIR, 'audio')
+        : '/app/recordings/audio';
+    const filepath = path.join(audioDir, filename);
+
+    if (!fs.existsSync(filepath)) {
+        return res.status(404).json({ error: 'Audio file not found' });
+    }
+
+    const stat = fs.statSync(filepath);
+    res.writeHead(200, {
+        'Content-Type': 'audio/wav',
+        'Content-Length': stat.size,
+        'Accept-Ranges': 'bytes'
+    });
+    fs.createReadStream(filepath).pipe(res);
+});
+
 module.exports = router;

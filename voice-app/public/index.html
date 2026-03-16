@@ -969,20 +969,32 @@
                     }
                     const dirIcon = rec.direction === 'inbound' ? '📥' : '📤';
                     const initMsg = rec.initialMessage ? `<div style="margin-bottom:0.5rem"><div style="font-size:0.7rem;color:var(--text-muted)">Initial message:</div><div style="font-size:0.75rem;color:var(--text-primary)">${rec.initialMessage}</div></div>` : '';
+
+                    // Audio player
+                    const audioPlayer = rec.audioFile
+                        ? `<div style="margin-top:0.5rem">
+                            <audio controls preload="none" style="width:100%;height:32px;border-radius:6px;filter:invert(1) hue-rotate(180deg);opacity:0.85">
+                                <source src="/api/recordings/audio/${rec.audioFile}" type="audio/wav">
+                            </audio>
+                           </div>`
+                        : '';
+
                     return `<div class="vm-item" style="cursor:pointer;flex-direction:column;align-items:stretch" onclick="this.querySelector('.rec-detail').style.display = this.querySelector('.rec-detail').style.display === 'none' ? 'block' : 'none'">
                         <div style="display:flex;align-items:center;gap:0.5rem">
                             <div style="flex:1;min-width:0">
                                 <div class="vm-caller">${dirIcon} ${rec.callerNumber || 'Unknown'}</div>
-                                <div class="vm-meta">${rec.device} · ${rec.duration || 0}s · ${timeAgo(rec.timestamp)} · tap to expand</div>
+                                <div class="vm-meta">${rec.device} · ${rec.duration || 0}s · ${timeAgo(rec.timestamp)} · ${turns.length} turns · tap to expand</div>
                                 <div class="vm-meta" style="color:var(--text-primary);margin-top:2px">${preview}</div>
                             </div>
+                            ${rec.audioFile ? '<span style="font-size:1.2rem;opacity:0.6" title="Has audio recording">🔊</span>' : ''}
                         </div>
                         <div class="rec-detail" style="display:none;margin-top:0.5rem;padding-top:0.5rem;border-top:1px solid var(--border)">
                             ${initMsg}
-                            ${turns.length > 0 ? turns.map(t => `
-                                <div style="margin-bottom:0.4rem">
-                                    <div style="font-size:0.7rem;color:var(--accent)">👤 ${t.user || '(listening)'}</div>
-                                    <div style="font-size:0.7rem;color:var(--success)">🤖 ${t.assistant || ''}</div>
+                            ${audioPlayer}
+                            ${turns.length > 0 ? '<div style="margin-top:0.5rem;font-size:0.7rem;color:var(--text-muted);margin-bottom:0.3rem">Transcript:</div>' + turns.map(t => `
+                                <div style="margin-bottom:0.5rem;padding:0.4rem;background:rgba(0,0,0,0.2);border-radius:6px">
+                                    <div style="font-size:0.75rem;color:var(--accent);margin-bottom:2px">👤 ${t.user || '(listening)'}</div>
+                                    <div style="font-size:0.75rem;color:var(--success)">🤖 ${t.assistant || ''}</div>
                                 </div>
                             `).join('') : '<div class="vm-meta">Call ended before conversation started</div>'}
                         </div>

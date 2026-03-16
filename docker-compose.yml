@@ -51,6 +51,8 @@ services:
       - ./voice-app/config:/app/config
       # Voicemail Access (requires SSHFS mount on host)
       - ./voice-app/mounts/voicemail:/var/spool/asterisk/voicemail
+      # Call recordings (transcripts + audio)
+      - call-recordings:/app/recordings
     depends_on:
       - drachtio
       - freeswitch
@@ -89,3 +91,4 @@ volumes:
   whisper-models:
   tts-voices:
   tts-config:
+  call-recordings:
