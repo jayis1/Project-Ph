@@ -12,7 +12,9 @@ AI Phone gives your local AI a phone number through FreePBX:
 
 - **Inbound**: Call an extension and talk to your local AI
 - **Outbound**: Your server calls YOU with alerts, then has a conversation
-- **Mission Control**: Web dashboard at `http://<your-server-ip>:3030` to monitor status and initiate calls
+- **Streaming AI**: Responses stream sentence-by-sentence for natural pacing with thinking phrases and hold music
+- **Call Recordings**: Every call is automatically recorded and available in Mission Control
+- **Mission Control**: Web dashboard at `http://<your-server-ip>:3030` to monitor status, play recordings, and initiate calls
 
 ## How it works
 
@@ -23,7 +25,7 @@ AI Phone gives your local AI a phone number through FreePBX:
 | Component | Software |
 |-----------|----------|
 | PBX | [FreePBX](https://www.freepbx.org/) or any SIP provider |
-| LLM | [Ollama](https://ollama.com/) with a chat model (recommended: `qwen2.5:14b`) |
+| LLM | [Ollama](https://ollama.com/) with a chat model (default: `deepseek-r1:8b`) |
 | STT | Local Whisper server (e.g. [faster-whisper](https://github.com/SYSTRAN/faster-whisper) or [whisper.cpp](https://github.com/ggerganov/whisper.cpp)) |
 | TTS | Local TTS server (e.g. [OpenedAI Speech](https://github.com/matatonic/openedai-speech) or any OpenAI-compatible `/v1/audio/speech` endpoint) |
 | Runtime | Docker + Node.js 18+ |
@@ -56,7 +58,7 @@ ai-phone start
 | SIP Password | `mysecret` |
 | External IP | `172.16.1.163` |
 | Ollama API URL | `http://host.docker.internal:11434` |
-| Ollama Model | `qwen2.5:14b` |
+| Ollama Model | `deepseek-r1:8b` |
 | Local Whisper URL | `http://host.docker.internal:8080/v1` |
 | Local TTS URL | `http://host.docker.internal:5002/api/tts` |
 | Bot Name | `Trinity` |
@@ -80,6 +82,7 @@ A web dashboard is served at **port 3030** when the voice-app is running. It pro
 - **System Status** — live view of Drachtio (SIP) and FreeSWITCH (media) connectivity
 - **Device List** — all registered extensions and their voice configs
 - **Outbound Calls** — initiate outbound calls to any phone number from the browser
+- **Call Recordings** — playback and download recorded conversations
 - **Call History** — track completed, failed, and active calls in real-time
 - **Live Logs** — scrolling log view of all voice-app activity
 
@@ -110,13 +113,14 @@ curl -X POST http://localhost:3000/api/outbound-call \
 
 | Model | Size | RAM | Best for |
 |-------|------|-----|----------|
+| `deepseek-r1:8b` | 4.9GB | ~6GB | **Default** — fast with chain-of-thought reasoning |
 | `llama3.1:8b` | 4.7GB | ~6GB | Fast responses, basic conversation |
-| `qwen2.5:14b` | 9GB | ~12GB | **Recommended** — smart + fast enough for calls |
+| `qwen2.5:14b` | 9GB | ~12GB | Smart + fast enough for calls |
 | `gemma2:27b` | 16GB | ~20GB | Smartest, but slower (5-10s response time) |
 
 ```bash
 # Switch models
-ollama pull qwen2.5:14b
+ollama pull deepseek-r1:8b
 # Update OLLAMA_MODEL in your .env, then:
 docker rm -f voice-app; docker compose up -d --build voice-app
 ```
@@ -162,7 +166,7 @@ See [`.env.example`](.env.example) for all configurable variables. Key ones:
 |----------|---------|
 | `EXTERNAL_IP` | Server LAN IP for RTP routing |
 | `OLLAMA_API_URL` | URL to Ollama instance |
-| `OLLAMA_MODEL` | Chat model to use (default: `qwen2.5:14b`) |
+| `OLLAMA_MODEL` | Chat model to use (default: `deepseek-r1:8b`) |
 | `LOCAL_TTS_URL` | TTS API endpoint |
 | `LOCAL_STT_URL` | Whisper STT API endpoint |
 | `SIP_DOMAIN` | FreePBX server FQDN or IP |

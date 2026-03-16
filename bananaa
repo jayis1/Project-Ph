@@ -6,16 +6,16 @@
            v    |
 +==============================================+
 |             FreePBX (Asterisk)               |
-|  [ Inbound Route ]     [ Outbound  ]         |
+|  [ Inbound Route ]     [ Outbound Route ]    |
 |         |                     ^              |
 |         v                     |              |
 |    (SIP Trunk: 127.0.0.1:5070)               |
 +=========|=====================|==============+
           |                     |
-          | (SIP Signaling)     | (Provisioning Loop)
+          | (SIP Signaling)     | (Outbound API)
           v                     |
 +-------------------------------|----------------------------------------------------+
-|  🐳 Docker Compose Stack: "gemini-phone"                                           |
+|  🐳 Docker Compose Stack: "ai-phone"                                              |
 |                                                                                    |
 |  +--------------------+        (SIP)         +----------------------+              |
 |  |    Drachtio SRF    | <==================> |      Voice App       |              |
@@ -25,31 +25,31 @@
 |           ^                                             | (Control via ESL)        |
 |           | (Internal SIP/RTP)                          v                          |
 |           v                                  +----------------------+              |
-|  +--------------------+                      |   Media Controller   |              |
-|  |     FreeSWITCH     | <-----(RTP Audio)--> |  (Stream Handling)   |              |
+|  +--------------------+                      | Conversation Loop    |              |
+|  |     FreeSWITCH     | <-----(RTP Audio)--> |  (VAD / Streaming)   |              |
 |  |   (Media Server)   |                      +----------|-----------+              |
 |  +--------|-----------+                                 |                          |
-|           |                                             | (HTTP Streams)           |
-|           | (SSHFS Mount)                               v                          |
+|           |                                             | (WebSocket Audio Fork)   |
+|           | (Audio Fork)                                v                          |
 |           v                                  +----------------------+              |
-| [ /var/spool/asterisk ] <====(Files)=======> |    AI Orchestrator   |              |
-|    (Remote Voicemail)                        |  (STT / TTS / LLM)   |              |
+|  [ RTP Ports 30000-30100 ]                   |   AI Orchestrator    |              |
+|                                              | (STT + TTS + Ollama) |              |
 |                                              +----------|-----------+              |
 +---------------------------------------------------------|--------------------------+
                                                           |
-                                                          | (HTTP JSON)
-                                                          v
-                                               +----------------------+
-                                               |  Gemini API Server   |
-                                               | (Local Context/Mem)  |
-                                               +----------|-----------+
-                                                          |
-                                                          v
-                                                 ( 🧠 Google Gemini )
+                                          +---------------+---------------+
+                                          |               |               |
+                                          v               v               v
+                                +--------------+ +--------------+ +----------------+
+                                | 🗣️ Whisper   | | 🔊 OpenedAI  | | 🧠 Ollama      |
+                                |  STT Server  | |   Speech     | |  (Local LLM)   |
+                                | (faster-     | |  (Local TTS) | |  deepseek-r1   |
+                                |  whisper)    | |              | |                |
+                                +--------------+ +--------------+ +----------------+
 
 ======================================================================================
 Legend:
-  ===   Control/API Flow
-  ---   Media/Data Flow
+  ===   Control/API Flow (SIP, HTTP)
+  ---   Media/Data Flow (RTP, Audio, WebSocket)
   [ ]   Component
 ======================================================================================
