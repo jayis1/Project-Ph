@@ -87,11 +87,12 @@ async function query(prompt, options = {}) {
  * Query Ollama with streaming — yields complete sentences as they arrive
  * @param {string} prompt - The user prompt
  * @param {Object} options - Options (same as query())
+ * @param {AbortSignal} [options.signal] - AbortController signal to cancel the stream
  * @yields {string} Complete sentences as they're generated
  * @returns {AsyncGenerator<string>} Async generator of sentence strings
  */
 async function* queryStream(prompt, options = {}) {
-  const { callId, devicePrompt, timeout = 120 } = options;
+  const { callId, devicePrompt, timeout = 120, signal } = options;
   const timestamp = new Date().toISOString();
 
   // Initialize conversation history for this call if it doesn't exist
@@ -106,8 +107,9 @@ async function* queryStream(prompt, options = {}) {
 
   console.log(`[${timestamp}] OLLAMA Streaming query ${OLLAMA_API_URL} model=${OLLAMA_MODEL} call=${callId} (history: ${messages.length})`);
 
+  let response;
   try {
-    const response = await axios.post(
+    response = await axios.post(
       `${OLLAMA_API_URL}/api/chat`,
       {
         model: OLLAMA_MODEL,
@@ -117,15 +119,42 @@ async function* queryStream(prompt, options = {}) {
       {
         timeout: timeout * 1000,
         headers: { 'Content-Type': 'application/json' },
-        responseType: 'stream'
+        responseType: 'stream',
+        signal: signal  // AbortController signal — aborts the HTTP stream on call end
       }
     );
+  } catch (error) {
+    if (error.name === 'CanceledError' || error.name === 'AbortError' || signal?.aborted) {
+      console.log(`[${timestamp}] OLLAMA Stream aborted (call ended)`);
+      return;
+    }
+    if (error.code === 'ECONNREFUSED' || error.code === 'EHOSTUNREACH') {
+      console.warn(`[${timestamp}] OLLAMA Unreachable (${error.code}) — is Ollama running?`);
+      yield "I can't reach my AI backend right now. Please check that Ollama is running.";
+    } else if (error.code === 'ETIMEDOUT' || error.code === 'ECONNABORTED') {
+      console.error(`[${timestamp}] OLLAMA Stream timeout after ${timeout}s`);
+      yield "That request took too long. Please try a simpler question.";
+    } else {
+      console.error(`[${timestamp}] OLLAMA Stream error:`, error.message);
+      yield "I encountered an error. Please try again.";
+    }
+    return;
+  }
 
+  try {
     let buffer = '';
     let fullResponse = '';
+    let insideThink = false;  // Track deepseek-r1 <think> blocks
 
     // Process the NDJSON stream
     for await (const chunk of response.data) {
+      // Check abort between chunks
+      if (signal?.aborted) {
+        console.log(`[${timestamp}] OLLAMA Stream aborted mid-stream (call ended)`);
+        response.data.destroy();  // Kill the underlying socket
+        break;
+      }
+
       const lines = chunk.toString().split('\n').filter(l => l.trim());
 
       for (const line of lines) {
@@ -136,7 +165,24 @@ async function* queryStream(prompt, options = {}) {
           continue; // skip malformed lines
         }
 
-        const token = parsed.message?.content || '';
+        let token = parsed.message?.content || '';
+
+        // Filter out deepseek-r1 <think>...</think> reasoning blocks
+        if (token.includes('<think>')) {
+          insideThink = true;
+          token = token.replace(/<think>[\s\S]*/g, '');
+        }
+        if (insideThink) {
+          if (token.includes('</think>')) {
+            insideThink = false;
+            token = token.replace(/[\s\S]*<\/think>/g, '');
+          } else if (!token.includes('<think>')) {
+            token = '';  // Swallow tokens inside <think> block
+          }
+        }
+
+        if (!token) continue;
+
         buffer += token;
         fullResponse += token;
 
@@ -163,8 +209,8 @@ async function* queryStream(prompt, options = {}) {
       }
     }
 
-    // Flush anything remaining
-    if (buffer.trim().length > 2) {
+    // Flush anything remaining (if not aborted)
+    if (!signal?.aborted && buffer.trim().length > 2) {
       console.log(`[${timestamp}] OLLAMA Stream remainder (${buffer.trim().length} chars)`);
       yield buffer.trim();
     }
@@ -178,14 +224,10 @@ async function* queryStream(prompt, options = {}) {
     console.log(`[${timestamp}] OLLAMA Stream complete (${fullResponse.length} chars total)`);
 
   } catch (error) {
-    if (error.code === 'ECONNREFUSED' || error.code === 'EHOSTUNREACH') {
-      console.warn(`[${timestamp}] OLLAMA Unreachable (${error.code}) — is Ollama running?`);
-      yield "I can't reach my AI backend right now. Please check that Ollama is running.";
-    } else if (error.code === 'ETIMEDOUT' || error.code === 'ECONNABORTED') {
-      console.error(`[${timestamp}] OLLAMA Stream timeout after ${timeout}s`);
-      yield "That request took too long. Please try a simpler question.";
+    if (error.name === 'CanceledError' || error.name === 'AbortError' || signal?.aborted) {
+      console.log(`[${timestamp}] OLLAMA Stream aborted during read (call ended)`);
     } else {
-      console.error(`[${timestamp}] OLLAMA Stream error:`, error.message);
+      console.error(`[${timestamp}] OLLAMA Stream read error:`, error.message);
       yield "I encountered an error. Please try again.";
     }
   }

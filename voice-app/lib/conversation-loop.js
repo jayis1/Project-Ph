@@ -179,6 +179,7 @@ async function runConversationLoop(endpoint, dialog, callUuid, options) {
   let dtmfHandler = null;
   let callbackTarget = null; // Track immediate callback intent
   let scheduledCallbackInfo = null; // Track scheduled callback intent
+  let streamAbortController = null; // Abort AI stream on hangup
 
   // Enhance system prompt with caller info and callback capabilities
   // Only advertise callbacks if we have a real caller ID to call back
@@ -199,6 +200,10 @@ ${callbackInstructions}
   // Track when call ends to prevent operations on dead endpoints
   const onDialogDestroy = () => {
     callActive = false;
+    // Abort any in-progress AI stream immediately
+    if (streamAbortController) {
+      streamAbortController.abort();
+    }
     logger.info('Call ended (dialog destroyed)', { callUuid });
   };
 
@@ -424,7 +429,12 @@ ${callbackInstructions}
       logger.info('Querying AI (streaming)', { callUuid });
 
       try {
-        const stream = aiBridge.queryStream(aiPrompt, { callId: callUuid, devicePrompt: devicePrompt });
+        streamAbortController = new AbortController();
+        const stream = aiBridge.queryStream(aiPrompt, {
+          callId: callUuid,
+          devicePrompt: devicePrompt,
+          signal: streamAbortController.signal
+        });
         let sentenceCount = 0;
         let fillerTimer = null;
         let fillerIndex = 0;
@@ -490,6 +500,7 @@ ${callbackInstructions}
         if (fillerTimer) clearTimeout(fillerTimer);
 
         logger.info('AI stream complete', { callUuid, sentences: sentenceCount, totalLength: fullAiResponse.length });
+        streamAbortController = null;
 
       } catch (streamError) {
         logger.warn('Streaming failed, falling back to non-streaming', { callUuid, error: streamError.message });
