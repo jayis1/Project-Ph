@@ -474,11 +474,13 @@ ${callbackInstructions}
             fillerIndex++;
             logger.info('Playing filler phrase (AI slow)', { callUuid, phrase: filler });
             try {
-              // Stop hold music briefly for filler
+              // Generate TTS first (while hold music still plays — no silence gap)
+              const fillerUrl = await getCachedPhrase(filler, ttsService, voiceId);
+              if (!callActive) return;
+              // NOW stop hold music and play filler immediately
               if (musicPlaying) {
                 try { await endpoint.api('uuid_break', endpoint.uuid); } catch (e) { /* ignore */ }
               }
-              const fillerUrl = await getCachedPhrase(filler, ttsService, voiceId);
               if (callActive) await endpoint.play(fillerUrl);
               // Restart hold music after filler
               if (callActive) {
