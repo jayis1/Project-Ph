@@ -81,19 +81,14 @@ services:
     container_name: voxtral-tts
     restart: unless-stopped
     network_mode: host
+    shm_size: '4gb'
     command: >
       bash -c "pip install git+https://github.com/vllm-project/vllm-omni.git &&
       vllm serve mistralai/Voxtral-4B-TTS-2603 --omni --port 8000
-      --dtype half --gpu-memory-utilization 0.95"
+      --dtype float32 --device cpu"
     environment:
       - HUGGING_FACE_HUB_TOKEN=${HF_TOKEN:-}
-      - HSA_OVERRIDE_GFX_VERSION=${HSA_OVERRIDE_GFX_VERSION:-}
-    devices:
-      - /dev/kfd:/dev/kfd
-      - /dev/dri:/dev/dri
-    group_add:
-      - video
-      - render
+      - VLLM_TARGET_DEVICE=cpu
     volumes:
       - voxtral-models:/root/.cache/huggingface
     # Ports (for reference - host mode):
