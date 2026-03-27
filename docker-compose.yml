@@ -57,7 +57,7 @@ services:
       - drachtio
       - freeswitch
       - whisper-stt
-      - voxtral-tts
+      - kokoro-tts
     # Ports (for reference):
     # - 3000: HTTP API
     # - 3001: WebSocket for audio streaming
@@ -76,25 +76,17 @@ services:
     # Ports (for reference - host mode):
     # - 8080: OpenAI-compatible STT API (/v1/audio/transcriptions)
 
-  voxtral-tts:
-    image: vllm/vllm-openai:latest
-    container_name: voxtral-tts
+  kokoro-tts:
+    image: ghcr.io/remsky/kokoro-fastapi-cpu:latest
+    container_name: kokoro-tts
     restart: unless-stopped
     network_mode: host
-    shm_size: '4gb'
-    command: >
-      bash -c "pip install git+https://github.com/vllm-project/vllm-omni.git &&
-      vllm serve mistralai/Voxtral-4B-TTS-2603 --omni --port 8000
-      --dtype float32 --device cpu"
-    environment:
-      - HUGGING_FACE_HUB_TOKEN=${HF_TOKEN:-}
-      - VLLM_TARGET_DEVICE=cpu
     volumes:
-      - voxtral-models:/root/.cache/huggingface
+      - kokoro-models:/app/api/src/core/lib
     # Ports (for reference - host mode):
-    # - 8000: OpenAI-compatible TTS API (/v1/audio/speech)
+    # - 8880: OpenAI-compatible TTS API (/v1/audio/speech)
 
 volumes:
   whisper-models:
-  voxtral-models:
+  kokoro-models:
   call-recordings:

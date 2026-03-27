@@ -27,7 +27,7 @@ AI Phone gives your local AI a phone number through FreePBX:
 | PBX | [FreePBX](https://www.freepbx.org/) or any SIP provider |
 | LLM | [Ollama](https://ollama.com/) with a chat model (default: `deepseek-r1:8b`) |
 | STT | Local Whisper server (e.g. [faster-whisper](https://github.com/SYSTRAN/faster-whisper) or [whisper.cpp](https://github.com/ggerganov/whisper.cpp)) |
-| TTS | [Voxtral TTS](https://huggingface.co/mistralai/Voxtral-4B-TTS-2603) via vLLM-Omni (included in Docker Compose) — GPU with ≥16GB VRAM recommended |
+| TTS | [Kokoro TTS](https://github.com/remsky/Kokoro-FastAPI) via Kokoro-FastAPI (included in Docker Compose) — runs on CPU, no GPU needed |
 | Runtime | Docker + Node.js 18+ |
 
 > **No API keys needed.** No data ever leaves your machine.
@@ -140,16 +140,16 @@ docker run -p 8080:8000 fedirz/faster-whisper-server
 ```
 The voice app will POST audio to `/v1/audio/transcriptions` (OpenAI-compatible format).
 
-### Voxtral TTS (via vLLM-Omni)
+### Kokoro TTS (via Kokoro-FastAPI)
 Included in Docker Compose — starts automatically with `ai-phone start`.
 
-The `voxtral-tts` container runs `vllm serve mistralai/Voxtral-4B-TTS-2603 --omni` and exposes an OpenAI-compatible `/v1/audio/speech` endpoint on port 8000. First startup downloads the ~8GB model.
+The `kokoro-tts` container runs Kokoro-82M TTS and exposes an OpenAI-compatible `/v1/audio/speech` endpoint on port 8880. Runs fast on CPU (3-5x real-time speed).
 
 ```bash
 # Test TTS independently
-curl http://localhost:8000/v1/audio/speech \
+curl http://localhost:8880/v1/audio/speech \
   -X POST -H 'Content-Type: application/json' \
-  -d '{"input":"Hello world","model":"mistralai/Voxtral-4B-TTS-2603","voice":"professional_female","response_format":"wav"}' \
+  -d '{"input":"Hello world","model":"kokoro","voice":"af_heart","response_format":"wav"}' \
   --output test.wav
 ```
 
@@ -174,9 +174,7 @@ See [`.env.example`](.env.example) for all configurable variables. Key ones:
 | `EXTERNAL_IP` | Server LAN IP for RTP routing |
 | `OLLAMA_API_URL` | URL to Ollama instance |
 | `OLLAMA_MODEL` | Chat model to use (default: `deepseek-r1:8b`) |
-| `LOCAL_TTS_URL` | Voxtral TTS API endpoint |
-| `VOXTRAL_VOICE` | TTS voice preset (default: `professional_female`) |
-| `VOXTRAL_MODEL` | TTS model name (default: `mistralai/Voxtral-4B-TTS-2603`) |
+| `LOCAL_TTS_URL` | Kokoro TTS API endpoint (default: port 8880) |
 | `LOCAL_STT_URL` | Whisper STT API endpoint |
 | `SIP_DOMAIN` | FreePBX server FQDN or IP |
 | `SIP_REGISTRAR` | SIP registrar address |

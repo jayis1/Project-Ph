@@ -157,7 +157,7 @@ services:
       - drachtio
       - freeswitch
       - whisper-stt
-      - voxtral-tts
+      - kokoro-tts
 
   whisper-stt:
     image: fedirz/faster-whisper-server:latest-cpu
@@ -171,25 +171,17 @@ services:
     volumes:
       - whisper-models:/root/.cache/huggingface
 
-  voxtral-tts:
-    image: vllm/vllm-openai:latest
-    container_name: voxtral-tts
+  kokoro-tts:
+    image: ghcr.io/remsky/kokoro-fastapi-cpu:latest
+    container_name: kokoro-tts
     restart: unless-stopped
     network_mode: host
-    shm_size: '4gb'
-    command: >
-      bash -c "pip install git+https://github.com/vllm-project/vllm-omni.git &&
-      vllm serve mistralai/Voxtral-4B-TTS-2603 --omni --port 8000
-      --dtype float32 --device cpu"
-    environment:
-      - HUGGING_FACE_HUB_TOKEN=\${HF_TOKEN:-}
-      - VLLM_TARGET_DEVICE=cpu
     volumes:
-      - voxtral-models:/root/.cache/huggingface
+      - kokoro-models:/app/api/src/core/lib
 
 volumes:
   whisper-models:
-  voxtral-models:
+  kokoro-models:
 `;
 }
 
@@ -243,10 +235,8 @@ export function generateEnvFile(config) {
     '# Local STT (Whisper-compatible — served by whisper-stt container on port 8080)',
     `LOCAL_STT_URL=${config.api.localSttUrl || 'http://127.0.0.1:8080/v1'}`,
     '',
-    '# Voxtral TTS (served by voxtral-tts container on port 8000)',
-    `LOCAL_TTS_URL=${config.api.localTtsUrl || 'http://127.0.0.1:8000/v1/audio/speech'}`,
-    'VOXTRAL_MODEL=mistralai/Voxtral-4B-TTS-2603',
-    'VOXTRAL_VOICE=professional_female',
+    '# Kokoro TTS (served by kokoro-tts container on port 8880)',
+    `LOCAL_TTS_URL=${config.api.localTtsUrl || 'http://127.0.0.1:8880/v1/audio/speech'}`,
     '',
     '# Application Settings',
     `HTTP_PORT=${config.server.httpPort}`,
@@ -394,7 +384,7 @@ export async function stopContainers(services = []) {
  * @returns {Promise<void>}
  */
 async function forceRemoveStaleContainers() {
-  const knownContainers = ['drachtio', 'freeswitch', 'voice-app', 'whisper-stt', 'voxtral-tts', 'openedai-speech'];
+  const knownContainers = ['drachtio', 'freeswitch', 'voice-app', 'whisper-stt', 'kokoro-tts', 'voxtral-tts', 'openedai-speech'];
 
   for (const name of knownContainers) {
     try {

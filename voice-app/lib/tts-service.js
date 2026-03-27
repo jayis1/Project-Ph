@@ -1,8 +1,11 @@
 /**
- * Local TTS Service — Voxtral TTS via vLLM-Omni
- * Sends text to a local vLLM-Omni server running Voxtral 4B TTS.
+ * Local TTS Service — Kokoro TTS via Kokoro-FastAPI
+ * Sends text to a local Kokoro-FastAPI server running Kokoro-82M TTS.
  * OpenAI-compatible /v1/audio/speech endpoint.
- * No cloud API keys required — fully local inference.
+ * No cloud API keys required — fully local CPU inference.
+ *
+ * For GPU servers with Voxtral TTS, just change LOCAL_TTS_URL to point
+ * to the vLLM-Omni endpoint instead.
  */
 
 const axios = require('axios');
@@ -11,9 +14,8 @@ const path = require('path');
 const crypto = require('crypto');
 const logger = require('./logger');
 
-const LOCAL_TTS_URL = process.env.LOCAL_TTS_URL || 'http://127.0.0.1:8000/v1/audio/speech';
-const VOXTRAL_MODEL = process.env.VOXTRAL_MODEL || 'mistralai/Voxtral-4B-TTS-2603';
-const VOXTRAL_VOICE = process.env.VOXTRAL_VOICE || 'professional_female';
+const LOCAL_TTS_URL = process.env.LOCAL_TTS_URL || 'http://127.0.0.1:8880/v1/audio/speech';
+
 
 // Audio output directory
 let audioDir = path.join(__dirname, '../audio-temp');
@@ -54,7 +56,7 @@ function generateFilename(text) {
 async function generateSpeech(text, _voiceId) {
   const startTime = Date.now();
 
-  logger.info('Generating speech with Voxtral TTS', { textLength: text.length, url: LOCAL_TTS_URL });
+  logger.info('Generating speech with Kokoro TTS', { textLength: text.length, url: LOCAL_TTS_URL });
 
   let response;
 
@@ -67,9 +69,9 @@ async function generateSpeech(text, _voiceId) {
         url: LOCAL_TTS_URL,
         headers: { 'Content-Type': 'application/json' },
         data: {
-          model: VOXTRAL_MODEL,
+          model: 'kokoro',
           input: text,
-          voice: VOXTRAL_VOICE,
+          voice: 'af_heart',
           response_format: 'wav'
         },
         responseType: 'arraybuffer',
@@ -92,13 +94,13 @@ async function generateSpeech(text, _voiceId) {
     fs.writeFileSync(filepath, response.data);
 
     const latency = Date.now() - startTime;
-    logger.info('Voxtral TTS generation successful', { filename, fileSize: response.data.length, latency });
+    logger.info('Kokoro TTS generation successful', { filename, fileSize: response.data.length, latency });
 
     return `http://127.0.0.1:3000/audio-files/${filename}`;
 
   } catch (error) {
     const latency = Date.now() - startTime;
-    logger.error('Voxtral TTS generation failed', {
+    logger.error('Kokoro TTS generation failed', {
       error: error.message,
       latency,
       url: LOCAL_TTS_URL,
