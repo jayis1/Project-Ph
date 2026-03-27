@@ -165,7 +165,7 @@ services:
     restart: unless-stopped
     network_mode: host
     environment:
-      - WHISPER__MODEL=\${WHISPER_MODEL:-Systran/faster-whisper-large-v3-turbo}
+      - WHISPER__MODEL=\${WHISPER_MODEL:-Systran/faster-whisper-large-v3}
       - UVICORN_HOST=0.0.0.0
       - UVICORN_PORT=8080
     volumes:

@@ -87,9 +87,12 @@ router.get('/health', async (req, res) => {
 
     // TTS
     try {
-        const ttsUrl = process.env.LOCAL_TTS_URL || 'http://127.0.0.1:8000/v1/audio/speech';
+        const ttsUrl = process.env.LOCAL_TTS_URL || 'http://127.0.0.1:8880/v1/audio/speech';
         const baseUrl = ttsUrl.replace(/\/v1\/audio\/speech\/?$/, '').replace(/\/api\/tts\/?$/, '');
-        await axios.get(baseUrl, { timeout: 3000 });
+        // Try /v1/models (OpenAI-compat), then base URL root
+        await axios.get(`${baseUrl}/v1/models`, { timeout: 3000 }).catch(() =>
+            axios.get(baseUrl, { timeout: 3000 })
+        );
         checks.tts = { status: 'online' };
     } catch (e) {
         checks.tts = { status: 'offline', error: e.message };
