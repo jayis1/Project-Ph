@@ -500,10 +500,10 @@ ${callbackInstructions}
         let fillerTimer = null;
         let fillerIndex = 0;
 
-        // Filler timeout: first fires at 3s, subsequent at 7s
-        // Aggressive timing needed for deepseek-r1 which has a long <think> phase
-        const FILLER_FIRST_DELAY = 3000;
-        const FILLER_REPEAT_DELAY = 7000;
+        // Filler timeout: first fires at 8s, subsequent at 15s
+        // Longer delays let hold music play uninterrupted
+        const FILLER_FIRST_DELAY = 8000;
+        const FILLER_REPEAT_DELAY = 15000;
 
         const startFillerTimer = (delayMs) => {
           if (fillerTimer) clearTimeout(fillerTimer);
