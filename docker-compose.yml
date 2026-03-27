@@ -77,7 +77,7 @@ services:
     # - 8080: OpenAI-compatible STT API (/v1/audio/transcriptions)
 
   voxtral-tts:
-    image: vllm/vllm-openai:v0.18.0
+    image: vllm/vllm-openai:latest
     container_name: voxtral-tts
     restart: unless-stopped
     network_mode: host
@@ -87,15 +87,15 @@ services:
       --dtype half --gpu-memory-utilization 0.95"
     environment:
       - HUGGING_FACE_HUB_TOKEN=${HF_TOKEN:-}
+      - HSA_OVERRIDE_GFX_VERSION=${HSA_OVERRIDE_GFX_VERSION:-}
+    devices:
+      - /dev/kfd:/dev/kfd
+      - /dev/dri:/dev/dri
+    group_add:
+      - video
+      - render
     volumes:
       - voxtral-models:/root/.cache/huggingface
-    deploy:
-      resources:
-        reservations:
-          devices:
-            - driver: nvidia
-              count: 1
-              capabilities: [gpu]
     # Ports (for reference - host mode):
     # - 8000: OpenAI-compatible TTS API (/v1/audio/speech)
 
