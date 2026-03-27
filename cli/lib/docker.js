@@ -157,7 +157,7 @@ services:
       - drachtio
       - freeswitch
       - whisper-stt
-      - openedai-speech
+      - voxtral-tts
 
   whisper-stt:
     image: fedirz/faster-whisper-server:latest-cpu
@@ -171,19 +171,30 @@ services:
     volumes:
       - whisper-models:/root/.cache/huggingface
 
-  openedai-speech:
-    image: ghcr.io/matatonic/openedai-speech:latest
-    container_name: openedai-speech
+  voxtral-tts:
+    image: vllm/vllm-openai:v0.18.0
+    container_name: voxtral-tts
     restart: unless-stopped
     network_mode: host
+    command: >
+      bash -c "pip install git+https://github.com/vllm-project/vllm-omni.git &&
+      vllm serve mistralai/Voxtral-4B-TTS-2603 --omni --port 8000
+      --dtype half --gpu-memory-utilization 0.95"
+    environment:
+      - HUGGING_FACE_HUB_TOKEN=\${HF_TOKEN:-}
     volumes:
-      - tts-voices:/app/voices
-      - tts-config:/app/config
+      - voxtral-models:/root/.cache/huggingface
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]
 
 volumes:
   whisper-models:
-  tts-voices:
-  tts-config:
+  voxtral-models:
 `;
 }
 
@@ -237,8 +248,10 @@ export function generateEnvFile(config) {
     '# Local STT (Whisper-compatible — served by whisper-stt container on port 8080)',
     `LOCAL_STT_URL=${config.api.localSttUrl || 'http://127.0.0.1:8080/v1'}`,
     '',
-    '# Local TTS (served by openedai-speech container on port 8000)',
+    '# Voxtral TTS (served by voxtral-tts container on port 8000)',
     `LOCAL_TTS_URL=${config.api.localTtsUrl || 'http://127.0.0.1:8000/v1/audio/speech'}`,
+    'VOXTRAL_MODEL=mistralai/Voxtral-4B-TTS-2603',
+    'VOXTRAL_VOICE=professional_female',
     '',
     '# Application Settings',
     `HTTP_PORT=${config.server.httpPort}`,
@@ -386,7 +399,7 @@ export async function stopContainers(services = []) {
  * @returns {Promise<void>}
  */
 async function forceRemoveStaleContainers() {
-  const knownContainers = ['drachtio', 'freeswitch', 'voice-app', 'whisper-stt', 'openedai-speech'];
+  const knownContainers = ['drachtio', 'freeswitch', 'voice-app', 'whisper-stt', 'voxtral-tts', 'openedai-speech'];
 
   for (const name of knownContainers) {
     try {
