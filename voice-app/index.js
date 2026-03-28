@@ -333,11 +333,11 @@ function checkReadyState() {
 // Graceful shutdown
 function shutdown(signal) {
   console.log("\n[" + new Date().toISOString() + "] Received " + signal + ", shutting down...");
-  if (registrar) registrar.stop();
-  if (httpServer) httpServer.close();
-  if (audioForkServer) audioForkServer.stop();
-  if (mediaServer) mediaServer.disconnect();
-  srf.disconnect();
+  try { if (registrar) registrar.stop(); } catch (e) { /* ignore */ }
+  try { if (httpServer) httpServer.close(); } catch (e) { /* ignore */ }
+  try { if (audioForkServer) audioForkServer.stop(); } catch (e) { /* ignore */ }
+  try { if (mediaServer) mediaServer.disconnect(); } catch (e) { /* ignore */ }
+  try { if (drachtioConnected) srf.disconnect(); } catch (e) { /* ignore */ }
   setTimeout(function () { process.exit(0); }, 1000);
 }
 
