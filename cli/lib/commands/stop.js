@@ -7,7 +7,7 @@ import { stopContainers } from '../docker.js';
  * Stop command - Shut down all services
  * @returns {Promise<void>}
  */
-export async function stopCommand() {
+export async function stopCommand(services = []) {
   console.log(chalk.bold.cyan('\n⏹️  Stopping AI Phone\n'));
 
   // Check if configured
@@ -25,8 +25,8 @@ export async function stopCommand() {
   const spinner = ora('Stopping services...').start();
 
   try {
-    // Stop all Docker containers
-    await stopContainers();
+    // Stop Docker containers
+    await stopContainers(services);
 
     spinner.succeed('Services stopped successfully');
     console.log(chalk.bold.green('\n✓ AI Phone stopped\n'));

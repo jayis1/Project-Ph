@@ -6,7 +6,7 @@ import { getConfigPath } from '../config.js';
 
 const CONFIG_FILE = getConfigPath();
 
-export async function startCommand() {
+export async function startCommand(services = []) {
   console.log(chalk.cyan.bold('\n🚀 Starting AI Phone\n'));
 
   // Check if config exists
@@ -29,7 +29,10 @@ export async function startCommand() {
 
   try {
     console.log(chalk.cyan('📞 Starting services...'));
-    await startContainers(['drachtio', 'freeswitch', 'voice-app']);
+    const targetServices = services && services.length > 0 
+      ? services 
+      : ['drachtio', 'freeswitch', 'voice-app'];
+    await startContainers(targetServices);
 
     console.log(chalk.green('\n✅ Services started!\n'));
     console.log(chalk.cyan('Next steps:'));
