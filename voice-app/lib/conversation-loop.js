@@ -504,7 +504,15 @@ ${callbackInstructions}
 
       if (!callActive) break;
 
+      let fullAiResponse = '';
+
       // Handle the result
+      if (result.type === 'error') {
+        const errUrl = await ttsService.generateSpeech("My systems are taking slightly longer than usual to respond. Could you please bear with me and ask that again?", voiceId);
+        await endpoint.play(errUrl);
+        continue;
+      }
+      
       if (result.type === 'clarify') {
         const clarifyUrl = await ttsService.generateSpeech("Sorry, I didn't catch that. Could you repeat?", voiceId);
         await endpoint.play(clarifyUrl);
