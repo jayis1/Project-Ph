@@ -42,8 +42,7 @@ services:
     restart: unless-stopped
     network_mode: host
     env_file:
-      - path: .env
-        required: false
+      - .env
     volumes:
       # Audio files directory for TTS playback
       - ./voice-app/audio:/app/audio

@@ -170,8 +170,7 @@ services:`;
     restart: unless-stopped
     network_mode: host
     env_file:
-      - path: ${getEnvPath()}
-        required: false
+      - ${getEnvPath()}
     volumes:
       - ${config.paths.voiceApp}/audio:/app/audio
       - ${config.paths.voiceApp}/config:/app/config`;
