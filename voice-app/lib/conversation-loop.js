@@ -413,6 +413,7 @@ ${callbackInstructions}
       // ============================================
       // GOT-IT BEEP: Signal "I heard you, processing"
       // ============================================
+      let musicPlaying = false;
       try {
         if (callActive) await endpoint.play(GOTIT_BEEP_URL);
       } catch (e) {
@@ -420,7 +421,16 @@ ${callbackInstructions}
         logger.warn('Got-it beep failed', { callUuid, error: e.message });
       }
 
-      // Transcribe
+      // Start hold music IMMEDIATELY (plays during Whisper + AI processing)
+      if (callActive) {
+        logger.info('Playing hold music while processing', { callUuid });
+        endpoint.play(HOLD_MUSIC_URL).catch(e => {
+          logger.warn('Hold music failed', { callUuid, error: e.message });
+        });
+        musicPlaying = true;
+      }
+
+      // Transcribe (hold music plays during this)
       const transcript = await whisperClient.transcribe(utterance.audio, {
         format: 'pcm',
         sampleRate: 16000
@@ -430,6 +440,10 @@ ${callbackInstructions}
 
       // Handle empty transcription
       if (!transcript || transcript.trim().length < 2) {
+        // Stop hold music before speaking
+        if (musicPlaying) {
+          try { await endpoint.api('uuid_break', endpoint.uuid); musicPlaying = false; } catch (e) { /* ignore */ }
+        }
         const clarifyUrl = await ttsService.generateSpeech(
           "Sorry, I didn't catch that. Could you repeat?",
           voiceId
@@ -440,27 +454,21 @@ ${callbackInstructions}
 
       // Handle goodbye
       if (isGoodbye(transcript)) {
+        // Stop hold music before speaking
+        if (musicPlaying) {
+          try { await endpoint.api('uuid_break', endpoint.uuid); musicPlaying = false; } catch (e) { /* ignore */ }
+        }
         const byeUrl = await ttsService.generateSpeech("Goodbye! Call again anytime.", voiceId);
         if (callActive) await endpoint.play(byeUrl);
         break;
       }
 
       // ============================================
-      // THINKING FEEDBACK + STREAMING AI RESPONSE
+      // STREAMING AI RESPONSE (hold music still playing)
       // ============================================
 
-      // Check if call still active before thinking feedback
+      // Check if call still active
       if (!callActive) break;
-
-      // 1. Start hold music immediately (no thinking phrases — just music)
-      let musicPlaying = false;
-      if (callActive) {
-        logger.info('Playing hold music while processing', { callUuid });
-        endpoint.play(HOLD_MUSIC_URL).catch(e => {
-          logger.warn('Hold music failed', { callUuid, error: e.message });
-        });
-        musicPlaying = true;
-      }
 
       // 2. Build AI prompt with context
       let voicemailContext = '';
