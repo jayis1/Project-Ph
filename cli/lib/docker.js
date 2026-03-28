@@ -158,9 +158,12 @@ services:`;
       freeswitch
       -a 30000
       -z 30100
-      -nc -nonat -nf
+      -nonat -nf
     environment:
       - EXTERNAL_IP=${externalIp}
+    volumes:
+      - ${config.paths.voiceApp}/audio:/app/audio
+      - ${config.paths.voiceApp}/static:/app/static
 `;
   }
 
