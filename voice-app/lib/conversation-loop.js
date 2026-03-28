@@ -515,6 +515,9 @@ ${callbackInstructions}
           } catch (e) { /* ignore */ }
           musicPlaying = false;
 
+          // Brief settle delay — FreeSWITCH needs a moment after uuid_break
+          await new Promise(resolve => setTimeout(resolve, 300));
+
           // Play the complete response — single play call
           logger.info('Playing AI response', { callUuid });
           await endpoint.play(responseUrl);
