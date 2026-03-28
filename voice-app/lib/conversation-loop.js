@@ -506,8 +506,8 @@ ${callbackInstructions}
           // Generate TTS FIRST (while hold music still plays — no silence gap)
           const sentenceUrl = await ttsService.generateSpeech(sentence, voiceId);
 
-          // Stop hold music right before playing first sentence
-          if (sentenceCount === 1 && musicPlaying) {
+          // Stop hold music / any playing audio before speaking
+          if (musicPlaying) {
             try {
               await endpoint.api('uuid_break', endpoint.uuid);
               musicPlaying = false;
