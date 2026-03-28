@@ -158,7 +158,7 @@ services:`;
       freeswitch
       -a 30000
       -z 30100
-      -nc -nonat -nf
+      -nonat -nf
     environment:
       - EXTERNAL_IP=${externalIp}
 `;
