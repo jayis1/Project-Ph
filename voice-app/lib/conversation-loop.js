@@ -439,10 +439,10 @@ ${callbackInstructions}
         logger.info('Transcribed', { callUuid, transcript });
 
         if (!transcript || transcript.trim().length < 2) {
-          return { type: 'clarify' };
+          return { type: 'clarify', transcript: transcript || '' };
         }
         if (isGoodbye(transcript)) {
-          return { type: 'goodbye' };
+          return { type: 'goodbye', transcript };
         }
 
         // Build AI prompt
@@ -480,7 +480,7 @@ ${callbackInstructions}
         // Generate TTS for full response
         logger.info('Generating full response TTS', { callUuid, textLength: fullText.length });
         const url = await ttsService.generateSpeech(fullText, voiceId);
-        return { type: 'response', url, text: fullText, sentences: count };
+        return { type: 'response', url, text: fullText, sentences: count, transcript };
       })();
 
       // Play hold music (properly awaited — doesn't corrupt endpoint state)
@@ -531,7 +531,7 @@ ${callbackInstructions}
       conversationLog.push({
         turn: turnCount,
         timestamp: Date.now(),
-        user: transcript,
+        user: result?.transcript || '',
         assistant: fullAiResponse
       });
 
