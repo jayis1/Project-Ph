@@ -506,16 +506,17 @@ ${callbackInstructions}
           // Generate TTS FIRST (while hold music still plays — no silence gap)
           const sentenceUrl = await ttsService.generateSpeech(sentence, voiceId);
 
-          // Stop hold music / any playing audio before speaking
-          if (musicPlaying) {
-            try {
-              await endpoint.api('uuid_break', endpoint.uuid);
-              musicPlaying = false;
-            } catch (e) { /* ignore */ }
-          }
+          // Force-stop any playing audio before each sentence
+          try {
+            await endpoint.api('uuid_break', endpoint.uuid);
+          } catch (e) { /* ignore */ }
+          musicPlaying = false;
 
-          // Play immediately after stopping music — seamless transition
-          if (callActive) await endpoint.play(sentenceUrl);
+          // Play immediately — seamless transition
+          if (callActive) {
+            logger.info('Playing TTS sentence', { callUuid, sentenceNum: sentenceCount });
+            await endpoint.play(sentenceUrl);
+          }
         }
 
         logger.info('AI stream complete', { callUuid, sentences: sentenceCount, totalLength: fullAiResponse.length });
