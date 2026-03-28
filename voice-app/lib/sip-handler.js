@@ -61,9 +61,6 @@ function stripVideoFromSdp(sdp) {
   return result.join('\r\n');
 }
 
-// Track active calls to prevent duplicate conversation loops
-const activeCalls = new Map();
-
 /**
  * Handle incoming SIP INVITE
  */
@@ -101,20 +98,8 @@ async function handleInvite(req, res, options) {
 
     console.log('[' + new Date().toISOString() + '] CALL Connected: ' + callUuid);
 
-    // Deduplicate: only one conversation loop per caller at a time
-    const dedupeKey = callerId + '_' + (dialedExt || 'default');
-    if (activeCalls.has(dedupeKey)) {
-      console.log('[' + new Date().toISOString() + '] CALL Duplicate detected for ' + dedupeKey + ', skipping conversation loop');
-      dialog.on('destroy', function () {
-        if (endpoint) endpoint.destroy().catch(function () { });
-      });
-      return { endpoint, dialog, callerId, callUuid };
-    }
-    activeCalls.set(dedupeKey, callUuid);
-
     dialog.on('destroy', function () {
       console.log('[' + new Date().toISOString() + '] CALL Ended');
-      activeCalls.delete(dedupeKey);
       if (endpoint) endpoint.destroy().catch(function () { });
     });
 
