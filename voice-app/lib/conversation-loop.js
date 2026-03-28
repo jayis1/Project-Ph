@@ -452,27 +452,17 @@ ${callbackInstructions}
       // Check if call still active before thinking feedback
       if (!callActive) break;
 
-      // 1. Play random thinking phrase
-      const thinkingPhrase = getRandomThinkingPhrase();
-      logger.info('Playing thinking phrase', { callUuid, phrase: thinkingPhrase });
-      try {
-        const thinkingUrl = await getCachedPhrase(thinkingPhrase, ttsService, voiceId);
-        if (callActive) await endpoint.play(thinkingUrl);
-      } catch (e) {
-        if (!callActive) break;
-        logger.warn('Thinking phrase failed', { callUuid, error: e.message });
-      }
-
-      // 2. Start hold music in background
+      // 1. Start hold music immediately (no thinking phrases — just music)
       let musicPlaying = false;
       if (callActive) {
+        logger.info('Playing hold music while processing', { callUuid });
         endpoint.play(HOLD_MUSIC_URL).catch(e => {
           logger.warn('Hold music failed', { callUuid, error: e.message });
         });
         musicPlaying = true;
       }
 
-      // 3. Build AI prompt with context
+      // 2. Build AI prompt with context
       let voicemailContext = '';
       if (transcript.toLowerCase().includes('voicemail') || transcript.toLowerCase().includes('message')) {
         const messages = await voicemailService.listVoicemails(deviceConfig?.extension || '9000');
@@ -486,7 +476,7 @@ ${callbackInstructions}
       const aiPrompt = transcript + voicemailContext + systemContext;
       let fullAiResponse = '';
 
-      // 4. Stream AI response — TTS + play each sentence as it arrives
+      // 3. Stream AI response — TTS + play each sentence as it arrives
       logger.info('Querying AI (streaming)', { callUuid });
 
       try {
@@ -497,51 +487,9 @@ ${callbackInstructions}
           signal: streamAbortController.signal
         });
         let sentenceCount = 0;
-        let fillerTimer = null;
-        let fillerIndex = 0;
-
-        // Filler timeout: first fires at 8s, subsequent at 15s
-        // Longer delays let hold music play uninterrupted
-        const FILLER_FIRST_DELAY = 8000;
-        const FILLER_REPEAT_DELAY = 15000;
-
-        const startFillerTimer = (delayMs) => {
-          if (fillerTimer) clearTimeout(fillerTimer);
-          fillerTimer = setTimeout(async () => {
-            if (!callActive) return;
-            const filler = FILLER_PHRASES[fillerIndex % FILLER_PHRASES.length];
-            fillerIndex++;
-            logger.info('Playing filler phrase (AI slow)', { callUuid, phrase: filler });
-            try {
-              // Generate TTS first (while hold music still plays — no silence gap)
-              const fillerUrl = await getCachedPhrase(filler, ttsService, voiceId);
-              if (!callActive) return;
-              // NOW stop hold music and play filler immediately
-              if (musicPlaying) {
-                try { await endpoint.api('uuid_break', endpoint.uuid); } catch (e) { /* ignore */ }
-              }
-              if (callActive) await endpoint.play(fillerUrl);
-              // Restart hold music after filler
-              if (callActive) {
-                endpoint.play(HOLD_MUSIC_URL).catch(() => { });
-                musicPlaying = true;
-              }
-            } catch (e) {
-              logger.warn('Filler phrase failed', { callUuid, error: e.message });
-            }
-            // Set up next filler (longer interval)
-            startFillerTimer(FILLER_REPEAT_DELAY);
-          }, delayMs);
-        };
-
-        // Start the filler timer (short first delay)
-        startFillerTimer(FILLER_FIRST_DELAY);
 
         for await (const sentence of stream) {
           if (!callActive) break;
-
-          // Cancel filler timer on each sentence
-          if (fillerTimer) clearTimeout(fillerTimer);
 
           sentenceCount++;
           fullAiResponse += (sentenceCount > 1 ? ' ' : '') + sentence;
@@ -558,13 +506,7 @@ ${callbackInstructions}
           // Generate TTS and play this sentence immediately
           const sentenceUrl = await ttsService.generateSpeech(sentence, voiceId);
           if (callActive) await endpoint.play(sentenceUrl);
-
-          // Restart filler timer for next sentence
-          startFillerTimer(FILLER_REPEAT_DELAY);
         }
-
-        // Clear filler timer
-        if (fillerTimer) clearTimeout(fillerTimer);
 
         logger.info('AI stream complete', { callUuid, sentences: sentenceCount, totalLength: fullAiResponse.length });
         streamAbortController = null;
