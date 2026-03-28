@@ -421,13 +421,17 @@ ${callbackInstructions}
         logger.warn('Got-it beep failed', { callUuid, error: e.message });
       }
 
-      // Start hold music IMMEDIATELY (plays during Whisper + AI processing)
+      // Start hold music via uuid_broadcast (doesn't corrupt endpoint.play state)
       if (callActive) {
         logger.info('Playing hold music while processing', { callUuid });
-        endpoint.play(HOLD_MUSIC_URL).catch(e => {
-          logger.warn('Hold music failed', { callUuid, error: e.message });
-        });
-        musicPlaying = true;
+        try {
+          // uuid_broadcast plays audio without interfering with endpoint.play()
+          const musicPath = HOLD_MUSIC_URL.replace('http://127.0.0.1:3000/', '/app/');
+          await endpoint.api('uuid_broadcast', `${endpoint.uuid} ${musicPath} aleg`);
+          musicPlaying = true;
+        } catch (e) {
+          logger.warn('Hold music broadcast failed', { callUuid, error: e.message });
+        }
       }
 
       // Transcribe (hold music plays during this)
@@ -440,7 +444,6 @@ ${callbackInstructions}
 
       // Handle empty transcription
       if (!transcript || transcript.trim().length < 2) {
-        // Stop hold music before speaking
         if (musicPlaying) {
           try { await endpoint.api('uuid_break', endpoint.uuid); musicPlaying = false; } catch (e) { /* ignore */ }
         }
@@ -454,7 +457,6 @@ ${callbackInstructions}
 
       // Handle goodbye
       if (isGoodbye(transcript)) {
-        // Stop hold music before speaking
         if (musicPlaying) {
           try { await endpoint.api('uuid_break', endpoint.uuid); musicPlaying = false; } catch (e) { /* ignore */ }
         }
@@ -484,7 +486,7 @@ ${callbackInstructions}
       const aiPrompt = transcript + voicemailContext + systemContext;
       let fullAiResponse = '';
 
-      // 3. Stream AI response — TTS + play each sentence as it arrives
+      // 3. Stream AI response — collect text while music plays
       logger.info('Querying AI (streaming)', { callUuid });
 
       try {
@@ -504,21 +506,19 @@ ${callbackInstructions}
           logger.info('Stream chunk', { callUuid, num: sentenceCount, text: sentence.substring(0, 80) });
         }
 
-        // Phase 2: Generate ONE TTS for the full response, then play
+        // Phase 2: Generate TTS, stop music, play
         if (callActive && fullAiResponse.trim().length > 0) {
           logger.info('Generating full response TTS', { callUuid, textLength: fullAiResponse.length });
           const responseUrl = await ttsService.generateSpeech(fullAiResponse, voiceId);
 
           // Stop hold music
-          try {
-            await endpoint.api('uuid_break', endpoint.uuid);
-          } catch (e) { /* ignore */ }
-          musicPlaying = false;
+          if (musicPlaying) {
+            try { await endpoint.api('uuid_break', endpoint.uuid); } catch (e) { /* ignore */ }
+            musicPlaying = false;
+            await new Promise(resolve => setTimeout(resolve, 200));
+          }
 
-          // Brief settle delay — FreeSWITCH needs a moment after uuid_break
-          await new Promise(resolve => setTimeout(resolve, 300));
-
-          // Play the complete response — single play call
+          // Play the complete response
           logger.info('Playing AI response', { callUuid });
           await endpoint.play(responseUrl);
         }
