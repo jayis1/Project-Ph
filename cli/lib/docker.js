@@ -132,6 +132,11 @@ services:
     container_name: freeswitch
     restart: unless-stopped
     network_mode: host
+    security_opt:
+      - seccomp:unconfined
+    cap_add:
+      - IPC_LOCK
+      - SYS_NICE
     command: >
       freeswitch -nonat
       --sip-port 5080
