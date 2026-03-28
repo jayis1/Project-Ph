@@ -169,7 +169,7 @@ services:
       - kokoro-tts
 
   whisper-stt:
-    image: fedirz/faster-whisper-server:latest-cpu
+    image: fedirz/faster-whisper-server:latest-cuda
     container_name: whisper-stt
     restart: unless-stopped
     network_mode: host
@@ -179,14 +179,28 @@ services:
       - UVICORN_PORT=8080
     volumes:
       - whisper-models:/root/.cache/huggingface
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]
 
   kokoro-tts:
-    image: ghcr.io/remsky/kokoro-fastapi-cpu:latest
+    image: ghcr.io/remsky/kokoro-fastapi-gpu:latest
     container_name: kokoro-tts
     restart: unless-stopped
     network_mode: host
     volumes:
       - kokoro-models:/app/api/src/core/lib
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]
 
 volumes:
   whisper-models:
