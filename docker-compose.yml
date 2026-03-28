@@ -23,7 +23,7 @@ services:
     restart: unless-stopped
     network_mode: host
     command: >
-      freeswitch -a 30000 -z 30100 -nonat -nf
+      freeswitch -a 30000 -z 30100 -nc -nonat -nf
     environment:
       # CRITICAL: Set this to your server's LAN IP
       # This IP goes into SDP packets so the PBX knows where to send audio
