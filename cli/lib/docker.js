@@ -156,6 +156,7 @@ services:`;
       - SYS_NICE
     command: >
       freeswitch
+      -nc
       -a 30000
       -z 30100
       -nonat -nf
