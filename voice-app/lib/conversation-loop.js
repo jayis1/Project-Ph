@@ -495,34 +495,29 @@ ${callbackInstructions}
           signal: streamAbortController.signal
         });
         let sentenceCount = 0;
-        const ttsUrls = [];  // Collect all TTS audio URLs
 
-        // Phase 1: Generate all TTS while hold music plays uninterrupted
+        // Phase 1: Collect entire AI response text (hold music plays uninterrupted)
         for await (const sentence of stream) {
           if (!callActive) break;
-
           sentenceCount++;
           fullAiResponse += (sentenceCount > 1 ? ' ' : '') + sentence;
-          logger.info('Stream sentence', { callUuid, sentenceNum: sentenceCount, text: sentence.substring(0, 80) });
-
-          // Generate TTS in background (hold music keeps playing)
-          const sentenceUrl = await ttsService.generateSpeech(sentence, voiceId);
-          ttsUrls.push(sentenceUrl);
+          logger.info('Stream chunk', { callUuid, num: sentenceCount, text: sentence.substring(0, 80) });
         }
 
-        logger.info('All TTS ready', { callUuid, sentences: ttsUrls.length });
+        // Phase 2: Generate ONE TTS for the full response, then play
+        if (callActive && fullAiResponse.trim().length > 0) {
+          logger.info('Generating full response TTS', { callUuid, textLength: fullAiResponse.length });
+          const responseUrl = await ttsService.generateSpeech(fullAiResponse, voiceId);
 
-        // Phase 2: Stop hold music and play all sentences sequentially
-        if (callActive && ttsUrls.length > 0) {
+          // Stop hold music
           try {
             await endpoint.api('uuid_break', endpoint.uuid);
           } catch (e) { /* ignore */ }
           musicPlaying = false;
 
-          for (const url of ttsUrls) {
-            if (!callActive) break;
-            await endpoint.play(url);
-          }
+          // Play the complete response — single play call
+          logger.info('Playing AI response', { callUuid });
+          await endpoint.play(responseUrl);
         }
 
         logger.info('AI stream complete', { callUuid, sentences: sentenceCount, totalLength: fullAiResponse.length });
