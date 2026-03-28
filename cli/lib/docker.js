@@ -108,12 +108,23 @@ export function generateDockerCompose(config) {
   const freeswitchImage = 'drachtio/drachtio-freeswitch-mrf:latest';
   const platformLine = isPiMode ? '\n    platform: linux/arm64' : '';
 
-  return `
+  const components = config.components || ['drachtio', 'freeswitch', 'voice-app', 'whisper-stt', 'kokoro-tts'];
+  const has = (comp) => components.includes(comp);
+
+  const dependsOnString = components
+    .filter(c => c !== 'voice-app') // voice-app depends on others
+    .map(c => `      - ${c}`)
+    .join('\n');
+
+  let yaml = `
 # CRITICAL: All containers must use network_mode: host
 # Docker bridge networking causes FreeSWITCH to advertise internal IPs
 # in SDP, making RTP unreachable from external callers.
 
-services:
+services:`;
+
+  if (has('drachtio')) {
+    yaml += `
   drachtio:
     image: ${drachtioImage}${platformLine}
     container_name: drachtio
@@ -126,7 +137,11 @@ services:
       --secret \${DRACHTIO_SECRET}
       --port 9022
       --loglevel info
+`;
+  }
 
+  if (has('freeswitch')) {
+    yaml += `
   freeswitch:
     image: ${freeswitchImage}${platformLine}
     container_name: freeswitch
@@ -148,7 +163,11 @@ services:
     # RTP ports 30000-30100 avoid conflict with SBC (uses 20000-20099)
     environment:
       - EXTERNAL_IP=${externalIp}
+`;
+  }
 
+  if (has('voice-app')) {
+    yaml += `
   voice-app:
     build: 
       context: ${config.paths.voiceApp}
@@ -161,13 +180,18 @@ services:
         required: false
     volumes:
       - ${config.paths.voiceApp}/audio:/app/audio
-      - ${config.paths.voiceApp}/config:/app/config
-    depends_on:
-      - drachtio
-      - freeswitch
-      - whisper-stt
-      - kokoro-tts
+      - ${config.paths.voiceApp}/config:/app/config`;
 
+    if (dependsOnString) {
+      yaml += `
+    depends_on:
+${dependsOnString}`;
+    }
+    yaml += '\n';
+  }
+
+  if (has('whisper-stt')) {
+    yaml += `
   whisper-stt:
     image: fedirz/faster-whisper-server:latest-cuda
     container_name: whisper-stt
@@ -186,7 +210,11 @@ services:
             - driver: nvidia
               count: all
               capabilities: [gpu]
+`;
+  }
 
+  if (has('kokoro-tts')) {
+    yaml += `
   kokoro-tts:
     image: ghcr.io/remsky/kokoro-fastapi-gpu:latest
     container_name: kokoro-tts
@@ -201,11 +229,16 @@ services:
             - driver: nvidia
               count: all
               capabilities: [gpu]
+`;
+  }
 
+  yaml += `
 volumes:
   whisper-models:
   kokoro-models:
 `;
+
+  return yaml;
 }
 
 /**
