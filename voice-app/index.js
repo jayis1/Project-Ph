@@ -102,7 +102,12 @@ console.log("  - WS Port:     " + config.ws_port);
 console.log("  - Audio Dir:   " + config.audio_dir);
 console.log("  - Mix Type:    " + (process.env.AUDIO_FORK_MIXTYPE || "L") + " (capture direction)");
 console.log("\n[DEVICES] Loaded " + Object.keys(deviceRegistry.getAllDevices()).length + " device extensions");
-console.log("\nWaiting for connections...\n");
+console.log("\nStarting HTTP server and Mission Control...\n");
+
+// Start HTTP server + Mission Control immediately (doesn't need SIP)
+initializeHttpAndDashboard();
+
+console.log("\nConnecting to remote services...\n");
 
 // Connect to drachtio
 srf.connect({
@@ -184,8 +189,8 @@ connectWithRetry(connectToFreeswitch, {
     process.exit(1);
   });
 
-// Initialize servers
-function initializeServers() {
+// Initialize HTTP server + Mission Control immediately (no SIP dependency)
+function initializeHttpAndDashboard() {
   var fs = require("fs");
   if (!fs.existsSync(config.audio_dir)) {
     fs.mkdirSync(config.audio_dir, { recursive: true });
@@ -208,21 +213,6 @@ function initializeServers() {
   // TTS service
   ttsService.setAudioDir(config.audio_dir);
   console.log("[" + new Date().toISOString() + "] TTS Service configured");
-
-  // ========== OUTBOUND CALLING ROUTES ==========
-  setupOutboundRoutes({
-    srf: srf,
-    mediaServer: mediaServer,
-    deviceRegistry: deviceRegistry,  // Required for device lookup
-    audioForkServer: audioForkServer,
-    whisperClient: whisperClient,
-    aiBridge: aiBridge,
-    ttsService: ttsService,
-    wsPort: config.ws_port
-  });
-
-  httpServer.app.use("/api", outboundRouter);
-  console.log("[" + new Date().toISOString() + "] OUTBOUND Calling API enabled");
 
   // ========== QUERY API ROUTES ==========
   setupQueryRoutes({
@@ -272,7 +262,7 @@ function initializeServers() {
   httpServer.app.use("/api", systemRouter);
   console.log("[" + new Date().toISOString() + "] SYSTEM API enabled (/api/system-stats, /api/health, /api/voicemails)");
 
-  // Start Mission Control
+  // Start Mission Control immediately — dashboard is always available
   try {
     const { startMissionControl } = require("./lib/mission-control");
     startMissionControl(3030);
@@ -289,6 +279,24 @@ function initializeServers() {
   }, 60 * 1000);
 }
 
+// Initialize SIP-dependent routes (needs mediaServer connection)
+function initializeSipRoutes() {
+  // ========== OUTBOUND CALLING ROUTES ==========
+  setupOutboundRoutes({
+    srf: srf,
+    mediaServer: mediaServer,
+    deviceRegistry: deviceRegistry,
+    audioForkServer: audioForkServer,
+    whisperClient: whisperClient,
+    aiBridge: aiBridge,
+    ttsService: ttsService,
+    wsPort: config.ws_port
+  });
+
+  httpServer.app.use("/api", outboundRouter);
+  console.log("[" + new Date().toISOString() + "] OUTBOUND Calling API enabled");
+}
+
 // Check ready state
 function checkReadyState() {
   if (drachtioConnected && freeswitchConnected && !isReady) {
@@ -296,7 +304,7 @@ function checkReadyState() {
     console.log("\n[" + new Date().toISOString() + "] READY Voice interface is fully connected!");
     console.log("=".repeat(64) + "\n");
 
-    initializeServers();
+    initializeSipRoutes();
 
     // Register SIP INVITE handler
     srf.invite(function (req, res) {
