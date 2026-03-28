@@ -483,8 +483,11 @@ ${callbackInstructions}
         return { type: 'response', url, text: fullText, sentences: count, transcript };
       })();
 
-      // DIAGNOSTIC: No hold music — testing if TTS plays fully without play/break interference
-      logger.info('Processing (no hold music for diagnostic)', { callUuid });
+      // Play hold music while processing
+      logger.info('Playing hold music while processing', { callUuid });
+      const musicPromise = callActive
+        ? endpoint.play(HOLD_MUSIC_URL).catch(() => {})
+        : Promise.resolve();
 
       // Wait for processing to complete
       let result;
@@ -494,6 +497,11 @@ ${callbackInstructions}
         logger.warn('Processing error', { callUuid, error: err.message });
         result = { type: 'error' };
       }
+
+      // Stop hold music
+      try { await endpoint.api('uuid_break', endpoint.uuid); } catch (e) { /* ignore */ }
+      await musicPromise.catch(() => {});
+      await new Promise(resolve => setTimeout(resolve, 100));
 
       if (!callActive) break;
 
@@ -512,6 +520,8 @@ ${callbackInstructions}
         fullAiResponse = result.text;
         logger.info('Playing AI response', { callUuid, sentences: result.sentences, textLength: result.text.length });
         await endpoint.play(result.url);
+        // RTP drain delay — last packets need time to reach the caller's phone
+        await new Promise(resolve => setTimeout(resolve, 700));
         logger.info('AI responded', { callUuid });
       }
 
