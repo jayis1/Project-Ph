@@ -286,8 +286,8 @@ ${callbackInstructions}
       return;
     }
 
-    // Start audio fork for entire call
-    const wsUrl = `ws://${VOICE_APP_HOST}:${wsPort}/${encodeURIComponent(callUuid)}`;
+    // Start audio fork for entire call (127.0.0.1 works securely due to Shared Network Mode)
+    const wsUrl = `ws://127.0.0.1:${wsPort}/${encodeURIComponent(callUuid)}`;
 
     // Use try-catch for expectSession to handle race conditions
     let sessionPromise;
