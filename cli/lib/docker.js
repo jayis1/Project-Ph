@@ -105,7 +105,7 @@ export function generateDockerCompose(config) {
   // Determine if running on Pi (ARM64) - use specific versions with platform
   const isPiMode = config.deployment && config.deployment.mode === 'pi-split';
   const drachtioImage = isPiMode ? 'drachtio/drachtio-server:0.9.4' : 'drachtio/drachtio-server:latest';
-  const freeswitchImage = 'drachtio/drachtio-freeswitch-mrf:latest';
+  const freeswitchImage = 'drachtio/drachtio-freeswitch-mrf:0.9.0';
   const platformLine = isPiMode ? '\n    platform: linux/arm64' : '';
 
   const components = config.components || ['drachtio', 'freeswitch', 'voice-app', 'whisper-stt', 'kokoro-tts'];
@@ -152,15 +152,7 @@ services:`;
     cap_add:
       - IPC_LOCK
       - SYS_NICE
-    command: >
-      freeswitch -nonat
-      --sip-port 5080
-      --rtp-range-start 30000
-      --rtp-range-end 30100
-      --ext-rtp-ip \${EXTERNAL_IP}
-      --ext-sip-ip \${EXTERNAL_IP}
-      --advertise-external-ip
-    # RTP ports 30000-30100 avoid conflict with SBC (uses 20000-20099)
+    command: ["freeswitch", "-nonat"]
     environment:
       - EXTERNAL_IP=${externalIp}
 `;

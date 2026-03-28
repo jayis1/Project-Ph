@@ -81,14 +81,33 @@ ai-phone logs               # Tail logs
 
 ## Advanced: Distributed Multi-Node Architecture
 
+```text
+┌─────────────────────────┐           ┌────────────────────────────┐
+│ Machine 3 (LXC AI)      │           │ Machine 4 (LXC Voice)      │
+│ ⟷ Drachtio (:5070)      │ ⟷ (SIP) ⟷ │ Voice App (:3000)          │
+│                         │           │  ↑ FreeSWITCH              │
+│    Whisper (:8080) ⟵────┼───(HTTP)──┤  │ Audio IN                │
+│    Kokoro  (:8880) ⟵────┼───(HTTP)──┤  ↓ Audio OUT               │
+└─────────────────────────┘           └──────────────┬─────────────┘
+                                                     │
+                                                 (HTTP API)
+                                                     │
+                                                     ▼
+                                          ┌─────────────────────────┐
+                                          │ Machine 2 (Ollama)      │
+                                          │ ⟷ gemma3:12b            │
+                                          └─────────────────────────┘
+```
+
 The AI Phone is designed as a suite of decoupled microservices. You can run all 5 containers on one machine, or split them across a Proxmox cluster to isolate the heavy GPU/AI processing from your PBX SIP routing.
 
 During `ai-phone setup`, you will see an **Infrastructure Deployment** prompt. Use the `Spacebar` to Check/Uncheck the exact containers you want running on that specific Linux instance.
 
-**Example 3-Machine Split:**
+**Example 4-Machine Split:**
 1. **Machine 1 (Asterisk/FreePBX)**: Doesn't run docker, just your PBX.
-2. **Machine 2 (GPU Server)**: Run `ai-phone setup` and only check `Speech-to-Text` and `Text-to-Speech`.
-3. **Machine 3 (The Brain)**: Run `ai-phone setup` (point the TTS/STT URLs to Machine 2), and only check `SIP Signaling`, `Media Engine`, and `Voice App`.
+2. **Machine 2 (GPU Server)**: Pure Ollama server.
+3. **Machine 3 (The Brain)**: Run `ai-phone setup` and only check `SIP Signaling (Drachtio)`, `Speech-to-Text`, and `Text-to-Speech`.
+4. **Machine 4 (Voice Engine)**: Run `ai-phone setup` and only check `Media Engine (FreeSWITCH)` and `Voice App`.
 
 ## Mission Control
 
