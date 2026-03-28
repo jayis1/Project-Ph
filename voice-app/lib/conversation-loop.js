@@ -495,7 +495,10 @@ ${callbackInstructions}
           fullAiResponse += (sentenceCount > 1 ? ' ' : '') + sentence;
           logger.info('Stream sentence', { callUuid, sentenceNum: sentenceCount, text: sentence.substring(0, 80) });
 
-          // Stop hold music before first sentence
+          // Generate TTS FIRST (while hold music still plays — no silence gap)
+          const sentenceUrl = await ttsService.generateSpeech(sentence, voiceId);
+
+          // Stop hold music right before playing first sentence
           if (sentenceCount === 1 && musicPlaying) {
             try {
               await endpoint.api('uuid_break', endpoint.uuid);
@@ -503,8 +506,7 @@ ${callbackInstructions}
             } catch (e) { /* ignore */ }
           }
 
-          // Generate TTS and play this sentence immediately
-          const sentenceUrl = await ttsService.generateSpeech(sentence, voiceId);
+          // Play immediately after stopping music — seamless transition
           if (callActive) await endpoint.play(sentenceUrl);
         }
 
