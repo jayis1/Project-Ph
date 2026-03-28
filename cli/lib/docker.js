@@ -122,6 +122,7 @@ services:
     command: >
       drachtio
       --contact "sip:*:${drachtioPort};transport=tcp,udp"
+      --external-ip \${EXTERNAL_IP}
       --secret \${DRACHTIO_SECRET}
       --port 9022
       --loglevel info
@@ -132,10 +133,13 @@ services:
     restart: unless-stopped
     network_mode: host
     command: >
-      freeswitch
+      freeswitch -nonat
       --sip-port 5080
       --rtp-range-start 30000
       --rtp-range-end 30100
+      --ext-rtp-ip \${EXTERNAL_IP}
+      --ext-sip-ip \${EXTERNAL_IP}
+      --advertise-external-ip
     # RTP ports 30000-30100 avoid conflict with SBC (uses 20000-20099)
     environment:
       - EXTERNAL_IP=${externalIp}
