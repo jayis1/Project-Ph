@@ -610,8 +610,11 @@ ${callbackInstructions}
   } finally {
     logger.info('Conversation loop cleanup', { callUuid });
 
-    // Stop audio recording
-    if (audioRecordingPath) {
+    // Only stop audio recording if we had real interactions
+    // (prevents the second SIP leg's cleanup from disrupting the first leg's audio)
+    const hadInteraction = conversationLog.length > 0;
+
+    if (audioRecordingPath && hadInteraction) {
       try {
         await endpoint.api('uuid_record', `${endpoint.uuid} stop ${audioRecordingPath}`);
         logger.info('Audio recording stopped', { callUuid, path: audioRecordingPath });
