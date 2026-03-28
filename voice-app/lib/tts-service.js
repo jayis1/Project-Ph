@@ -14,6 +14,8 @@ const path = require('path');
 const crypto = require('crypto');
 const logger = require('./logger');
 
+const { execSync } = require('child_process');
+
 const LOCAL_TTS_URL = process.env.LOCAL_TTS_URL || 'http://127.0.0.1:8880/v1/audio/speech';
 
 
@@ -90,11 +92,25 @@ async function generateSpeech(text, _voiceId) {
     }
 
     const filename = generateFilename(text);
+    const rawPath = path.join(audioDir, 'raw_' + filename);
     const filepath = path.join(audioDir, filename);
-    fs.writeFileSync(filepath, response.data);
+
+    // Save raw TTS output (24kHz from Kokoro GPU)
+    fs.writeFileSync(rawPath, response.data);
+
+    // Resample to 8kHz/16-bit/mono for FreeSWITCH telephony
+    try {
+      execSync(`ffmpeg -y -i "${rawPath}" -ar 8000 -ac 1 -sample_fmt s16 "${filepath}" 2>/dev/null`);
+      fs.unlinkSync(rawPath); // Clean up raw file
+    } catch (e) {
+      // Fallback: use raw file if ffmpeg fails
+      logger.warn('ffmpeg resample failed, using raw audio', { error: e.message });
+      fs.renameSync(rawPath, filepath);
+    }
 
     const latency = Date.now() - startTime;
-    logger.info('Kokoro TTS generation successful', { filename, fileSize: response.data.length, latency });
+    const stats = fs.statSync(filepath);
+    logger.info('Kokoro TTS generation successful', { filename, fileSize: stats.size, latency });
 
     return `http://127.0.0.1:3000/audio-files/${filename}`;
 
