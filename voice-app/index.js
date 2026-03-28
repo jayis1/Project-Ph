@@ -270,8 +270,9 @@ function initializeHttpAndDashboard() {
     console.error("Failed to start mission control:", err.message);
   }
 
-  // Finalize HTTP server
-  httpServer.finalize();
+  // NOTE: Do NOT call httpServer.finalize() here!
+  // The outbound routes are added later in initializeSipRoutes(),
+  // and finalize() adds the 404 catch-all handler which must come LAST.
 
   // Cleanup old files periodically
   setInterval(function () {
@@ -295,6 +296,10 @@ function initializeSipRoutes() {
 
   httpServer.app.use("/api", outboundRouter);
   console.log("[" + new Date().toISOString() + "] OUTBOUND Calling API enabled");
+
+  // Now that ALL routes are registered, add the 404 catch-all handler
+  httpServer.finalize();
+  console.log("[" + new Date().toISOString() + "] HTTP server finalized with 404/error handlers");
 }
 
 // Check ready state
