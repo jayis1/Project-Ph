@@ -483,11 +483,14 @@ ${callbackInstructions}
         return { type: 'response', url, text: fullText, sentences: count, transcript };
       })();
 
-      // Play hold music (properly awaited — doesn't corrupt endpoint state)
+      // Start hold music via uuid_displace (background audio layer — doesn't touch endpoint.play state)
+      const MUSIC_FILE = '/app/static/hold-music.wav';
       logger.info('Playing hold music while processing', { callUuid });
-      const musicPromise = callActive
-        ? endpoint.play(HOLD_MUSIC_URL).catch(() => {})
-        : Promise.resolve();
+      try {
+        await endpoint.api('uuid_displace', `${endpoint.uuid} start ${MUSIC_FILE} 0 mux`);
+      } catch (e) {
+        logger.warn('Hold music displace failed', { callUuid, error: e.message });
+      }
 
       // Wait for processing to complete (music plays during this)
       let result;
@@ -498,11 +501,8 @@ ${callbackInstructions}
         result = { type: 'error' };
       }
 
-      // Stop hold music (properly tracked play — uuid_break works correctly)
-      try { await endpoint.api('uuid_break', endpoint.uuid); } catch (e) { /* ignore */ }
-      // Wait for the music promise to settle after break
-      await musicPromise.catch(() => {});
-      await new Promise(resolve => setTimeout(resolve, 100));
+      // Stop hold music (displace stop — clean, doesn't affect endpoint.play)
+      try { await endpoint.api('uuid_displace', `${endpoint.uuid} stop ${MUSIC_FILE}`); } catch (e) { /* ignore */ }
 
       if (!callActive) break;
 
