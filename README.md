@@ -82,32 +82,39 @@ ai-phone logs               # Tail logs
 ## Advanced: Distributed Multi-Node Architecture
 
 ```text
-┌─────────────────────────┐           ┌────────────────────────────┐
-│ Machine 3 (LXC AI)      │           │ Machine 4 (LXC Voice)      │
-│ ⟷ Drachtio (:5070)      │ ⟷ (SIP) ⟷ │ Voice App (:3000)          │
-│                         │           │  ↑ FreeSWITCH              │
-│    Whisper (:8080) ⟵────┼───(HTTP)──┤  │ Audio IN                │
-│    Kokoro  (:8880) ⟵────┼───(HTTP)──┤  ↓ Audio OUT               │
-└─────────────────────────┘           └──────────────┬─────────────┘
-                                                     │
-                                                 (HTTP API)
-                                                     │
-                                                     ▼
-                                          ┌─────────────────────────┐
-                                          │ Machine 2 (Ollama)      │
-                                          │ ⟷ gemma3:12b            │
-                                          └─────────────────────────┘
+┌────────────────────────────────────┐          ┌──────────────────────────────────┐
+│ Machine 3 — LXC AI (172.16.1.229) │          │ Machine 4 — Mission Control      │
+│ ⟷ Drachtio (:5070)                │          │           (172.16.1.171)         │
+│ ⟷ FreeSWITCH (media)              │◄─(SIP)──│ Voice App (:3000)               │
+│   Whisper STT (:8080)      ◄──────┼──(HTTP)──┤ Mission Control (:3030)         │
+│   Kokoro TTS (:8880)       ◄──────┼──(HTTP)──┤                                 │
+└────────────────────────────────────┘          └──────────────┬──────────────────┘
+                                                              │
+                                                          (HTTP API)
+                                                              │
+                                                              ▼
+                                                ┌──────────────────────────┐
+                                                │ Machine 2 — Ollama       │
+                                                │   (172.16.1.26)          │
+                                                │ ⟷ gemma3:12b             │
+                                                └──────────────────────────┘
+
+                                                ┌──────────────────────────┐
+                                                │ Machine 1 — FreePBX      │
+                                                │   (172.16.1.163)         │
+                                                │ ⟷ SIP Routing            │
+                                                └──────────────────────────┘
 ```
 
-The AI Phone is designed as a suite of decoupled microservices. You can run all 5 containers on one machine, or split them across a Proxmox cluster to isolate the heavy GPU/AI processing from your PBX SIP routing.
+The AI Phone is designed as a suite of decoupled microservices. You can run all 5 containers on one machine, or split them across a cluster.
 
-During `ai-phone setup`, you will see an **Infrastructure Deployment** prompt. Use the `Spacebar` to Check/Uncheck the exact containers you want running on that specific Linux instance.
+During `ai-phone setup`, use the `Spacebar` to Check/Uncheck the exact containers you want running on that specific Linux instance.
 
 **Example 4-Machine Split:**
-1. **Machine 1 (Asterisk/FreePBX)**: Doesn't run docker, just your PBX.
-2. **Machine 2 (GPU Server)**: Pure Ollama server.
-3. **Machine 3 (The Brain)**: Run `ai-phone setup` and only check `SIP Signaling (Drachtio)`, `Speech-to-Text`, and `Text-to-Speech`.
-4. **Machine 4 (Voice Engine)**: Run `ai-phone setup` and only check `Media Engine (FreeSWITCH)` and `Voice App`.
+1. **Machine 1 (FreePBX — 172.16.1.163)**: Doesn't run docker, just your existing PBX.
+2. **Machine 2 (Ollama — 172.16.1.26)**: Pure Ollama server running Gemma/Llama.
+3. **Machine 3 (LXC AI — 172.16.1.229)**: Run `ai-phone setup` and check `SIP Signaling (Drachtio)`, `Media Engine (FreeSWITCH)`, `Speech-to-Text`, and `Text-to-Speech`.
+4. **Machine 4 (Mission Control — 172.16.1.171)**: Run `ai-phone setup` and check `Voice Application Logic`. All Ollama traffic is routed through this machine.
 
 ## Mission Control
 

@@ -112,7 +112,9 @@ async function generateSpeech(text, _voiceId) {
     const stats = fs.statSync(filepath);
     logger.info('Kokoro TTS generation successful', { filename, fileSize: stats.size, latency });
 
-    return `http://127.0.0.1:3000/audio-files/${filename}`;
+    const voiceAppHost = process.env.EXTERNAL_IP || '127.0.0.1';
+    const httpPort = process.env.HTTP_PORT || '3000';
+    return `http://${voiceAppHost}:${httpPort}/audio-files/${filename}`;
 
   } catch (error) {
     const latency = Date.now() - startTime;

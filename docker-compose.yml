@@ -53,11 +53,13 @@ services:
       - ./voice-app/mounts/voicemail:/var/spool/asterisk/voicemail
       # Call recordings (transcripts + audio)
       - call-recordings:/app/recordings
-    depends_on:
-      - drachtio
-      - freeswitch
-      - whisper-stt
-      - kokoro-tts
+    # Note: In distributed setups, drachtio + freeswitch run on Machine 3.
+    # Only list local container dependencies here.
+    # depends_on:
+    #   - drachtio      # Remote on Machine 3 in distributed mode
+    #   - freeswitch    # Remote on Machine 3 in distributed mode
+    #   - whisper-stt   # Remote on Machine 3 in distributed mode
+    #   - kokoro-tts    # Remote on Machine 3 in distributed mode
     # Ports (for reference):
     # - 3000: HTTP API
     # - 3001: WebSocket for audio streaming

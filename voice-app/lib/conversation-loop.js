@@ -23,10 +23,12 @@ const { saveRecording } = require('./call-recordings');
 // Path to audio-temp for cache validation
 const AUDIO_TEMP_DIR = path.join(__dirname, '../audio-temp');
 
-// Audio cue URLs
-const READY_BEEP_URL = 'http://127.0.0.1:3000/static/ready-beep.wav';
-const GOTIT_BEEP_URL = 'http://127.0.0.1:3000/static/gotit-beep.wav';
-const HOLD_MUSIC_URL = 'http://127.0.0.1:3000/static/hold-music.wav';
+// Audio cue URLs — use EXTERNAL_IP so remote FreeSWITCH (Machine 3) can reach us
+const VOICE_APP_HOST = process.env.EXTERNAL_IP || '127.0.0.1';
+const VOICE_APP_HTTP_PORT = process.env.HTTP_PORT || '3000';
+const READY_BEEP_URL = `http://${VOICE_APP_HOST}:${VOICE_APP_HTTP_PORT}/static/ready-beep.wav`;
+const GOTIT_BEEP_URL = `http://${VOICE_APP_HOST}:${VOICE_APP_HTTP_PORT}/static/gotit-beep.wav`;
+const HOLD_MUSIC_URL = `http://${VOICE_APP_HOST}:${VOICE_APP_HTTP_PORT}/static/hold-music.wav`;
 
 // Conversational thinking phrases — long enough to feel natural while AI processes
 const THINKING_PHRASES = [
@@ -288,7 +290,7 @@ ${callbackInstructions}
     }
 
     // Start audio fork for entire call
-    const wsUrl = `ws://127.0.0.1:${wsPort}/${encodeURIComponent(callUuid)}`;
+    const wsUrl = `ws://${VOICE_APP_HOST}:${wsPort}/${encodeURIComponent(callUuid)}`;
 
     // Use try-catch for expectSession to handle race conditions
     let sessionPromise;

@@ -156,6 +156,23 @@ export async function setupCommand() {
   
   config.components = components;
 
+  // If Drachtio/FreeSWITCH are NOT selected, they run on a remote machine.
+  // Ask for that machine's IP so voice-app can connect to them.
+  const needsRemoteMedia = !components.includes('drachtio') || !components.includes('freeswitch');
+  if (needsRemoteMedia) {
+    console.log(chalk.yellow('\n⚠️  Drachtio/FreeSWITCH not selected — they must run on a remote machine.'));
+    const { remoteMediaIp } = await inquirer.prompt([
+      {
+        type: 'input',
+        name: 'remoteMediaIp',
+        message: 'Remote Machine 3 IP (where Drachtio + FreeSWITCH run):',
+        default: existingConfig.remoteMediaIp || '172.16.1.229',
+        validate: (input) => /^\d+\.\d+\.\d+\.\d+$/.test(input) || 'Must be a valid IP address'
+      }
+    ]);
+    config.remoteMediaIp = remoteMediaIp;
+  }
+
   // Save configuration
   try {
     writeFileSync(CONFIG_FILE, JSON.stringify(config, null, 2));
@@ -199,7 +216,8 @@ export async function setupCommand() {
       deployment: {
         mode: installMode,
         pi: { drachtioPort }
-      }
+      },
+      remoteMediaIp: config.remoteMediaIp || null
     };
 
     await writeDockerConfig(mappedConfig);

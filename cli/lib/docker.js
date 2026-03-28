@@ -147,12 +147,14 @@ services:`;
     container_name: freeswitch
     restart: unless-stopped
     network_mode: host
+    tmpfs:
+      - /usr/local/freeswitch/db
     security_opt:
       - seccomp:unconfined
     cap_add:
       - IPC_LOCK
       - SYS_NICE
-    command: ["freeswitch", "-nonat"]
+    command: ["freeswitch", "-nonat", "-nf"]
     environment:
       - EXTERNAL_IP=${externalIp}
 `;
@@ -257,13 +259,13 @@ export function generateEnvFile(config) {
     `EXTERNAL_IP=${config.server.externalIp === 'auto' ? getLocalIP() : config.server.externalIp}`,
     '',
     '# Drachtio Configuration',
-    'DRACHTIO_HOST=127.0.0.1',
+    `DRACHTIO_HOST=${config.remoteMediaIp || '127.0.0.1'}`,
     'DRACHTIO_PORT=9022',
     `DRACHTIO_SECRET=${config.secrets.drachtio}`,
     `DRACHTIO_SIP_PORT=${config.deployment?.pi?.drachtioPort || 5060}`,
     '',
     '# FreeSWITCH Configuration',
-    'FREESWITCH_HOST=127.0.0.1',
+    `FREESWITCH_HOST=${config.remoteMediaIp || '127.0.0.1'}`,
     'FREESWITCH_PORT=8021',
     'FREESWITCH_SECRET=JambonzR0ck$',
     '',
