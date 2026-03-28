@@ -34,12 +34,14 @@ The wizard guides you through configuration:
 3. Local Whisper STT API URL
 4. Local TTS API URL
 5. Device configuration (name, extension, auth, voice, prompt)
-6. Server LAN IP (for RTP audio routing)
+6. Infrastructure Deployment (select exactly which containers run on this host)
+7. Server LAN IP (for RTP audio routing)
 
 **What `ai-phone start` does:**
 
-- Starts Docker containers (drachtio, freeswitch, voice-app)
-- Connects them to your local Ollama server
+- Generates an isolated `docker-compose.yml` tailored to the selected components.
+- Starts Docker containers (drachtio, freeswitch, voice-app, whisper-stt, kokoro-tts).
+- Connects them to your local Ollama server over the network.
 
 ## Commands
 
@@ -56,9 +58,11 @@ ai-phone config reset       # Reset config (creates backup first)
 ### Service Management
 
 ```bash
-ai-phone start              # Start Docker services
+ai-phone start              # Start all configured Docker services
+ai-phone start <services>   # Start explicitly named services (e.g. drachtio)
 ai-phone stop               # Stop all services
-ai-phone status             # Show service status
+ai-phone stop <services>    # Stop specific services
+ai-phone status             # Show overview of SIP and container state
 ai-phone doctor             # Health check for dependencies and services
 ```
 

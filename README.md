@@ -38,11 +38,13 @@ AI Phone gives your local AI a phone number through FreePBX:
 # 1. Install
 curl -sSL https://raw.githubusercontent.com/jayis1/Project-Ph/main/install.sh | bash
 
-# 2. Configure
-ai-phone setup   # Enter SIP credentials + local AI endpoints
+# 2. Configure (select which Docker containers run on this machine)
+ai-phone setup
 
 # 3. Run
-ai-phone start
+ai-phone start              # Start all configured services
+# or
+ai-phone start freeswitch   # Start specific services only
 
 # 4. Open Mission Control
 # Navigate to http://<your-server-ip>:3030
@@ -67,13 +69,26 @@ ai-phone start
 ## CLI Commands
 
 ```bash
-ai-phone setup    # Interactive configuration
-ai-phone start    # Launch Docker containers
-ai-phone stop     # Stop services
-ai-phone status   # Check status
-ai-phone doctor   # Health checks
-ai-phone logs     # Tail logs
+ai-phone setup              # Interactive configuration wizard
+ai-phone start              # Launch all configured Docker containers
+ai-phone start <services>   # Launch specific containers (e.g. freeswitch voice-app)
+ai-phone stop               # Stop services
+ai-phone stop <services>    # Stop specific containers
+ai-phone status             # Check container and SIP status
+ai-phone doctor             # Run health checks
+ai-phone logs               # Tail logs
 ```
+
+## Advanced: Distributed Multi-Node Architecture
+
+The AI Phone is designed as a suite of decoupled microservices. You can run all 5 containers on one machine, or split them across a Proxmox cluster to isolate the heavy GPU/AI processing from your PBX SIP routing.
+
+During `ai-phone setup`, you will see an **Infrastructure Deployment** prompt. Use the `Spacebar` to Check/Uncheck the exact containers you want running on that specific Linux instance.
+
+**Example 3-Machine Split:**
+1. **Machine 1 (Asterisk/FreePBX)**: Doesn't run docker, just your PBX.
+2. **Machine 2 (GPU Server)**: Run `ai-phone setup` and only check `Speech-to-Text` and `Text-to-Speech`.
+3. **Machine 3 (The Brain)**: Run `ai-phone setup` (point the TTS/STT URLs to Machine 2), and only check `SIP Signaling`, `Media Engine`, and `Voice App`.
 
 ## Mission Control
 
