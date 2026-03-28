@@ -483,13 +483,10 @@ ${callbackInstructions}
         return { type: 'response', url, text: fullText, sentences: count, transcript };
       })();
 
-      // Play hold music while processing (endpoint.play with Promise.race)
-      logger.info('Playing hold music while processing', { callUuid });
-      const musicPromise = callActive
-        ? endpoint.play(HOLD_MUSIC_URL).catch(() => {})
-        : Promise.resolve();
+      // DIAGNOSTIC: No hold music — testing if TTS plays fully without play/break interference
+      logger.info('Processing (no hold music for diagnostic)', { callUuid });
 
-      // Wait for processing to complete (music plays during this)
+      // Wait for processing to complete
       let result;
       try {
         result = await processPromise;
@@ -497,11 +494,6 @@ ${callbackInstructions}
         logger.warn('Processing error', { callUuid, error: err.message });
         result = { type: 'error' };
       }
-
-      // Stop hold music and wait for it to settle
-      try { await endpoint.api('uuid_break', endpoint.uuid); } catch (e) { /* ignore */ }
-      await musicPromise.catch(() => {});
-      await new Promise(resolve => setTimeout(resolve, 100));
 
       if (!callActive) break;
 
