@@ -495,7 +495,9 @@ ${callbackInstructions}
           signal: streamAbortController.signal
         });
         let sentenceCount = 0;
+        const ttsUrls = [];  // Collect all TTS audio URLs
 
+        // Phase 1: Generate all TTS while hold music plays uninterrupted
         for await (const sentence of stream) {
           if (!callActive) break;
 
@@ -503,19 +505,23 @@ ${callbackInstructions}
           fullAiResponse += (sentenceCount > 1 ? ' ' : '') + sentence;
           logger.info('Stream sentence', { callUuid, sentenceNum: sentenceCount, text: sentence.substring(0, 80) });
 
-          // Generate TTS FIRST (while hold music still plays — no silence gap)
+          // Generate TTS in background (hold music keeps playing)
           const sentenceUrl = await ttsService.generateSpeech(sentence, voiceId);
+          ttsUrls.push(sentenceUrl);
+        }
 
-          // Force-stop any playing audio before each sentence
+        logger.info('All TTS ready', { callUuid, sentences: ttsUrls.length });
+
+        // Phase 2: Stop hold music and play all sentences sequentially
+        if (callActive && ttsUrls.length > 0) {
           try {
             await endpoint.api('uuid_break', endpoint.uuid);
           } catch (e) { /* ignore */ }
           musicPlaying = false;
 
-          // Play immediately — seamless transition
-          if (callActive) {
-            logger.info('Playing TTS sentence', { callUuid, sentenceNum: sentenceCount });
-            await endpoint.play(sentenceUrl);
+          for (const url of ttsUrls) {
+            if (!callActive) break;
+            await endpoint.play(url);
           }
         }
 
