@@ -301,7 +301,7 @@ ${callbackInstructions}
 
     await endpoint.forkAudioStart({
       wsUrl,
-      mixType: 'mono',
+      mixType: 'mixed',
       sampling: '16k'
     });
     forkRunning = true;
