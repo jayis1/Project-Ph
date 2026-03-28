@@ -32,6 +32,31 @@ AI Phone gives your local AI a phone number through FreePBX:
 
 > **No API keys needed.** No data ever leaves your machine.
 
+### Proxmox LXC Guidelines (Crucial)
+
+If you are deploying AI Phone on a Proxmox LXC container instead of bare-metal Linux or a full VM:
+1. **Must be a Privileged Container**: Uncheck the "Unprivileged container" box when creating the LXC. Unprivileged LXCs aggressively block Docker's `overlay2` storage driver from establishing SQLite database locks, causing the FreeSWITCH container to eternally hang during boot. Privileged containers natively support Docker volumes and direct GPU passthrough without hacking cgroups.
+2. **CPU Type must be `host`**: FreeSWITCH mathematically requires **AVX instructions** to process raw audio streams. If your machine's physical CPU supports AVX, but your Proxmox VM is set to a masked CPU architecture (like `kvm64`), FreeSWITCH will instantly silently crash with an "Illegal Instruction" (`SIGILL`).
+
+### Nvidia GPU Passthrough (Docker)
+
+If you are passing an Nvidia GPU (like a Tesla T400) to offload the heavy Whisper and Kokoro models, standard Docker is not enough. You must formally install the [Nvidia Container Toolkit](https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/latest/install-guide.html) bridge:
+
+```bash
+# 1. Add the official Nvidia toolkit repository
+curl -fsSL https://nvidia.github.io/libnvidia-container/gpgkey | gpg --dearmor -o /usr/share/keyrings/nvidia-container-toolkit-keyring.gpg \
+  && curl -s -L https://nvidia.github.io/libnvidia-container/stable/deb/nvidia-container-toolkit.list | \
+    sed 's#deb https://#deb [signed-by=/usr/share/keyrings/nvidia-container-toolkit-keyring.gpg] https://#g' | \
+    tee /etc/apt/sources.list.d/nvidia-container-toolkit.list
+
+# 2. Install and bind the Docker runtime
+apt-get update && apt-get install -y nvidia-container-toolkit
+nvidia-ctk runtime configure --runtime=docker
+systemctl restart docker
+
+# 3. Now `ai-phone start` will successfully allocate hardware access!
+```
+
 ## Quick Start
 
 ```bash
