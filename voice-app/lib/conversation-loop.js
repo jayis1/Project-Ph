@@ -25,7 +25,8 @@ const AUDIO_TEMP_DIR = path.join(__dirname, '../audio-temp');
 
 const READY_BEEP_URL = '/app/static/ready-beep.wav';
 const GOTIT_BEEP_URL = '/app/static/gotit-beep.wav';
-const HOLD_MUSIC_URL = '/app/static/hold-music.wav';
+const HOLD_MUSIC_URL = '/app/audio/hold-music.wav';
+const HOLD_MUSIC_ALT_URL = '/app/audio/hold-music-alt.wav';
 
 // Conversational thinking phrases — long enough to feel natural while AI processes
 const THINKING_PHRASES = [
@@ -482,10 +483,11 @@ ${callbackInstructions}
         return { type: 'response', url, text: fullText, sentences: count, transcript };
       })();
 
-      // Play hold music while processing
-      logger.info('Playing hold music while processing', { callUuid });
+      // Play hold music while processing (Randomly select between the two tracks)
+      const selectedMusic = Math.random() > 0.5 ? HOLD_MUSIC_URL : HOLD_MUSIC_ALT_URL;
+      logger.info('Playing hold music while processing', { callUuid, track: selectedMusic });
       const musicPromise = callActive
-        ? endpoint.play(HOLD_MUSIC_URL).catch(() => {})
+        ? endpoint.play(selectedMusic).catch(() => {})
         : Promise.resolve();
 
       // Wait for processing to complete
