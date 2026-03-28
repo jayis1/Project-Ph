@@ -413,7 +413,6 @@ ${callbackInstructions}
       // ============================================
       // GOT-IT BEEP: Signal "I heard you, processing"
       // ============================================
-      let musicPlaying = false;
       try {
         if (callActive) await endpoint.play(GOTIT_BEEP_URL);
       } catch (e) {
@@ -421,145 +420,112 @@ ${callbackInstructions}
         logger.warn('Got-it beep failed', { callUuid, error: e.message });
       }
 
-      // Start hold music via uuid_broadcast (doesn't corrupt endpoint.play state)
-      if (callActive) {
-        logger.info('Playing hold music while processing', { callUuid });
-        try {
-          // uuid_broadcast plays audio without interfering with endpoint.play()
-          const musicPath = HOLD_MUSIC_URL.replace('http://127.0.0.1:3000/', '/app/');
-          await endpoint.api('uuid_broadcast', `${endpoint.uuid} ${musicPath} aleg`);
-          musicPlaying = true;
-        } catch (e) {
-          logger.warn('Hold music broadcast failed', { callUuid, error: e.message });
-        }
-      }
-
-      // Transcribe (hold music plays during this)
-      const transcript = await whisperClient.transcribe(utterance.audio, {
-        format: 'pcm',
-        sampleRate: 16000
-      });
-
-      logger.info('Transcribed', { callUuid, transcript });
-
-      // Handle empty transcription
-      if (!transcript || transcript.trim().length < 2) {
-        if (musicPlaying) {
-          try { await endpoint.api('uuid_break', endpoint.uuid); musicPlaying = false; } catch (e) { /* ignore */ }
-        }
-        const clarifyUrl = await ttsService.generateSpeech(
-          "Sorry, I didn't catch that. Could you repeat?",
-          voiceId
-        );
-        if (callActive) await endpoint.play(clarifyUrl);
-        continue;
-      }
-
-      // Handle goodbye
-      if (isGoodbye(transcript)) {
-        if (musicPlaying) {
-          try { await endpoint.api('uuid_break', endpoint.uuid); musicPlaying = false; } catch (e) { /* ignore */ }
-        }
-        const byeUrl = await ttsService.generateSpeech("Goodbye! Call again anytime.", voiceId);
-        if (callActive) await endpoint.play(byeUrl);
-        break;
-      }
-
       // ============================================
-      // STREAMING AI RESPONSE (hold music still playing)
+      // PARALLEL: Hold music + Processing
       // ============================================
+      // Process everything (Whisper + AI + TTS) while music plays
+      // Use Promise.race so they run truly in parallel
 
-      // Check if call still active
-      if (!callActive) break;
+      let responseUrl = null;
+      let processError = null;
 
-      // 2. Build AI prompt with context
-      let voicemailContext = '';
-      if (transcript.toLowerCase().includes('voicemail') || transcript.toLowerCase().includes('message')) {
-        const messages = await voicemailService.listVoicemails(deviceConfig?.extension || '9000');
-        if (messages.length > 0) {
-          voicemailContext = `\n[SYSTEM] User has ${messages.length} voicemails. Latest from ${messages[messages.length - 1].callerId} at ${messages[messages.length - 1].timestamp}. You can offer to play them.`;
-        } else {
-          voicemailContext = '\n[SYSTEM] User has 0 voicemails.';
+      // Processing pipeline (runs in parallel with music)
+      const processPromise = (async () => {
+        // Transcribe
+        const transcript = await whisperClient.transcribe(utterance.audio, {
+          format: 'pcm',
+          sampleRate: 16000
+        });
+        logger.info('Transcribed', { callUuid, transcript });
+
+        if (!transcript || transcript.trim().length < 2) {
+          return { type: 'clarify' };
         }
-      }
+        if (isGoodbye(transcript)) {
+          return { type: 'goodbye' };
+        }
 
-      const aiPrompt = transcript + voicemailContext + systemContext;
-      let fullAiResponse = '';
+        // Build AI prompt
+        let voicemailContext = '';
+        if (transcript.toLowerCase().includes('voicemail') || transcript.toLowerCase().includes('message')) {
+          const messages = await voicemailService.listVoicemails(deviceConfig?.extension || '9000');
+          if (messages.length > 0) {
+            voicemailContext = `\n[SYSTEM] User has ${messages.length} voicemails. Latest from ${messages[messages.length - 1].callerId} at ${messages[messages.length - 1].timestamp}. You can offer to play them.`;
+          } else {
+            voicemailContext = '\n[SYSTEM] User has 0 voicemails.';
+          }
+        }
+        const aiPrompt = transcript + voicemailContext + systemContext;
 
-      // 3. Stream AI response — collect text while music plays
-      logger.info('Querying AI (streaming)', { callUuid });
-
-      try {
+        // Stream AI response — collect full text
+        logger.info('Querying AI (streaming)', { callUuid });
         streamAbortController = new AbortController();
         const stream = aiBridge.queryStream(aiPrompt, {
           callId: callUuid,
           devicePrompt: devicePrompt,
           signal: streamAbortController.signal
         });
-        let sentenceCount = 0;
-
-        // Phase 1: Collect entire AI response text (hold music plays uninterrupted)
+        let fullText = '';
+        let count = 0;
         for await (const sentence of stream) {
           if (!callActive) break;
-          sentenceCount++;
-          fullAiResponse += (sentenceCount > 1 ? ' ' : '') + sentence;
-          logger.info('Stream chunk', { callUuid, num: sentenceCount, text: sentence.substring(0, 80) });
+          count++;
+          fullText += (count > 1 ? ' ' : '') + sentence;
+          logger.info('Stream chunk', { callUuid, num: count, text: sentence.substring(0, 80) });
         }
-
-        // Phase 2: Generate TTS, stop music, play
-        if (callActive && fullAiResponse.trim().length > 0) {
-          logger.info('Generating full response TTS', { callUuid, textLength: fullAiResponse.length });
-          const responseUrl = await ttsService.generateSpeech(fullAiResponse, voiceId);
-
-          // Stop hold music
-          if (musicPlaying) {
-            try { await endpoint.api('uuid_break', endpoint.uuid); } catch (e) { /* ignore */ }
-            musicPlaying = false;
-            await new Promise(resolve => setTimeout(resolve, 200));
-          }
-
-          // Play the complete response
-          logger.info('Playing AI response', { callUuid });
-          await endpoint.play(responseUrl);
-        }
-
-        logger.info('AI stream complete', { callUuid, sentences: sentenceCount, totalLength: fullAiResponse.length });
         streamAbortController = null;
 
-      } catch (streamError) {
-        logger.warn('Streaming failed, falling back to non-streaming', { callUuid, error: streamError.message });
+        if (!fullText.trim()) return { type: 'empty' };
 
-        // Fallback to non-streaming query
-        fullAiResponse = await aiBridge.query(aiPrompt, { callId: callUuid, devicePrompt: devicePrompt });
+        // Generate TTS for full response
+        logger.info('Generating full response TTS', { callUuid, textLength: fullText.length });
+        const url = await ttsService.generateSpeech(fullText, voiceId);
+        return { type: 'response', url, text: fullText, sentences: count };
+      })();
 
-        // Stop hold music
-        if (musicPlaying && callActive) {
-          try { await endpoint.api('uuid_break', endpoint.uuid); } catch (e) { /* ignore */ }
-          musicPlaying = false;
-        }
+      // Play hold music (properly awaited — doesn't corrupt endpoint state)
+      logger.info('Playing hold music while processing', { callUuid });
+      const musicPromise = callActive
+        ? endpoint.play(HOLD_MUSIC_URL).catch(() => {})
+        : Promise.resolve();
 
-        if (!callActive) {
-          logger.info('Call ended during AI processing', { callUuid });
-          break;
-        }
-
-        const voiceLine = extractVoiceLine(fullAiResponse);
-        const responseUrl = await ttsService.generateSpeech(voiceLine, voiceId);
-        if (callActive) await endpoint.play(responseUrl);
+      // Wait for processing to complete (music plays during this)
+      let result;
+      try {
+        result = await processPromise;
+      } catch (err) {
+        logger.warn('Processing error', { callUuid, error: err.message });
+        result = { type: 'error' };
       }
 
-      // Stop hold music if still playing
-      if (musicPlaying && callActive) {
-        try { await endpoint.api('uuid_break', endpoint.uuid); } catch (e) { /* ignore */ }
-      }
+      // Stop hold music (properly tracked play — uuid_break works correctly)
+      try { await endpoint.api('uuid_break', endpoint.uuid); } catch (e) { /* ignore */ }
+      // Wait for the music promise to settle after break
+      await musicPromise.catch(() => {});
+      await new Promise(resolve => setTimeout(resolve, 100));
 
-      // Check if call ended during AI processing
-      if (!callActive) {
-        logger.info('Call ended during AI processing', { callUuid });
+      if (!callActive) break;
+
+      // Handle the result
+      if (result.type === 'clarify') {
+        const clarifyUrl = await ttsService.generateSpeech("Sorry, I didn't catch that. Could you repeat?", voiceId);
+        await endpoint.play(clarifyUrl);
+        continue;
+      }
+      if (result.type === 'goodbye') {
+        const byeUrl = await ttsService.generateSpeech("Goodbye! Call again anytime.", voiceId);
+        await endpoint.play(byeUrl);
         break;
       }
+      if (result.type === 'response' && result.url) {
+        fullAiResponse = result.text;
+        logger.info('Playing AI response', { callUuid, sentences: result.sentences, textLength: result.text.length });
+        await endpoint.play(result.url);
+        logger.info('AI responded', { callUuid });
+      }
 
-      logger.info('AI responded', { callUuid });
+
+
 
       // Log conversation turn for transcript
       conversationLog.push({
