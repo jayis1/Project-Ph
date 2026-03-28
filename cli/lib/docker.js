@@ -154,7 +154,11 @@ services:`;
     cap_add:
       - IPC_LOCK
       - SYS_NICE
-    command: ["freeswitch", "-nonat", "-nf"]
+    command: >
+      freeswitch
+      --sip-port 5080
+      --rtp-range-start 30000
+      --rtp-range-end 30100
     environment:
       - EXTERNAL_IP=${externalIp}
 `;
