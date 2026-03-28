@@ -23,7 +23,7 @@ services:
     restart: unless-stopped
     network_mode: host
     command: >
-      freeswitch --sip-port 5080 --rtp-range-start 30000 --rtp-range-end 30100 --ext-rtp-ip ${EXTERNAL_IP:-127.0.0.1} --ext-sip-ip ${EXTERNAL_IP:-127.0.0.1} --advertise-external-ip
+      freeswitch -a 30000 -z 30100 -nonat -nf
     environment:
       # CRITICAL: Set this to your server's LAN IP
       # This IP goes into SDP packets so the PBX knows where to send audio

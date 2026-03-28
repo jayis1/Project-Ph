@@ -156,9 +156,9 @@ services:`;
       - SYS_NICE
     command: >
       freeswitch
-      --sip-port 5080
-      --rtp-range-start 30000
-      --rtp-range-end 30100
+      -a 30000
+      -z 30100
+      -nonat -nf
     environment:
       - EXTERNAL_IP=${externalIp}
 `;
