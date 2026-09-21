@@ -100,7 +100,10 @@ async function handleInvite(req, res, options) {
 
     dialog.on('destroy', function () {
       console.log('[' + new Date().toISOString() + '] CALL Ended');
-      if (endpoint) endpoint.destroy().catch(function () { });
+      // Delay endpoint cleanup to avoid disrupting audio on the other SIP leg
+      setTimeout(function () {
+        if (endpoint) endpoint.destroy().catch(function () { });
+      }, 15000);
     });
 
     // Pass activeCalls and n8nConfig (already in options)

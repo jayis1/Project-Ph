@@ -27,7 +27,7 @@ AI Phone gives your local AI a phone number through FreePBX:
 | PBX | [FreePBX](https://www.freepbx.org/) or any SIP provider |
 | LLM | [Ollama](https://ollama.com/) with a chat model (default: `deepseek-r1:8b`) |
 | STT | Local Whisper server (e.g. [faster-whisper](https://github.com/SYSTRAN/faster-whisper) or [whisper.cpp](https://github.com/ggerganov/whisper.cpp)) |
-| TTS | Local TTS server (e.g. [OpenedAI Speech](https://github.com/matatonic/openedai-speech) or any OpenAI-compatible `/v1/audio/speech` endpoint) |
+| TTS | [Kokoro TTS](https://github.com/remsky/Kokoro-FastAPI) via Kokoro-FastAPI (included in Docker Compose) — runs on CPU, no GPU needed |
 | Runtime | Docker + Node.js 18+ |
 
 > **No API keys needed.** No data ever leaves your machine.
@@ -140,11 +140,18 @@ docker run -p 8080:8000 fedirz/faster-whisper-server
 ```
 The voice app will POST audio to `/v1/audio/transcriptions` (OpenAI-compatible format).
 
-### OpenedAI Speech (TTS)
+### Kokoro TTS (via Kokoro-FastAPI)
+Included in Docker Compose — starts automatically with `ai-phone start`.
+
+The `kokoro-tts` container runs Kokoro-82M TTS and exposes an OpenAI-compatible `/v1/audio/speech` endpoint on port 8880. Runs fast on CPU (3-5x real-time speed).
+
 ```bash
-docker run -p 8000:8000 ghcr.io/matatonic/openedai-speech
+# Test TTS independently
+curl http://localhost:8880/v1/audio/speech \
+  -X POST -H 'Content-Type: application/json' \
+  -d '{"input":"Hello world","model":"kokoro","voice":"af_heart","response_format":"wav"}' \
+  --output test.wav
 ```
-The voice app will POST to the configured `LOCAL_TTS_URL` using the OpenAI `/v1/audio/speech` format.
 
 ## Network & Port Configuration
 
@@ -167,7 +174,7 @@ See [`.env.example`](.env.example) for all configurable variables. Key ones:
 | `EXTERNAL_IP` | Server LAN IP for RTP routing |
 | `OLLAMA_API_URL` | URL to Ollama instance |
 | `OLLAMA_MODEL` | Chat model to use (default: `deepseek-r1:8b`) |
-| `LOCAL_TTS_URL` | TTS API endpoint |
+| `LOCAL_TTS_URL` | Kokoro TTS API endpoint (default: port 8880) |
 | `LOCAL_STT_URL` | Whisper STT API endpoint |
 | `SIP_DOMAIN` | FreePBX server FQDN or IP |
 | `SIP_REGISTRAR` | SIP registrar address |

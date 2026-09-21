@@ -57,7 +57,7 @@ services:
       - drachtio
       - freeswitch
       - whisper-stt
-      - openedai-speech
+      - kokoro-tts
     # Ports (for reference):
     # - 3000: HTTP API
     # - 3001: WebSocket for audio streaming
@@ -76,19 +76,17 @@ services:
     # Ports (for reference - host mode):
     # - 8080: OpenAI-compatible STT API (/v1/audio/transcriptions)
 
-  openedai-speech:
-    image: ghcr.io/matatonic/openedai-speech:latest
-    container_name: openedai-speech
+  kokoro-tts:
+    image: ghcr.io/remsky/kokoro-fastapi-cpu:latest
+    container_name: kokoro-tts
     restart: unless-stopped
     network_mode: host
     volumes:
-      - tts-voices:/app/voices
-      - tts-config:/app/config
+      - kokoro-models:/app/api/src/core/lib
     # Ports (for reference - host mode):
-    # - 8000: OpenAI-compatible TTS API (/v1/audio/speech)
+    # - 8880: OpenAI-compatible TTS API (/v1/audio/speech)
 
 volumes:
   whisper-models:
-  tts-voices:
-  tts-config:
+  kokoro-models:
   call-recordings:

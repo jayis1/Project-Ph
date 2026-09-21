@@ -198,15 +198,17 @@ async function* queryStream(prompt, options = {}) {
         buffer += token;
         fullResponse += token;
 
-        // Check for sentence boundaries — yield complete sentences
-        const sentenceMatch = buffer.match(/^([\s\S]*?[.!?])\s*/);
-        if (sentenceMatch) {
-          const sentence = sentenceMatch[1].trim();
-          buffer = buffer.slice(sentenceMatch[0].length);
+        // Check for speech boundaries — yield chunks at sentence OR clause level
+        // Split on .!? (sentences) or ,;: (clauses) when buffer is long enough
+        let yieldMatch;
+        while ((yieldMatch = buffer.match(/^([\s\S]*?[.!?])\s*/)) ||
+               (buffer.length > 20 && (yieldMatch = buffer.match(/^([\s\S]*?[,;:])\s*/)))) {
+          const chunk = yieldMatch[1].trim();
+          buffer = buffer.slice(yieldMatch[0].length);
 
-          if (sentence.length > 2) {
-            console.log(`[${timestamp}] OLLAMA Stream sentence (${sentence.length} chars): "${sentence.substring(0, 60)}..."`);
-            yield sentence;
+          if (chunk.length > 2) {
+            console.log(`[${timestamp}] OLLAMA Stream chunk (${chunk.length} chars): "${chunk.substring(0, 60)}"`);
+            yield chunk;
           }
         }
 

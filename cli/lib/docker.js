@@ -157,7 +157,7 @@ services:
       - drachtio
       - freeswitch
       - whisper-stt
-      - openedai-speech
+      - kokoro-tts
 
   whisper-stt:
     image: fedirz/faster-whisper-server:latest-cpu
@@ -165,25 +165,23 @@ services:
     restart: unless-stopped
     network_mode: host
     environment:
-      - WHISPER__MODEL=\${WHISPER_MODEL:-Systran/faster-whisper-large-v3-turbo}
+      - WHISPER__MODEL=\${WHISPER_MODEL:-Systran/faster-whisper-large-v3}
       - UVICORN_HOST=0.0.0.0
       - UVICORN_PORT=8080
     volumes:
       - whisper-models:/root/.cache/huggingface
 
-  openedai-speech:
-    image: ghcr.io/matatonic/openedai-speech:latest
-    container_name: openedai-speech
+  kokoro-tts:
+    image: ghcr.io/remsky/kokoro-fastapi-cpu:latest
+    container_name: kokoro-tts
     restart: unless-stopped
     network_mode: host
     volumes:
-      - tts-voices:/app/voices
-      - tts-config:/app/config
+      - kokoro-models:/app/api/src/core/lib
 
 volumes:
   whisper-models:
-  tts-voices:
-  tts-config:
+  kokoro-models:
 `;
 }
 
@@ -237,8 +235,8 @@ export function generateEnvFile(config) {
     '# Local STT (Whisper-compatible — served by whisper-stt container on port 8080)',
     `LOCAL_STT_URL=${config.api.localSttUrl || 'http://127.0.0.1:8080/v1'}`,
     '',
-    '# Local TTS (served by openedai-speech container on port 8000)',
-    `LOCAL_TTS_URL=${config.api.localTtsUrl || 'http://127.0.0.1:8000/v1/audio/speech'}`,
+    '# Kokoro TTS (served by kokoro-tts container on port 8880)',
+    `LOCAL_TTS_URL=${config.api.localTtsUrl || 'http://127.0.0.1:8880/v1/audio/speech'}`,
     '',
     '# Application Settings',
     `HTTP_PORT=${config.server.httpPort}`,
@@ -386,7 +384,7 @@ export async function stopContainers(services = []) {
  * @returns {Promise<void>}
  */
 async function forceRemoveStaleContainers() {
-  const knownContainers = ['drachtio', 'freeswitch', 'voice-app', 'whisper-stt', 'openedai-speech'];
+  const knownContainers = ['drachtio', 'freeswitch', 'voice-app', 'whisper-stt', 'kokoro-tts', 'voxtral-tts', 'openedai-speech'];
 
   for (const name of knownContainers) {
     try {
