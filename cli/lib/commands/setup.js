@@ -149,6 +149,7 @@ export async function setupCommand() {
         { name: 'Voice Application Logic (Mission Control)', value: 'voice-app', checked: existingConfig.components ? existingConfig.components.includes('voice-app') : true },
         { name: 'Speech-to-Text (Whisper Local)', value: 'whisper-stt', checked: existingConfig.components ? existingConfig.components.includes('whisper-stt') : true },
         { name: 'Text-to-Speech (Kokoro Local)', value: 'kokoro-tts', checked: existingConfig.components ? existingConfig.components.includes('kokoro-tts') : true },
+        { name: 'Text-to-Speech (Voxtral 4B, NVIDIA GPU >=16GB)', value: 'voxtral-tts', checked: existingConfig.components ? existingConfig.components.includes('voxtral-tts') : false },
       ],
       validate: (ans) => ans.length > 0 ? true : 'You must select at least one component to run on this machine.'
     }

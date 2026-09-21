@@ -106,9 +106,47 @@ test('docker compose generation', async (t) => {
 
     // Verify other settings remain intact
     assert.ok(compose.includes('network_mode: host'), 'Should use host networking');
-    assert.ok(compose.includes('--sip-port 5080'), 'FreeSWITCH should use port 5080');
+    assert.ok(compose.includes('-a 30000'), 'FreeSWITCH should use RTP start port 30000');
+    assert.ok(compose.includes('-z 30100'), 'FreeSWITCH should use RTP end port 30100');
     assert.ok(compose.includes('--port 9022'), 'Drachtio should use port 9022');
     assert.ok(compose.includes('EXTERNAL_IP=192.168.1.50'), 'Should use configured external IP');
+  });
+
+  await t.test('generates Voxtral service and environment when selected', () => {
+    const config = {
+      components: ['voice-app', 'voxtral-tts'],
+      server: {
+        externalIp: '192.168.1.50',
+        httpPort: 3000
+      },
+      paths: {
+        voiceApp: '/app/voice-app'
+      },
+      sip: {
+        domain: 'freepbx.local',
+        registrar: '192.168.1.10'
+      },
+      devices: [{ extension: '9000', authId: 'user123', password: 'pass123' }],
+      api: { ollama: {} },
+      secrets: {
+        drachtio: 'test-secret-123',
+        freeswitch: 'test-secret-456'
+      }
+    };
+
+    const compose = generateDockerCompose(config);
+    const envFile = generateEnvFile(config);
+
+    assert.ok(compose.includes('voxtral-tts:'), 'Should include the Voxtral service');
+    assert.ok(compose.includes('vllm serve mistralai/Voxtral-4B-TTS-2603 --omni'),
+      'Should launch Voxtral with vLLM-Omni');
+    assert.ok(!compose.includes('\n  kokoro-tts:'), 'Should omit Kokoro when it is not selected');
+    assert.ok(envFile.includes('LOCAL_TTS_URL=http://127.0.0.1:8000/v1/audio/speech'),
+      'Should use the Voxtral endpoint');
+    assert.ok(envFile.includes('VOXTRAL_MODEL=mistralai/Voxtral-4B-TTS-2603'),
+      'Should configure the Voxtral model');
+    assert.ok(envFile.includes('VOXTRAL_VOICE=professional_female'),
+      'Should configure the Voxtral voice');
   });
 
   await t.test('generates env file with Ollama API URL', () => {

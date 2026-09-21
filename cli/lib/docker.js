@@ -232,10 +232,36 @@ ${dependsOnString}`;
 `;
   }
 
+  if (has('voxtral-tts')) {
+    yaml += `
+  voxtral-tts:
+    image: vllm/vllm-openai:v0.18.0
+    container_name: voxtral-tts
+    restart: unless-stopped
+    network_mode: host
+    command: >
+      bash -c "pip install git+https://github.com/vllm-project/vllm-omni.git &&
+      vllm serve mistralai/Voxtral-4B-TTS-2603 --omni --port 8000
+      --dtype half --gpu-memory-utilization 0.95"
+    environment:
+      - HUGGING_FACE_HUB_TOKEN=\${HF_TOKEN:-}
+    volumes:
+      - voxtral-models:/root/.cache/huggingface
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]
+`;
+  }
+
   yaml += `
 volumes:
   whisper-models:
   kokoro-models:
+  voxtral-models:
 `;
 
   return yaml;
@@ -254,6 +280,12 @@ export function generateEnvFile(config) {
       freeswitch: generateSecret()
     };
   }
+
+  const useVoxtral = config.components?.includes('voxtral-tts') &&
+    !config.components?.includes('kokoro-tts');
+  const defaultTtsUrl = useVoxtral
+    ? 'http://127.0.0.1:8000/v1/audio/speech'
+    : 'http://127.0.0.1:8880/v1/audio/speech';
 
   const lines = [
     '# ====================================',
@@ -291,8 +323,17 @@ export function generateEnvFile(config) {
     '# Local STT (Whisper-compatible — served by whisper-stt container on port 8080)',
     `LOCAL_STT_URL=${config.api.localSttUrl || 'http://127.0.0.1:8080/v1'}`,
     '',
-    '# Kokoro TTS (served by kokoro-tts container on port 8880)',
-    `LOCAL_TTS_URL=${config.api.localTtsUrl || 'http://127.0.0.1:8880/v1/audio/speech'}`,
+    useVoxtral
+      ? '# Voxtral TTS (served by voxtral-tts container on port 8000)'
+      : '# Kokoro TTS (served by kokoro-tts container on port 8880)',
+    `LOCAL_TTS_URL=${config.api.localTtsUrl || defaultTtsUrl}`,
+    ...(useVoxtral
+      ? [
+        'VOXTRAL_MODEL=mistralai/Voxtral-4B-TTS-2603',
+        'VOXTRAL_VOICE=professional_female',
+        'HF_TOKEN='
+      ]
+      : ['TTS_MODEL=kokoro', 'TTS_VOICE=af_heart']),
     '',
     '# Application Settings',
     `HTTP_PORT=${config.server.httpPort}`,

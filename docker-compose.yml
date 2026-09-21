@@ -59,6 +59,7 @@ services:
     #   - freeswitch    # Remote on Machine 3 in distributed mode
     #   - whisper-stt   # Remote on Machine 3 in distributed mode
     #   - kokoro-tts    # Remote on Machine 3 in distributed mode
+    #   - voxtral-tts   # Optional GPU TTS on Machine 3
     # Ports (for reference):
     # - 3000: HTTP API
     # - 3001: WebSocket for audio streaming
@@ -87,7 +88,34 @@ services:
     # Ports (for reference - host mode):
     # - 8880: OpenAI-compatible TTS API (/v1/audio/speech)
 
+  # Optional high-quality GPU TTS. Start with:
+  # docker compose --profile voxtral up -d voxtral-tts
+  voxtral-tts:
+    profiles: ["voxtral"]
+    image: vllm/vllm-openai:v0.18.0
+    container_name: voxtral-tts
+    restart: unless-stopped
+    network_mode: host
+    command: >
+      bash -c "pip install git+https://github.com/vllm-project/vllm-omni.git &&
+      vllm serve mistralai/Voxtral-4B-TTS-2603 --omni --port 8000
+      --dtype half --gpu-memory-utilization 0.95"
+    environment:
+      - HUGGING_FACE_HUB_TOKEN=${HF_TOKEN:-}
+    volumes:
+      - voxtral-models:/root/.cache/huggingface
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]
+    # Ports (for reference - host mode):
+    # - 8000: OpenAI-compatible TTS API (/v1/audio/speech)
+
 volumes:
   whisper-models:
   kokoro-models:
+  voxtral-models:
   call-recordings:

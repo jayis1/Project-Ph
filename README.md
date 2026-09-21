@@ -27,7 +27,7 @@ AI Phone gives your local AI a phone number through FreePBX:
 | PBX | [FreePBX](https://www.freepbx.org/) or any SIP provider |
 | LLM | [Ollama](https://ollama.com/) with a chat model (default: `deepseek-r1:8b`) |
 | STT | Local Whisper server (e.g. [faster-whisper](https://github.com/SYSTRAN/faster-whisper) or [whisper.cpp](https://github.com/ggerganov/whisper.cpp)) |
-| TTS | [Kokoro TTS](https://github.com/remsky/Kokoro-FastAPI) via Kokoro-FastAPI — runs on CPU or GPU (CUDA) |
+| TTS | [Kokoro TTS](https://github.com/remsky/Kokoro-FastAPI) (default, CPU/GPU) or [Voxtral 4B TTS](https://huggingface.co/mistralai/Voxtral-4B-TTS-2603) via vLLM-Omni (NVIDIA GPU with >=16GB VRAM) |
 | Runtime | Docker + Node.js 18+ |
 
 > **No API keys needed.** No data ever leaves your machine.
@@ -219,6 +219,28 @@ curl http://localhost:8880/v1/audio/speech \
   --output test.wav
 ```
 
+### Voxtral TTS (via vLLM-Omni)
+
+Voxtral is available as an optional Docker Compose service for NVIDIA GPU
+servers with at least 16GB VRAM. The first startup downloads the approximately
+8GB model.
+
+```bash
+# Static Compose: start the optional profile
+docker compose --profile voxtral up -d voxtral-tts
+
+# Point the voice app at Voxtral (or select Voxtral in `ai-phone setup`)
+LOCAL_TTS_URL=http://127.0.0.1:8000/v1/audio/speech
+VOXTRAL_MODEL=mistralai/Voxtral-4B-TTS-2603
+VOXTRAL_VOICE=professional_female
+
+# Test TTS independently
+curl http://localhost:8000/v1/audio/speech \
+  -X POST -H 'Content-Type: application/json' \
+  -d '{"input":"Hello world","model":"mistralai/Voxtral-4B-TTS-2603","voice":"professional_female","response_format":"wav"}' \
+  --output test.wav
+```
+
 ## Network & Port Configuration
 
 | Port | Service | Notes |
@@ -240,7 +262,11 @@ See [`.env.example`](.env.example) for all configurable variables. Key ones:
 | `EXTERNAL_IP` | Server LAN IP for RTP routing |
 | `OLLAMA_API_URL` | URL to Ollama instance |
 | `OLLAMA_MODEL` | Chat model to use (default: `deepseek-r1:8b`) |
-| `LOCAL_TTS_URL` | Kokoro TTS API endpoint (default: port 8880) |
+| `LOCAL_TTS_URL` | OpenAI-compatible TTS endpoint (Kokoro defaults to port 8880; Voxtral uses port 8000) |
+| `TTS_MODEL` / `TTS_VOICE` | Kokoro model and voice (defaults: `kokoro` / `af_heart`) |
+| `VOXTRAL_MODEL` | Voxtral model (default: `mistralai/Voxtral-4B-TTS-2603`) |
+| `VOXTRAL_VOICE` | Voxtral voice preset (default: `professional_female`) |
+| `HF_TOKEN` | Optional Hugging Face token for model downloads |
 | `LOCAL_STT_URL` | Whisper STT API endpoint |
 | `SIP_DOMAIN` | FreePBX server FQDN or IP |
 | `SIP_REGISTRAR` | SIP registrar address |

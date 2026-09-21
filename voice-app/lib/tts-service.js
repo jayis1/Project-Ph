@@ -1,11 +1,7 @@
 /**
- * Local TTS Service — Kokoro TTS via Kokoro-FastAPI
- * Sends text to a local Kokoro-FastAPI server running Kokoro-82M TTS.
- * OpenAI-compatible /v1/audio/speech endpoint.
- * No cloud API keys required — fully local CPU inference.
- *
- * For GPU servers with Voxtral TTS, just change LOCAL_TTS_URL to point
- * to the vLLM-Omni endpoint instead.
+ * Local TTS Service — OpenAI-compatible local speech synthesis.
+ * Defaults to Kokoro-FastAPI and also supports Voxtral 4B through
+ * vLLM-Omni by setting LOCAL_TTS_URL, VOXTRAL_MODEL and VOXTRAL_VOICE.
  */
 
 const axios = require('axios');
@@ -17,7 +13,9 @@ const logger = require('./logger');
 const { execSync } = require('child_process');
 
 const LOCAL_TTS_URL = process.env.LOCAL_TTS_URL || 'http://127.0.0.1:8880/v1/audio/speech';
-
+const TTS_MODEL = process.env.VOXTRAL_MODEL || process.env.TTS_MODEL || 'kokoro';
+const TTS_VOICE = process.env.VOXTRAL_VOICE || process.env.TTS_VOICE || 'af_heart';
+const TTS_ENGINE = TTS_MODEL.toLowerCase().includes('voxtral') ? 'Voxtral' : 'Kokoro';
 
 // Audio output directory
 let audioDir = path.join(__dirname, '../audio-temp');
@@ -45,20 +43,20 @@ function generateFilename(text) {
 }
 
 /**
- * Generate speech from text using local Voxtral TTS (vLLM-Omni)
+ * Generate speech from text using the configured local TTS server
  *
  * Supports two endpoint styles:
  *   - OpenAI-compatible (`/audio/speech`): POST JSON with {model, input, voice, response_format}
  *   - Generic (anything else): POST JSON with {text}
  *
  * @param {string} text - Text to convert to speech
- * @param {string} _voiceId - Ignored (voice configured via VOXTRAL_VOICE env var)
- * @returns {Promise<string>} HTTP URL to the saved audio file
+ * @param {string} _voiceId - Ignored (voice is configured with environment variables)
+ * @returns {Promise<string>} Path to the saved audio file
  */
 async function generateSpeech(text, _voiceId) {
   const startTime = Date.now();
 
-  logger.info('Generating speech with Kokoro TTS', { textLength: text.length, url: LOCAL_TTS_URL });
+  logger.info(`Generating speech with ${TTS_ENGINE} TTS`, { textLength: text.length, url: LOCAL_TTS_URL });
 
   let response;
 
@@ -71,9 +69,9 @@ async function generateSpeech(text, _voiceId) {
         url: LOCAL_TTS_URL,
         headers: { 'Content-Type': 'application/json' },
         data: {
-          model: 'kokoro',
+          model: TTS_MODEL,
           input: text,
-          voice: 'af_heart',
+          voice: TTS_VOICE,
           response_format: 'wav'
         },
         responseType: 'arraybuffer',
@@ -95,7 +93,7 @@ async function generateSpeech(text, _voiceId) {
     const rawPath = path.join(audioDir, 'raw_' + filename);
     const filepath = path.join(audioDir, filename);
 
-    // Save raw TTS output (24kHz from Kokoro GPU)
+    // Save raw TTS output before normalizing it for telephony.
     fs.writeFileSync(rawPath, response.data);
 
     // Resample to 8kHz/16-bit/mono for FreeSWITCH telephony
@@ -110,14 +108,14 @@ async function generateSpeech(text, _voiceId) {
 
     const latency = Date.now() - startTime;
     const stats = fs.statSync(filepath);
-    logger.info('Kokoro TTS generation successful', { filename, fileSize: stats.size, latency });
+    logger.info(`${TTS_ENGINE} TTS generation successful`, { filename, fileSize: stats.size, latency });
 
     // Bypass HTTP and return the direct physical file path so FreeSWITCH can read it over the shared volume mount
     return filepath;
 
   } catch (error) {
     const latency = Date.now() - startTime;
-    logger.error('Kokoro TTS generation failed', {
+    logger.error(`${TTS_ENGINE} TTS generation failed`, {
       error: error.message,
       latency,
       url: LOCAL_TTS_URL,
