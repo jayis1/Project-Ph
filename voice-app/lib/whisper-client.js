@@ -102,7 +102,7 @@ async function transcribe(audioBuffer, options = {}) {
       response = await axios.post(
         `${LOCAL_STT_URL}/audio/transcriptions`,
         form1,
-        { headers: form1.getHeaders(), timeout: 30000, maxContentLength: Infinity, maxBodyLength: Infinity }
+        { headers: form1.getHeaders(), timeout: 120000, maxContentLength: Infinity, maxBodyLength: Infinity }
       );
     } catch (apiError) {
       if (apiError.response && apiError.response.status === 404) {

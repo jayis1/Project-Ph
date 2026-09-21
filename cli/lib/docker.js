@@ -105,15 +105,26 @@ export function generateDockerCompose(config) {
   // Determine if running on Pi (ARM64) - use specific versions with platform
   const isPiMode = config.deployment && config.deployment.mode === 'pi-split';
   const drachtioImage = isPiMode ? 'drachtio/drachtio-server:0.9.4' : 'drachtio/drachtio-server:latest';
-  const freeswitchImage = 'drachtio/drachtio-freeswitch-mrf:latest';
+  const freeswitchImage = 'drachtio/drachtio-freeswitch-mrf:0.9.0';
   const platformLine = isPiMode ? '\n    platform: linux/arm64' : '';
 
-  return `
+  const components = config.components || ['drachtio', 'freeswitch', 'voice-app', 'whisper-stt', 'kokoro-tts'];
+  const has = (comp) => components.includes(comp);
+
+  const dependsOnString = components
+    .filter(c => c !== 'voice-app') // voice-app depends on others
+    .map(c => `      - ${c}`)
+    .join('\n');
+
+  let yaml = `
 # CRITICAL: All containers must use network_mode: host
 # Docker bridge networking causes FreeSWITCH to advertise internal IPs
 # in SDP, making RTP unreachable from external callers.
 
-services:
+services:`;
+
+  if (has('drachtio')) {
+    yaml += `
   drachtio:
     image: ${drachtioImage}${platformLine}
     container_name: drachtio
@@ -122,24 +133,42 @@ services:
     command: >
       drachtio
       --contact "sip:*:${drachtioPort};transport=tcp,udp"
+      --external-ip \${EXTERNAL_IP}
       --secret \${DRACHTIO_SECRET}
       --port 9022
       --loglevel info
+`;
+  }
 
+  if (has('freeswitch')) {
+    yaml += `
   freeswitch:
     image: ${freeswitchImage}${platformLine}
     container_name: freeswitch
     restart: unless-stopped
     network_mode: host
+    tmpfs:
+      - /usr/local/freeswitch/db
+    security_opt:
+      - seccomp:unconfined
+    cap_add:
+      - IPC_LOCK
+      - SYS_NICE
     command: >
       freeswitch
-      --sip-port 5080
-      --rtp-range-start 30000
-      --rtp-range-end 30100
-    # RTP ports 30000-30100 avoid conflict with SBC (uses 20000-20099)
+      -a 30000
+      -z 30100
+      -nonat -nf
     environment:
       - EXTERNAL_IP=${externalIp}
+    volumes:
+      - ${config.paths.voiceApp}/audio:/app/audio
+      - ${config.paths.voiceApp}/static:/app/static
+`;
+  }
 
+  if (has('voice-app')) {
+    yaml += `
   voice-app:
     build: 
       context: ${config.paths.voiceApp}
@@ -148,19 +177,23 @@ services:
     restart: unless-stopped
     network_mode: host
     env_file:
-      - path: ${getEnvPath()}
-        required: false
+      - ${getEnvPath()}
     volumes:
       - ${config.paths.voiceApp}/audio:/app/audio
-      - ${config.paths.voiceApp}/config:/app/config
-    depends_on:
-      - drachtio
-      - freeswitch
-      - whisper-stt
-      - kokoro-tts
+      - ${config.paths.voiceApp}/config:/app/config`;
 
+    if (dependsOnString) {
+      yaml += `
+    depends_on:
+${dependsOnString}`;
+    }
+    yaml += '\n';
+  }
+
+  if (has('whisper-stt')) {
+    yaml += `
   whisper-stt:
-    image: fedirz/faster-whisper-server:latest-cpu
+    image: fedirz/faster-whisper-server:latest-cuda
     container_name: whisper-stt
     restart: unless-stopped
     network_mode: host
@@ -170,19 +203,42 @@ services:
       - UVICORN_PORT=8080
     volumes:
       - whisper-models:/root/.cache/huggingface
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]
+`;
+  }
 
+  if (has('kokoro-tts')) {
+    yaml += `
   kokoro-tts:
-    image: ghcr.io/remsky/kokoro-fastapi-cpu:latest
+    image: ghcr.io/remsky/kokoro-fastapi-gpu:latest
     container_name: kokoro-tts
     restart: unless-stopped
     network_mode: host
     volumes:
       - kokoro-models:/app/api/src/core/lib
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]
+`;
+  }
 
+  yaml += `
 volumes:
   whisper-models:
   kokoro-models:
 `;
+
+  return yaml;
 }
 
 /**
@@ -209,13 +265,13 @@ export function generateEnvFile(config) {
     `EXTERNAL_IP=${config.server.externalIp === 'auto' ? getLocalIP() : config.server.externalIp}`,
     '',
     '# Drachtio Configuration',
-    'DRACHTIO_HOST=127.0.0.1',
+    `DRACHTIO_HOST=${config.remoteMediaIp || '127.0.0.1'}`,
     'DRACHTIO_PORT=9022',
     `DRACHTIO_SECRET=${config.secrets.drachtio}`,
     `DRACHTIO_SIP_PORT=${config.deployment?.pi?.drachtioPort || 5060}`,
     '',
     '# FreeSWITCH Configuration',
-    'FREESWITCH_HOST=127.0.0.1',
+    `FREESWITCH_HOST=${config.remoteMediaIp || '127.0.0.1'}`,
     'FREESWITCH_PORT=8021',
     'FREESWITCH_SECRET=JambonzR0ck$',
     '',

@@ -27,10 +27,35 @@ AI Phone gives your local AI a phone number through FreePBX:
 | PBX | [FreePBX](https://www.freepbx.org/) or any SIP provider |
 | LLM | [Ollama](https://ollama.com/) with a chat model (default: `deepseek-r1:8b`) |
 | STT | Local Whisper server (e.g. [faster-whisper](https://github.com/SYSTRAN/faster-whisper) or [whisper.cpp](https://github.com/ggerganov/whisper.cpp)) |
-| TTS | [Kokoro TTS](https://github.com/remsky/Kokoro-FastAPI) via Kokoro-FastAPI (included in Docker Compose) — runs on CPU, no GPU needed |
+| TTS | [Kokoro TTS](https://github.com/remsky/Kokoro-FastAPI) via Kokoro-FastAPI — runs on CPU or GPU (CUDA) |
 | Runtime | Docker + Node.js 18+ |
 
 > **No API keys needed.** No data ever leaves your machine.
+
+### Proxmox LXC Guidelines (Crucial)
+
+If you are deploying AI Phone on a Proxmox LXC container instead of bare-metal Linux or a full VM:
+1. **Must be a Privileged Container**: Uncheck the "Unprivileged container" box when creating the LXC. Unprivileged LXCs aggressively block Docker's `overlay2` storage driver from establishing SQLite database locks, causing the FreeSWITCH container to eternally hang during boot. Privileged containers natively support Docker volumes and direct GPU passthrough without hacking cgroups.
+2. **CPU Type must be `host`**: FreeSWITCH mathematically requires **AVX instructions** to process raw audio streams. If your machine's physical CPU supports AVX, but your Proxmox VM is set to a masked CPU architecture (like `kvm64`), FreeSWITCH will instantly silently crash with an "Illegal Instruction" (`SIGILL`).
+
+### Nvidia GPU Passthrough (Docker)
+
+If you are passing an Nvidia GPU (like a Tesla T400) to offload the heavy Whisper and Kokoro models, standard Docker is not enough. You must formally install the [Nvidia Container Toolkit](https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/latest/install-guide.html) bridge:
+
+```bash
+# 1. Add the official Nvidia toolkit repository
+curl -fsSL https://nvidia.github.io/libnvidia-container/gpgkey | gpg --dearmor -o /usr/share/keyrings/nvidia-container-toolkit-keyring.gpg \
+  && curl -s -L https://nvidia.github.io/libnvidia-container/stable/deb/nvidia-container-toolkit.list | \
+    sed 's#deb https://#deb [signed-by=/usr/share/keyrings/nvidia-container-toolkit-keyring.gpg] https://#g' | \
+    tee /etc/apt/sources.list.d/nvidia-container-toolkit.list
+
+# 2. Install and bind the Docker runtime
+apt-get update && apt-get install -y nvidia-container-toolkit
+nvidia-ctk runtime configure --runtime=docker
+systemctl restart docker
+
+# 3. Now `ai-phone start` will successfully allocate hardware access!
+```
 
 ## Quick Start
 
@@ -38,11 +63,13 @@ AI Phone gives your local AI a phone number through FreePBX:
 # 1. Install
 curl -sSL https://raw.githubusercontent.com/jayis1/Project-Ph/main/install.sh | bash
 
-# 2. Configure
-ai-phone setup   # Enter SIP credentials + local AI endpoints
+# 2. Configure (select which Docker containers run on this machine)
+ai-phone setup
 
 # 3. Run
-ai-phone start
+ai-phone start              # Start all configured services
+# or
+ai-phone start freeswitch   # Start specific services only
 
 # 4. Open Mission Control
 # Navigate to http://<your-server-ip>:3030
@@ -67,13 +94,52 @@ ai-phone start
 ## CLI Commands
 
 ```bash
-ai-phone setup    # Interactive configuration
-ai-phone start    # Launch Docker containers
-ai-phone stop     # Stop services
-ai-phone status   # Check status
-ai-phone doctor   # Health checks
-ai-phone logs     # Tail logs
+ai-phone setup              # Interactive configuration wizard
+ai-phone start              # Launch all configured Docker containers
+ai-phone start <services>   # Launch specific containers (e.g. freeswitch voice-app)
+ai-phone stop               # Stop services
+ai-phone stop <services>    # Stop specific containers
+ai-phone status             # Check container and SIP status
+ai-phone doctor             # Run health checks
+ai-phone logs               # Tail logs
 ```
+
+## Advanced: Distributed Multi-Node Architecture
+
+```text
+┌────────────────────────────────────┐          ┌──────────────────────────────────┐
+│ Machine 3 — LXC AI (172.16.1.229) │          │ Machine 4 — Mission Control      │
+│ ⟷ Drachtio (:5070)                │          │           (172.16.1.171)         │
+│ ⟷ FreeSWITCH (media)              │◄─(SIP)──│ Voice App (:3000)               │
+│   Whisper STT (:8080)      ◄──────┼──(HTTP)──┤ Mission Control (:3030)         │
+│   Kokoro TTS (:8880)       ◄──────┼──(HTTP)──┤                                 │
+└────────────────────────────────────┘          └──────────────┬──────────────────┘
+                                                              │
+                                                          (HTTP API)
+                                                              │
+                                                              ▼
+                                                ┌──────────────────────────┐
+                                                │ Machine 2 — Ollama       │
+                                                │   (172.16.1.26)          │
+                                                │ ⟷ gemma3:12b             │
+                                                └──────────────────────────┘
+
+                                                ┌──────────────────────────┐
+                                                │ Machine 1 — FreePBX      │
+                                                │   (172.16.1.163)         │
+                                                │ ⟷ SIP Routing            │
+                                                └──────────────────────────┘
+```
+
+The AI Phone is designed as a suite of decoupled microservices. You can run all 5 containers on one machine, or split them across a cluster.
+
+During `ai-phone setup`, use the `Spacebar` to Check/Uncheck the exact containers you want running on that specific Linux instance.
+
+**Example 4-Machine Split:**
+1. **Machine 1 (FreePBX — 172.16.1.163)**: Doesn't run docker, just your existing PBX.
+2. **Machine 2 (Ollama — 172.16.1.26)**: Pure Ollama server running Gemma/Llama.
+3. **Machine 3 (LXC AI — 172.16.1.229)**: Run `ai-phone setup` and check `SIP Signaling (Drachtio)`, `Media Engine (FreeSWITCH)`, `Speech-to-Text`, and `Text-to-Speech`.
+4. **Machine 4 (Mission Control — 172.16.1.171)**: Run `ai-phone setup` and check `Voice Application Logic`. All Ollama traffic is routed through this machine.
 
 ## Mission Control
 
@@ -180,16 +246,43 @@ See [`.env.example`](.env.example) for all configurable variables. Key ones:
 | `SIP_REGISTRAR` | SIP registrar address |
 | `DRACHTIO_SIP_PORT` | Drachtio SIP port (default: `5070`) |
 
-## FreePBX Trunk Configuration
+## FreePBX Configuration (Critical)
 
-For outbound PSTN calls, your SIP trunk needs `from_user` set to your trunk account ID. If FreePBX regenerates the config and removes it:
+### SIP Trunk Settings
 
-```bash
-sed -i '/^\[YourTrunk\]$/a from_user=YOUR_ACCOUNT_ID\nfrom_domain=YOUR_PROVIDER_DOMAIN' /etc/asterisk/pjsip.endpoint.conf
-asterisk -rx "module reload res_pjsip.so"
-```
+For outbound PSTN calls, your SIP trunk needs `from_user` and `from_domain` set. Configure in **Connectivity → Trunks → [Your Trunk] → pjsip Settings → Advanced**:
+
+| Setting | Value | Why |
+|---------|-------|-----|
+| `From Domain` | Your provider domain (e.g. `voice.redspot.dk`) | Required by SIP provider for authentication |
+| `From User` | Your trunk account ID (e.g. `88707695`) | Required by SIP provider for caller identification |
 
 Also ensure the outbound route has a dial pattern of `.` (matches all numbers) with your trunk selected.
+
+### RTP Timeout (Prevents 32-Second Call Drops)
+
+FreePBX defaults `rtp_timeout=30` in `/etc/asterisk/pjsip.endpoint.conf`, which kills calls after 30 seconds if FreePBX doesn't receive RTP. This must be disabled for AI calls (where silence is normal during processing):
+
+```bash
+# Persist across FreePBX config reloads
+echo -e "rtp_timeout=0\nrtp_timeout_hold=0" >> /etc/asterisk/pjsip.endpoint_custom.conf
+asterisk -rx "module reload res_pjsip.so"
+
+# Verify
+asterisk -rx "pjsip show endpoint YOUR_EXTENSION" | grep rtp_timeout
+```
+
+> **Warning:** Without this, outbound calls will consistently disconnect at exactly ~32 seconds.
+
+### Extension Settings
+
+For the AI extension (e.g. 9001), set in **Admin → Extensions → [Extension] → Advanced**:
+
+| Setting | Value | Why |
+|---------|-------|-----|
+| `Direct Media` | **No** | FreePBX must stay in the media path to bridge audio between FreeSWITCH and the SIP trunk |
+| `RTP Timeout` | **0** | Prevents premature call termination during AI processing |
+
 
 ## Documentation
 

@@ -23,10 +23,10 @@ const { saveRecording } = require('./call-recordings');
 // Path to audio-temp for cache validation
 const AUDIO_TEMP_DIR = path.join(__dirname, '../audio-temp');
 
-// Audio cue URLs
-const READY_BEEP_URL = 'http://127.0.0.1:3000/static/ready-beep.wav';
-const GOTIT_BEEP_URL = 'http://127.0.0.1:3000/static/gotit-beep.wav';
-const HOLD_MUSIC_URL = 'http://127.0.0.1:3000/static/hold-music.wav';
+const READY_BEEP_URL = '/app/static/ready-beep.wav';
+const GOTIT_BEEP_URL = '/app/static/gotit-beep.wav';
+const HOLD_MUSIC_URL = '/app/audio/hold-music.wav';
+const HOLD_MUSIC_ALT_URL = '/app/audio/hold-music-alt.wav';
 
 // Conversational thinking phrases — long enough to feel natural while AI processes
 const THINKING_PHRASES = [
@@ -287,7 +287,7 @@ ${callbackInstructions}
       return;
     }
 
-    // Start audio fork for entire call
+    // Start audio fork for entire call (127.0.0.1 works securely due to Shared Network Mode)
     const wsUrl = `ws://127.0.0.1:${wsPort}/${encodeURIComponent(callUuid)}`;
 
     // Use try-catch for expectSession to handle race conditions
@@ -301,7 +301,7 @@ ${callbackInstructions}
 
     await endpoint.forkAudioStart({
       wsUrl,
-      mixType: 'mono',
+      mixType: 'mixed',
       sampling: '16k'
     });
     forkRunning = true;
@@ -483,10 +483,11 @@ ${callbackInstructions}
         return { type: 'response', url, text: fullText, sentences: count, transcript };
       })();
 
-      // Play hold music while processing
-      logger.info('Playing hold music while processing', { callUuid });
+      // Play hold music while processing (Randomly select between the two tracks)
+      const selectedMusic = Math.random() > 0.5 ? HOLD_MUSIC_URL : HOLD_MUSIC_ALT_URL;
+      logger.info('Playing hold music while processing', { callUuid, track: selectedMusic });
       const musicPromise = callActive
-        ? endpoint.play(HOLD_MUSIC_URL).catch(() => {})
+        ? endpoint.play(selectedMusic).catch(() => {})
         : Promise.resolve();
 
       // Wait for processing to complete
@@ -505,7 +506,15 @@ ${callbackInstructions}
 
       if (!callActive) break;
 
+      let fullAiResponse = '';
+
       // Handle the result
+      if (result.type === 'error') {
+        const errUrl = await ttsService.generateSpeech("My systems are taking slightly longer than usual to respond. Could you please bear with me and ask that again?", voiceId);
+        await endpoint.play(errUrl);
+        continue;
+      }
+      
       if (result.type === 'clarify') {
         const clarifyUrl = await ttsService.generateSpeech("Sorry, I didn't catch that. Could you repeat?", voiceId);
         await endpoint.play(clarifyUrl);

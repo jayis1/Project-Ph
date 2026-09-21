@@ -135,6 +135,44 @@ export async function setupCommand() {
   config.botName = botName;
   config.botPrompt = botPrompt;
 
+  // Infrastructure Deployment
+  console.log(chalk.cyan('\n🏗️  Infrastructure Deployment\n'));
+
+  const { components } = await inquirer.prompt([
+    {
+      type: 'checkbox',
+      name: 'components',
+      message: 'Which components do you want to run on THIS machine?',
+      choices: [
+        { name: 'SIP Signaling (Drachtio)', value: 'drachtio', checked: existingConfig.components ? existingConfig.components.includes('drachtio') : true },
+        { name: 'Media Engine (FreeSWITCH)', value: 'freeswitch', checked: existingConfig.components ? existingConfig.components.includes('freeswitch') : true },
+        { name: 'Voice Application Logic (Mission Control)', value: 'voice-app', checked: existingConfig.components ? existingConfig.components.includes('voice-app') : true },
+        { name: 'Speech-to-Text (Whisper Local)', value: 'whisper-stt', checked: existingConfig.components ? existingConfig.components.includes('whisper-stt') : true },
+        { name: 'Text-to-Speech (Kokoro Local)', value: 'kokoro-tts', checked: existingConfig.components ? existingConfig.components.includes('kokoro-tts') : true },
+      ],
+      validate: (ans) => ans.length > 0 ? true : 'You must select at least one component to run on this machine.'
+    }
+  ]);
+  
+  config.components = components;
+
+  // If Drachtio/FreeSWITCH are NOT selected, they run on a remote machine.
+  // Ask for that machine's IP so voice-app can connect to them.
+  const needsRemoteMedia = !components.includes('drachtio') || !components.includes('freeswitch');
+  if (needsRemoteMedia) {
+    console.log(chalk.yellow('\n⚠️  Drachtio/FreeSWITCH not selected — they must run on a remote machine.'));
+    const { remoteMediaIp } = await inquirer.prompt([
+      {
+        type: 'input',
+        name: 'remoteMediaIp',
+        message: 'Remote Machine 3 IP (where Drachtio + FreeSWITCH run):',
+        default: existingConfig.remoteMediaIp || '172.16.1.229',
+        validate: (input) => /^\d+\.\d+\.\d+\.\d+$/.test(input) || 'Must be a valid IP address'
+      }
+    ]);
+    config.remoteMediaIp = remoteMediaIp;
+  }
+
   // Save configuration
   try {
     writeFileSync(CONFIG_FILE, JSON.stringify(config, null, 2));
@@ -149,6 +187,7 @@ export async function setupCommand() {
     const installDir = join(homedir(), '.ai-phone-cli');
 
     const mappedConfig = {
+      components: config.components,
       paths: {
         voiceApp: join(installDir, 'voice-app'),
       },
@@ -177,7 +216,8 @@ export async function setupCommand() {
       deployment: {
         mode: installMode,
         pi: { drachtioPort }
-      }
+      },
+      remoteMediaIp: config.remoteMediaIp || null
     };
 
     await writeDockerConfig(mappedConfig);

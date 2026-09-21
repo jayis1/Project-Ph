@@ -38,11 +38,11 @@ program
   });
 
 program
-  .command('start')
-  .description('Start all services (Docker containers)')
-  .action(async () => {
+  .command('start [services...]')
+  .description('Start specific services or all if none provided (Docker containers)')
+  .action(async (services) => {
     try {
-      await startCommand();
+      await startCommand(services);
     } catch (error) {
       console.error(chalk.red(`\n✗ Start failed: ${error.message}\n`));
       process.exit(1);
@@ -50,11 +50,11 @@ program
   });
 
 program
-  .command('stop')
-  .description('Stop all services')
-  .action(async () => {
+  .command('stop [services...]')
+  .description('Stop specific services or all if none provided')
+  .action(async (services) => {
     try {
-      await stopCommand();
+      await stopCommand(services);
     } catch (error) {
       console.error(chalk.red(`\n✗ Stop failed: ${error.message}\n`));
       process.exit(1);

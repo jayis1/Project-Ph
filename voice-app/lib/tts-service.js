@@ -112,7 +112,8 @@ async function generateSpeech(text, _voiceId) {
     const stats = fs.statSync(filepath);
     logger.info('Kokoro TTS generation successful', { filename, fileSize: stats.size, latency });
 
-    return `http://127.0.0.1:3000/audio-files/${filename}`;
+    // Bypass HTTP and return the direct physical file path so FreeSWITCH can read it over the shared volume mount
+    return filepath;
 
   } catch (error) {
     const latency = Date.now() - startTime;
